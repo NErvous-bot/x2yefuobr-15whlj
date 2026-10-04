@@ -21,6 +21,10 @@ jobs:
         with:
           node-version: '20'
       - run: node filter.js
+      # 规则自维护：抓真实正文巡检漏网广告，误伤0段+净化率提升才追加规则；
+      # 脚本内部对任何异常 exit 0 跳过写入，失败不影响主流程
+      - name: 规则自维护（漏网广告巡检+追加净化规则）
+        run: node rules.js
       - name: 镜像线路探活
         run: node probe.js
       - name: 成品校验（防上游返回畸形数据被自动提交）
@@ -48,4 +52,5 @@ jobs:
           # 清理旧命名的签名文件（v3.5首版的 legado.sig/replaceRule.sig）
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
           git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig urls.txt candidates.txt
-          git diff --cached --quiet || (git commit -m "auto update" && git pull --rebase origin main && git push)
+          # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
+          git diff --cached --quiet || (git commit -m "auto update" && git pull --rebase origin main && git push origin HEAD)
