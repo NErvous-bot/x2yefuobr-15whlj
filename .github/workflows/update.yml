@@ -33,18 +33,14 @@ jobs:
           node -e "const a=require('./legado.json');const bad=a.filter(s=>!s.ruleContent).length;if(bad/a.length>0.5)throw new Error('ruleContent缺失率过高:'+bad+'/'+a.length)"
           node -e "const r=require('./replaceRule.json');if(!Array.isArray(r)||r.length<1)throw new Error('净化规则异常:'+r.length)"
           echo "校验通过：legado.json 与 replaceRule.json 结构正常"
-      - name: ECDSA签名（App端内置公钥验签，防镜像投毒）
+      - name: ECDSA签名（node内置crypto + 自验签，防镜像投毒）
         env:
           # Secret 名沿用 ED25519_KEY，现值为 EC P-256 PKCS#8 PEM 的 base64
           #（Ed25519 在部分 vivo/Android 机型上 KeyFactory 无法导入 X.509 公钥）
           ED25519_KEY: ${{ secrets.ED25519_KEY }}
-        run: |
-          echo "$ED25519_KEY" | base64 -d > key.pem
-          # 注意文件名：App 端按「原名+.sig」取签名，即 legado.json.sig / replaceRule.json.sig
-          openssl dgst -sha256 -sign key.pem -in legado.json | base64 -w0 > legado.json.sig
-          openssl dgst -sha256 -sign key.pem -in replaceRule.json | base64 -w0 > replaceRule.json.sig
-          rm key.pem
-          echo "签名完成：$(wc -c < legado.json.sig)/$(wc -c < replaceRule.json.sig) 字节"
+        # 注意文件名：App 端按「原名+.sig」取签名，即 legado.json.sig / replaceRule.json.sig
+        # 2026-10-04 起 runner 的 openssl 签名报 unsupported 导致 0 字节签名被静默提交，改用 node 内置 crypto 并强制自验签
+        run: node sign.js
       - name: commit
         run: |
           git config user.name "github-actions[bot]"
