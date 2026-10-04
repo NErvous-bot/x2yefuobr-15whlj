@@ -18,5 +18,6 @@
   {"name":"作者的话引导","group":"净化-互动","replacePattern":"[（(【]?(?:PS|ps|Ps)[：:][^）)】\n]{0,60}?[求拉投][^）)】\n]{0,30}[)）】]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":23},
   {"name":"乱码控制符","group":"净化-排版","replacePattern":"[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFD]","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":31},
   {"name":"行尾空白","group":"净化-排版","replacePattern":"[^\\S\\n]+(?=\\n)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":32},
-  {"name":"多余空行","group":"净化-排版","replacePattern":"\\n{3,}","replacement":"\\n\\n","scope":"","isEnabled":true,"isRegex":true,"sortNo":33}
+  {"name":"多余空行","group":"净化-排版","replacePattern":"\\n{3,}","replacement":"\\n\\n","scope":"","isEnabled":true,"isRegex":true,"sortNo":33},
+  {"name":"自动·社群引流「加微信」","group":"净化-自动","replacePattern":"加微信","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":34}
 ]
