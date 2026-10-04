@@ -3,6 +3,7 @@
 // 无任何依赖，GitHub Actions 的 Node 20 可直接运行
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
+const { checkSource } = require('./aging-test');
 // 多 UA 池：随机选，绕过部分站点的反爬 UA 黑名单（参考 tickmao AUTO_SUPPLEMENT 思路）
 const UAS = [
     'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
@@ -154,7 +155,7 @@ function variants(o) {
         for (const s of list) {
             if (isOwn(s)) continue;
             const u = up.get(norm(s.bookSourceUrl));
-            if (u && (u.lastUpdateTime || 0) > (s.lastUpdateTime || 0)) { Object.assign(s, u); merged++; }
+            if (u && (u.lastUpdateTime || 0) > (s.lastUpdateTime || 0)) { delete s.lastUsableCheck; Object.assign(s, u); merged++; }
         }
         console.log('上游合并更新 ' + merged + ' 个源');
     }
@@ -189,20 +190,41 @@ function variants(o) {
     console.log('存活 ' + out.length + ' / ' + list.length + '，剔除 ' + removed + ' 个');
     if (dead.size) console.log('最终死域名:\n' + [...dead].join('\n'));
 
-    // 3.1) 老化剔除：>365天未更新 ≈ 作者弃坑（盗版站规则寿命普遍不到半年）。
-    //      最老的先走，每轮最多剔 8%，分批清完避免一次大出血；
+    // 3.1) 老化剔除·先实测再删：>365天未更新 ≈ 作者弃坑（盗版站规则寿命普遍不到半年）。
+    //      名单内最老 8% 且 90 天未实测的源，先做三关真实实测：
+    //      ①搜索"都市"出书 ②目录≥1章 ③第一章正文≥200字。
+    //      全过 → 豁免保留（90天免复测）；任一关确定坏 → 剔除；
+    //      规则不可测（js/XPath等）或网络失败 → 豁免不误删，由域名探活层兜底真死源。
+    //      活跃度（≤45天有更新）仅记日志，不影响去留。上游合并刷新过的源清掉复测标记。
     //      30% 阈值闸门只管探活死（防网络抖动误判），老化剔除单独限额不占闸门。
-    //      上游有新版本时 lastUpdateTime 会被合并刷新，只有上游也弃更的源才会老化
     const NOW = Date.now();
-    const AGED = 365 * 864e5, AGED_CAP = 0.08;
+    const AGED = 365 * 864e5, AGED_CAP = 0.08, RETEST = 90 * 864e5;
     const agedList = out.filter(s => NOW - (s.lastUpdateTime || 0) > AGED)
                         .sort((a, b) => (a.lastUpdateTime || 0) - (b.lastUpdateTime || 0));
-    const agedKill = new Set(agedList.slice(0, Math.floor(out.length * AGED_CAP))
-                                    .map(s => norm(s.bookSourceUrl)));
-    const agedRemoved = out.filter(s => agedKill.has(norm(s.bookSourceUrl))).length;
-    if (agedRemoved) {
-        out = out.filter(s => !agedKill.has(norm(s.bookSourceUrl)));
-        console.log('老化剔除 ' + agedRemoved + ' 个（>365天未更新，剩余 ' + (agedList.length - agedRemoved) + ' 个后续轮次继续）');
+    const agedCand = agedList.filter(s => NOW - (s.lastUsableCheck || 0) > RETEST)
+                             .slice(0, Math.floor(out.length * AGED_CAP));
+    let agedRemoved = 0, agedExempt = 0, actCnt = 0, staleCnt = 0, skipCnt = 0;
+    if (agedCand.length) {
+        console.log('老化复测 ' + agedCand.length + ' 个（>365天未更新，先实测再删：搜索→目录→正文）');
+        const results = await pool(agedCand, 8, s => checkSource(s).then(r => [s, r]));
+        const kill = new Set();
+        for (const [s, r] of results) {
+            const nm = ((s.bookSourceName || '') + ' ' + s.bookSourceUrl).slice(0, 60);
+            s.lastUsableCheck = NOW;
+            if (r.usable === true) {
+                agedExempt++;
+                if (r.activity === '活跃') actCnt++; else if (r.activity === '停滞') staleCnt++;
+                console.log('  ✓ 豁免[' + r.activity + '·' + r.chapters + '章·正文' + r.contentLen + '字] ' + nm);
+            } else if (r.usable === 'skip') {
+                agedExempt++; skipCnt++;
+                console.log('  - 不可测豁免[' + r.reason + '] ' + nm);
+            } else {
+                kill.add(norm(s.bookSourceUrl)); agedRemoved++;
+                console.log('  ✗ 实测剔除[' + r.reason + '] ' + nm);
+            }
+        }
+        if (agedRemoved) out = out.filter(s => !kill.has(norm(s.bookSourceUrl)));
+        console.log('老化复测: 豁免 ' + agedExempt + '（活跃 ' + actCnt + ' / 停滞 ' + staleCnt + ' / 未知 ' + (agedExempt - actCnt - staleCnt - skipCnt) + ' / 不可测 ' + skipCnt + '）剔除 ' + agedRemoved + '（名单余 ' + (agedList.length - agedRemoved) + ' 个后续轮次继续）');
     }
 
     // 3.5) 自动扩容：从上游实时筛一小批新源（硬过滤 → 探活 → 每轮最多15个，宁缺毋滥）

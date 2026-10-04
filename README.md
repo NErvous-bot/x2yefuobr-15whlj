@@ -8,6 +8,7 @@
 - `replaceRule.json`：全局替换净化规则（去引导语/引流/求票/乱码，对所有书源生效）
 - `*.sig`：上述 JSON 的 ECDSA P-256 签名文件，App 端内置公钥逐字节验签，防公共镜像线路篡改/投毒
 - `filter.js` + GitHub Actions：每 3 天自动探测域名存活、剔除死源、尝试域名搬家修复、失败保留旧版本，并对成品重新签名
+- `aging-test.js`：老化源实测模块（三关实测：搜索出书 → 目录≥1章 → 正文≥200字；规则不可测/网络失败/反爬验证一律豁免不误删）
 - `rules.js`：净化规则自维护流水线（每 3 天随更新自动运行：抓真实正文巡检漏网广告 → 模板法生成候选规则 → 干净语料 0 误伤 + 净化率提升双重校验通过后自动追加，单轮 ≤10 条，异常/效果不佳自动跳过不写入）
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
@@ -36,7 +37,7 @@ node preflight.js
 
 ## 许可与免责声明
 
-- 本仓库自有代码（`filter.js`、`probe.js`、`preflight.js`、SourceAutoSync App）以 GPL-3.0 协议发布，见 [LICENSE](LICENSE)。
+- 本仓库自有代码（`filter.js`、`aging-test.js`、`probe.js`、`preflight.js`、SourceAutoSync App）以 GPL-3.0 协议发布，见 [LICENSE](LICENSE)。
 - 书源数据沿用各上游仓库的原许可证（GPL-3.0 / MIT），完整许可证文本与版权声明见各上游仓库。
 - 本仓库仅包含书源规则配置，不存储、不分发任何小说正文内容。
 - `sync-app.apk` 由 GitHub Actions 从本仓库 `SourceAutoSync/` 源码自动构建（构建日志公开可查），对应完整源码即本仓库，满足 GPL-3.0 的源码提供要求。
@@ -48,4 +49,4 @@ node preflight.js
 
 - filter.js 有意设置 NODE_TLS_REJECT_UNAUTHORIZED=0（全局关闭 Node TLS 校验）：上游源与书源站普遍存在自签或过期证书，强校验会误杀可用源。该设置仅在 GitHub Actions 受控环境内运行。
 - 签名使用 node 内置 crypto（sign.js）而非 openssl：2026-10-04 起 runner 镜像的 openssl 签名报 unsupported，旧管道写法会把 0 字节签名静默提交，现改为签名后自验签、失败即 CI 失败。
-- 书源按「>365天未更新」分批老化剔除（每轮上限8%），探活死源剔除仍受单次30%阈值保护。
+- 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js/XPath）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
