@@ -1,0 +1,17 @@
+{
+ "generatedAt": 1791182861559,
+ "oldRef": "6294294",
+ "matrix": {
+  "untestable->untestable": 208,
+  "untestable->available": 26,
+  "untestable->broken": 32,
+  "broken->untestable": 21,
+  "broken->available": 16,
+  "available->available": 26,
+  "untestable->removed": 3,
+  "broken->broken": 57,
+  "available->untestable": 1,
+  "available->broken": 1
+ },
+ "addedSources": 7
+}

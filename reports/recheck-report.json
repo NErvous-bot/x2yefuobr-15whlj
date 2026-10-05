@@ -1,0 +1,264 @@
+{
+ "generatedAt": 1791182861560,
+ "oldRef": "6294294",
+ "tier1": [
+  {
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "SUSPECT"
+  }
+ ],
+ "tier2": [
+  {
+   "name": "话本小说",
+   "url": "https://www.ihuaben.com",
+   "traits": [
+    "JSONPath",
+    "js规则"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
+  },
+  {
+   "name": "疯读极速",
+   "url": "https://fiction.fengduxiaoshuo.com/",
+   "traits": [
+    "JSONPath"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
+  },
+  {
+   "name": "🎃灯读文学🎃",
+   "url": "https://s30007.zhongyue001.com#🎃",
+   "traits": [
+    "JSONPath",
+    "js规则"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "📚 百度小说",
+   "url": "https://dushu.baidu.com",
+   "traits": [
+    "JSONPath",
+    "js规则"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
+  },
+  {
+   "name": "阅友小说",
+   "url": "http://m.yueyouxs.com#",
+   "traits": [
+    "JSONPath"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
+  },
+  {
+   "name": "SF轻小说",
+   "url": "https://m.sfacg.com#南笙21.0101",
+   "traits": [
+    "JSONPath",
+    "js规则"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "SEARCH_PARSE",
+     "reason": "bookList规则不可测"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
+  },
+  {
+   "name": "中文万维",
+   "url": "http://cread.com#",
+   "traits": [
+    "POST",
+    "JSONPath",
+    "js规则"
+   ],
+   "oldNote": "bookList规则不可测",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  }
+ ]
+}

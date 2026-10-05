@@ -131,11 +131,16 @@ function jpQuery(root, path) {
     if (s !== '$' && !s.startsWith('$.')) return null;
     s = s.slice(1);
     const re = /\.(\*|[\w\u4e00-\u9fff\-]+)|\[\s*(\*|\d+)\s*\]|\[\s*'([^']*)'\s*\]/g;
-    let cur = [root], consumed = '', m;
-    while ((m = re.exec(s))) {
-        consumed += m[0];
-        const key = m[1] !== undefined ? m[1] : m[3];
-        const idx = m[2];
+    // 语法预检在前：整条路径必须被支持语法完全覆盖，否则一律不可测。
+    // （若先遍历，首段查空会提前 return [] 绕过末尾校验，把"规则超纲"误判成"搜索无结果"）
+    const toks = [];
+    let m;
+    while ((m = re.exec(s))) toks.push(m);
+    if (toks.reduce((a, t) => a + t[0].length, 0) !== s.length) return null;
+    let cur = [root];
+    for (const mm of toks) {
+        const key = mm[1] !== undefined ? mm[1] : mm[3];
+        const idx = mm[2];
         const next = [];
         for (const o of cur) {
             if (o == null || typeof o !== 'object') continue;
@@ -152,7 +157,6 @@ function jpQuery(root, path) {
         cur = next;
         if (!cur.length) return [];
     }
-    if (consumed !== s) return null; // 有未支持的语法残段
     const out = cur.slice();
     // legado 语义：列表规则最后落在单数组上时展开为元素列表
     if (out.length === 1 && Array.isArray(out[0])) return out[0].slice();
