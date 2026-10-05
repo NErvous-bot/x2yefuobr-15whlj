@@ -31,7 +31,10 @@ const UPSTREAMS = [
     'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/rezero.json',
     'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/wenku.json',
     'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/zaimanhua.json',  // 漫画→被BAD过滤
-    'https://raw.githubusercontent.com/shidahuilang/shuyuan-bak/main/good.json'
+    'https://raw.githubusercontent.com/shidahuilang/shuyuan-bak/main/good.json',
+    // 4) aoaostar/legado：AGPL-3.0 社区共享书源站（6612星，每日更新，3900源/20MB全量）
+    //    与本地重叠约104个，主要价值=给扩容池补 ~3600 个候选长尾源（仍按扩容闸门实测筛选）
+    'https://raw.githubusercontent.com/aoaostar/legado/master/sources/b778fe6b.json'
 ];
 
 function norm(u) {

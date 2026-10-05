@@ -10,6 +10,7 @@
 - `filter.js` + GitHub Actions：每 3 天自动探测域名存活、剔除死源、尝试域名搬家修复、失败保留旧版本，并对成品重新签名
 - `aging-test.js`：老化源实测模块（三关实测：搜索出书 → 目录≥1章 → 正文≥200字；规则不可测/网络失败/反爬验证一律豁免不误删）
 - `rules.js`：净化规则自维护流水线（每 3 天随更新自动运行：抓真实正文巡检漏网广告 → 模板法生成候选规则 → 干净语料 0 误伤 + 净化率提升双重校验通过后自动追加，单轮 ≤10 条，异常/效果不佳自动跳过不写入）
+- `health.js` + `health/source_health.json`：源级健康检查（每轮对书源做搜索/目录/正文三关实测并按响应速度评分，带时间预算轮测全库；结果 JSON 可随时查看哪些源真正可用）
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
@@ -34,11 +35,12 @@ node preflight.js
 - [shidahuilang/shuyuan-bak](https://github.com/shidahuilang/shuyuan-bak) （大灰狼订阅源，GPL-3.0）— 体量最大的中文小说书源合集
 - [tickmao/Novel](https://github.com/tickmao/Novel) （MIT）— 精而稳的 legado 源，每日验证维护
 - [jiwangyihao/source-j-legado](https://github.com/jiwangyihao/source-j-legado) （MIT）— 轻小说/二次元专项源集
+- [aoaostar/legado](https://github.com/aoaostar/legado) （AGPL-3.0）— 社区共享书源聚合站（每日更新），为扩容池提供长尾候选
 
 ## 许可与免责声明
 
 - 本仓库自有代码（`filter.js`、`aging-test.js`、`probe.js`、`preflight.js`、SourceAutoSync App）以 GPL-3.0 协议发布，见 [LICENSE](LICENSE)。
-- 书源数据沿用各上游仓库的原许可证（GPL-3.0 / MIT），完整许可证文本与版权声明见各上游仓库。
+- 书源数据沿用各上游仓库的原许可证（GPL-3.0 / MIT / AGPL-3.0），完整许可证文本与版权声明见各上游仓库。
 - 本仓库仅包含书源规则配置，不存储、不分发任何小说正文内容。
 - `sync-app.apk` 由 GitHub Actions 从本仓库 `SourceAutoSync/` 源码自动构建（构建日志公开可查），对应完整源码即本仓库，满足 GPL-3.0 的源码提供要求。
 - 本 App 不包含、不修改「阅读」(legado) 的任何代码，仅通过其官方公开的导入接口传递配置文件。
