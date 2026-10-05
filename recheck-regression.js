@@ -2,7 +2,8 @@
 // 对比新旧两份健康报告，对异常迁移源做多次完整实测复查：
 //   一级：旧可用 → 新确认坏  → 5次连续完整三关实测（搜索→书籍→目录→正文）
 //   二级：旧bookList不可测 → 新确认坏 → 3次完整实测
-// 判定：4/5以上成功=FLAPPING(抖动禁止删除)；0/N且死因一致=REAL_DEATH_CANDIDATE；其余=SUSPECT
+// 判定：4/5以上成功=FLAPPING(抖动禁止删除)；0/N且死因一致=REAL_DEATH_CANDIDATE；
+//       决定性样本<3=NET_UNREACHABLE(网络不可达不判死，下轮继续观察)；其余=SUSPECT
 // 严格只读：不修改 legado.json、不执行任何删除，只产出 reports/ 下三份报告
 // 用法：node recheck-regression.js [旧报告git引用，默认 HEAD~1]
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -53,6 +54,7 @@ function verdictOf(attempts) {
     if (pass === n) return { verdict: 'RECOVERED', pass, n };
     if (n >= 5 ? pass >= n - 1 : pass >= 2) return { verdict: 'FLAPPING', pass, n }; // 抖动：仅偶发失败
     if (pass === 0) {
+        if (n < 3) return { verdict: 'NET_UNREACHABLE', pass, n }; // 决定性样本<3：多为网络不可达，不能判死，下轮继续观察
         const stages = [...new Set(decisive.map(a => a.stage))];
         return { verdict: stages.length === 1 ? 'REAL_DEATH_CANDIDATE' : 'MIXED_DEATH', pass, n, stages };
     }

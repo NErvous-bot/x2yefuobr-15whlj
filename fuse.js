@@ -20,6 +20,7 @@ const stOf = v => (v.health === null || v.health === undefined) ? 'untestable' :
 
 const VERDICT_CN = {
     REAL_DEATH_CANDIDATE: '稳定死亡',
+    NET_UNREACHABLE: '网络不可达(不判死,下轮观察)',
     FLAPPING: '抖动',
     SUSPECT: '疑似(部分成功)',
     MIXED_DEATH: '死因混杂',
