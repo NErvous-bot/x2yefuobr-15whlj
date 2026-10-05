@@ -4,13 +4,16 @@
 
 ## 仓库组件
 
-- `legado.json`：精选书源合集（番茄官方 Cookie 源置顶）
+- `legado.json`：精选书源合集（按健康评分自动分层排序：核心/稳定/备用/观察，不可测源入保护池，确认坏沉底）
 - `replaceRule.json`：全局替换净化规则（去引导语/引流/求票/乱码，对所有书源生效）
 - `*.sig`：上述 JSON 的 ECDSA P-256 签名文件，App 端内置公钥逐字节验签，防公共镜像线路篡改/投毒
 - `filter.js` + GitHub Actions：每 3 天自动探测域名存活、剔除死源、尝试域名搬家修复、失败保留旧版本，并对成品重新签名
 - `aging-test.js`：老化源实测模块（三关实测：搜索出书 → 目录≥1章 → 正文≥200字；支持 GET/POST 搜索（含 headers/charset 选项与伪 JSON 宽松解析）、GBK 编解码、JSON 响应 JSONPath 常用子集、HTML 静态选择器子集；规则不可测/网络失败/反爬验证一律豁免不误删）
 - `rules.js`：净化规则自维护流水线（每 3 天随更新自动运行：抓真实正文巡检漏网广告 → 模板法生成候选规则 → 干净语料 0 误伤 + 净化率提升双重校验通过后自动追加，单轮 ≤10 条，异常/效果不佳自动跳过不写入）
 - `health.js` + `health/source_health.json`：源级健康检查（每轮对书源做搜索/目录/正文三关实测并按响应速度评分，带时间预算轮测全库；结果 JSON 可随时查看哪些源真正可用）
+- `score.js` + `reports/source_scores.json`：源评分分层（读健康报告计算源级分数，按核心/稳定/备用/观察分层覆写 weight，按权重降序重排 legado.json，让已验证的优质源优先）
+- `fuse.js` + `reports/fuse-summary.txt`：发布保险丝（旧可用→新坏须经多轮实测定生死，仅"稳定死亡"才拦截发布；总源数/可用数骤降熔断；BLOCKED 时自动回滚成品文件，手机端书源逐字节不变，仅提交诊断报告）
+- `recheck-regression.js`：回归复查裁决器（对状态异常的源做多轮实测裁决，输出新旧状态迁移矩阵，只读不改正式书源）
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
