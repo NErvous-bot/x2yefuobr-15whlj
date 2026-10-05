@@ -68,8 +68,8 @@ public class MainActivity extends Activity {
             refresh();
         });
 
-        // runs every 24h but only syncs inside Monday 5-11am window
-        // (or if last successful sync was >13 days ago); MD5-skip keeps it cheap
+        // runs every 24h; the worker first does a ~70-byte fingerprint check
+        // (version.txt) and downloads/writes sources only when repo content changed
         androidx.work.Constraints cons = new androidx.work.Constraints.Builder()
                 .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
                 .build();
@@ -112,10 +112,10 @@ public class MainActivity extends Activity {
         }
         String progLine = (progress == null) ? "" : "\n▶ " + progress + "\n";
         status.setText(
-                "书源自动同步 v3.14" + progLine +
+                "书源自动同步 v3.15" + progLine +
                 "\n上次：" + last + "\n" +
                 (hist.length() == 0 ? "" : "\n最近记录：" + hist + "\n") +
-                "\n每周一凌晨5点自动同步（错过自动补跑）· 镜像自动切换 · 全程验签");
+                "\n每天自动检查更新（有更新才下载写入）· 镜像自动切换 · 全程验签");
     }
 
     @Override

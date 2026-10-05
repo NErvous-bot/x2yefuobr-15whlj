@@ -22,4 +22,10 @@ for (const f of ['legado.json', 'replaceRule.json']) {
   console.log((ok ? '√' : '×') + ' ' + f + '.sig：DER ' + sig.length + ' 字节，自验签' + (ok ? '通过' : '失败'));
   if (!ok || sig.length < 8) fail = true;
 }
+// version.txt：两个成品的内容指纹（md5，各一行，共约70字节）。App 端每天
+// 只下载这个小文件做轻量比对，内容没变不拉全量书源。md5 随内容确定，
+// 健康检查等无关提交不会误触发；App 拿不到指纹时自动回退全量下载。
+const md5hex = f => crypto.createHash('md5').update(fs.readFileSync(f)).digest('hex');
+fs.writeFileSync('version.txt', md5hex('legado.json') + '\n' + md5hex('replaceRule.json') + '\n');
+console.log('√ version.txt：内容指纹已生成（legado ' + md5hex('legado.json').slice(0, 8) + '…）');
 process.exit(fail ? 1 : 0);

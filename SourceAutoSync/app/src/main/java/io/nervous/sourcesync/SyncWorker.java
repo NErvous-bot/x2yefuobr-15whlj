@@ -39,6 +39,11 @@ import java.util.List;
  *  - 请求追加随机 cb 参数穿透代理/CDN 缓存——带缓存的 WiFi 代理曾把
  *    旧版 json 和新签名混搭发给 App 导致验签失败，现在每次强制回源；
  *  - 全程 setProgressAsync 上报进度（界面实时显示当前第几条线路）。
+ *
+ * v3.15：
+ *  - 每天自动检查：先下载约70字节内容指纹（version.txt，书源+规则两个 md5），
+ *    内容没变当天不下载全量书源（无更新只刷新状态行，不发通知）；
+ *  - 数量兜底：新书源数少于上次一半视为仓库数据异常，拒绝导入保护书架。
  */
 public class SyncWorker extends Worker {
 
@@ -168,22 +173,29 @@ public class SyncWorker extends Worker {
     public Result doWork() {
         Context ctx = getApplicationContext();
 
-        // 0) 调度窗口：每周一凌晨5-11点执行；超13天未成功同步则任何时间补跑；
-        //    手动「立即同步」不受窗口限制
+        // 0) v3.15 起每天自动检查：先做轻量指纹探测（约70字节的 version.txt，
+        //    内容为书源+规则两个 md5）。两个 md5 都与本地一致 → 当天到此为止
+        //    （只刷新「上次」状态行，不发通知不下载全量）；探测失败且 7 天内
+        //    有成功记录 → 多为瞬时网络问题，交给 WorkManager 退避重试；
+        //    连续 7 天没检查成功、指纹有变化（有更新）、或手动「立即同步」
+        //    → 走全量下载写入
         if (!"manual".equals(getInputData().getString("mode"))) {
             android.content.SharedPreferences sp0 = ctx.getSharedPreferences("sync", Context.MODE_PRIVATE);
             long lastOk = sp0.getLong("lastOk", 0);
-            boolean firstRun = lastOk == 0;
-            boolean overdue = lastOk > 0
-                    && System.currentTimeMillis() - lastOk > 13L * 24 * 3600 * 1000;
-            java.util.Calendar now = java.util.Calendar.getInstance();
-            boolean inWindow = now.get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.MONDAY
-                    && now.get(java.util.Calendar.HOUR_OF_DAY) >= 5
-                    && now.get(java.util.Calendar.HOUR_OF_DAY) < 11;
-            if (!firstRun && !overdue && !inWindow) {
-                save("未到窗口（周一凌晨5点），跳过");
+            boolean stale = System.currentTimeMillis() - lastOk > 7L * 24 * 3600 * 1000;
+            prog("正在检查是否有更新…");
+            String[] fp = fetchFingerprint(decodeRepo());
+            if (fp != null && fp[0].equals(sp0.getString("fpJson", null))
+                    && fp[1].equals(sp0.getString("fpRules", null))) {
+                sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
+                saveQuiet("今日检查：无更新，书源已是最新");
                 return Result.success();
             }
+            if (fp == null && !stale) {
+                saveQuiet("今日检查失败（网络），稍后自动重试");
+                return Result.retry();
+            }
+            // 指纹有变化（有更新）或连续7天没检查成功：继续全量流程
         }
 
         // 1) 刷新镜像名单
@@ -198,13 +210,35 @@ public class SyncWorker extends Worker {
             return Result.retry();
         }
 
-        // 3) 内容没变就跳过写入（省电）
+        // 3) 内容没变就跳过写入（省电）；顺带同步规则并记录内容指纹
+        //    （走到这里多半是规则单独更新，或镜像指纹瞬时不一致）
         File cache = new File(getApplicationContext().getFilesDir(), "last.json");
         if (cache.exists() && md5(cache).equals(md5(json))) {
             String ruleMsg = syncRules(lines);
+            saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
                     .edit().putLong("lastOk", System.currentTimeMillis()).apply();
-            done(true, "无变化，跳过写入｜" + ruleMsg);
+            done(true, "书源无变化，跳过写入｜" + ruleMsg);
+            return Result.success();
+        }
+
+        // 3.5) 数量兜底：新书源数少于上次的一半，视为仓库数据异常（上游事故/
+        //      投毒），拒绝导入保护书架——深链兜底导入同样受此保护
+        int oldCount = 0;
+        if (cache.exists()) {
+            try { oldCount = new JSONArray(readFile(cache)).length(); } catch (Exception ignored) {}
+        }
+        JSONArray all;
+        int total;
+        try {
+            all = new JSONArray(json);
+            total = all.length();
+        } catch (Exception e) {
+            done(false, "书源数据异常（解析失败），已跳过本次更新");
+            return Result.success();
+        }
+        if (oldCount > 0 && total < oldCount / 2) {
+            done(false, "书源数量异常下降（" + total + "/" + oldCount + "），已拒绝本次更新保护书架");
             return Result.success();
         }
 
@@ -215,16 +249,19 @@ public class SyncWorker extends Worker {
             // autoImport=true 全自动，阅读App 自己下载，无需文件中转）
             String src = defaultLines(decodeRepo())[0] + "?cb=" + System.currentTimeMillis();
             boolean fired = fireOnlineImport("bookSource", src);
-            done(fired,
-                    fired
-                            ? "接口探针全不通过（" + authorityDiag.trim() + "），已唤起阅读App自动导入"
-                            : "失败：未找到阅读App，请先安装阅读App再同步｜" + authorityDiag.trim());
+            if (fired) {
+                writeFile(cache, json);
+                String ruleMsg = syncRules(lines);
+                saveFingerprints(md5(json));
+                done(true, "接口探针全不通过（" + authorityDiag.trim()
+                        + "），已唤起阅读App自动导入｜" + ruleMsg);
+            } else {
+                done(false, "失败：未找到阅读App，请先安装阅读App再同步｜" + authorityDiag.trim());
+            }
             return Result.success();
         }
         try {
             prog("验签通过，正在写入阅读App…");
-            JSONArray all = new JSONArray(json);
-            int total = all.length();
             // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
             Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
             for (int i = 0; i < total; i += BATCH) {
@@ -241,6 +278,7 @@ public class SyncWorker extends Worker {
             os.write(json.getBytes("UTF-8"));
             os.close();
             String ruleMsg = syncRules(lines);
+            saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
                     .edit().putLong("lastOk", System.currentTimeMillis()).apply();
             done(true, "成功：已写入" + total + "源｜" + ruleMsg);
@@ -359,6 +397,35 @@ public class SyncWorker extends Worker {
             }
         }
         return current;
+    }
+
+    /**
+     * 轻量版本探测：下载 version.txt（两行 md5 内容指纹，约70字节，CI 签名时
+     * 生成）。md5 随内容确定——健康检查等无关提交不会误触发全量下载。
+     * 逐线路尝试直到拿到合法指纹；全部失败返回 null（调用方按「不确定」处理）。
+     */
+    private String[] fetchFingerprint(String repo) {
+        for (String base : defaultLines(repo)) {
+            String txt = fetch(base.replace("legado.json", "version.txt")
+                    + "?cb=" + System.currentTimeMillis());
+            if (txt == null) continue;
+            String[] ps = txt.trim().split("\\s+");
+            if (ps.length == 2 && ps[0].matches("[0-9a-f]{32}")
+                    && ps[1].matches("[0-9a-f]{32}")) return ps;
+        }
+        return null;
+    }
+
+    /** 记录本地已确认的内容指纹：书源取刚处理完的内容 md5；规则取本地规则
+     *  缓存（缓存只在规则内容成功拉取后才写入，天然代表「已拿到最新」）。 */
+    private void saveFingerprints(String jsonMd5) {
+        try {
+            android.content.SharedPreferences sp =
+                    getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE);
+            sp.edit().putString("fpJson", jsonMd5).apply();
+            File rcache = new File(getApplicationContext().getFilesDir(), "last_rules.json");
+            if (rcache.exists()) sp.edit().putString("fpRules", md5(rcache)).apply();
+        } catch (Exception ignored) {}
     }
 
     /** 运行时解码仓库地址 */
@@ -482,6 +549,16 @@ public class SyncWorker extends Worker {
 
     private String md5(File file) {
         return md5(readFile(file));
+    }
+
+    /** 只刷新「上次」状态行、不滚动历史：每日无更新/检查失败用，避免刷掉真实记录 */
+    private void saveQuiet(String msg) {
+        try {
+            getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE)
+                    .edit().putString("last", new java.text.SimpleDateFormat(
+                            "MM-dd HH:mm", java.util.Locale.CHINA).format(new java.util.Date())
+                            + " " + msg).apply();
+        } catch (Exception ignored) {}
     }
 
     /** 保存本次结果，并滚动保留最近5条历史（界面可查，排查不再靠记忆） */
