@@ -29,6 +29,8 @@ jobs:
         run: node probe.js
       - name: 源健康检查（三关实测→source_health.json，带20分钟预算防超时）
         run: node health.js
+      - name: 发布保险丝（旧可用→新坏复查裁决+数量熔断，BLOCKED时回滚成品只留诊断）
+        run: node fuse.js
       - name: 成品校验（防上游返回畸形数据被自动提交）
         run: |
           node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
@@ -50,5 +52,6 @@ jobs:
           # 清理旧命名的签名文件（v3.5首版的 legado.sig/replaceRule.sig）
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
           git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt
+          git add reports/ 2>/dev/null || true
           # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
           git diff --cached --quiet || (git commit -m "auto update" && git pull --rebase origin main && git push origin HEAD)

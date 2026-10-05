@@ -13,6 +13,7 @@ const { checkSource } = require('./aging-test');
 const OLD_REF = process.argv[2] || 'HEAD~1';
 const BUDGET_MIN = 15, CONC = 5;
 const T1_TRIES = 5, T2_TRIES = 3;
+const T2_ON = process.env.RECHECK_T2 !== '0';  // 发布保险丝模式置0：跳过二级实测省预算
 
 const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
 
@@ -109,7 +110,7 @@ function traits(s) {
     // 4) 实测复查（带时间预算）
     const jobs = [
         ...tier1.map(x => ({ ...x, tier: 1, tries: T1_TRIES })),
-        ...tier2.map(x => ({ ...x, tier: 2, tries: T2_TRIES }))
+        ...(T2_ON ? tier2.map(x => ({ ...x, tier: 2, tries: T2_TRIES })) : [])
     ];
     let ji = 0;
     async function worker() {
@@ -166,12 +167,14 @@ function traits(s) {
             ' | 阶段: ' + j.attempts.map(a => a.stage).join(',') + (j.traits.length ? ' | 特征: ' + j.traits.join('+') : ''));
     }
     L.push('');
-    L.push('━━ 二级复查：旧BL不可测 → 确认坏 ' + tier2.length + ' ━━');
-    for (const [verdict, n] of Object.entries(s2)) L.push('  ' + verdict + ' ' + n);
-    for (const j of j2) {
-        if (!j.v) { L.push('  · 未测 ' + String(j.s.bookSourceName || '').slice(0, 20)); continue; }
-        L.push('  [' + j.v.verdict + ' ' + j.v.pass + '/' + j.v.n + '] ' + String(j.s.bookSourceName || '').slice(0, 20) +
-            ' | 阶段: ' + j.attempts.map(a => a.stage).join(',') + (j.traits.length ? ' | 特征: ' + j.traits.join('+') : ''));
+    L.push('━━ 二级复查：旧BL不可测 → 确认坏 ' + tier2.length + (T2_ON ? '' : '（保险丝模式：跳过实测）') + ' ━━');
+    if (T2_ON) {
+        for (const [verdict, n] of Object.entries(s2)) L.push('  ' + verdict + ' ' + n);
+        for (const j of j2) {
+            if (!j.v) { L.push('  · 未测 ' + String(j.s.bookSourceName || '').slice(0, 20)); continue; }
+            L.push('  [' + j.v.verdict + ' ' + j.v.pass + '/' + j.v.n + '] ' + String(j.s.bookSourceName || '').slice(0, 20) +
+                ' | 阶段: ' + j.attempts.map(a => a.stage).join(',') + (j.traits.length ? ' | 特征: ' + j.traits.join('+') : ''));
+        }
     }
     L.push('');
     const blocked = realDeath1 > 0;

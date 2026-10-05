@@ -57,7 +57,7 @@ function scoreOf(r, g, ms) {
     const now = Date.now();
     const sources = {};
     const testedKeys = new Set();
-    let usable = 0, dead = 0, untestable = 0, scoreSum = 0, scoreN = 0;
+    let usable = 0, dead = 0, untestable = 0, scoreSum = 0, scoreN = 0, flappingN = 0;
     for (const [s, r, ms] of tested) {
         const k = norm(s.bookSourceUrl); if (!k) continue;
         testedKeys.add(k);
@@ -68,27 +68,35 @@ function scoreOf(r, g, ms) {
             scoreSum += h; scoreN++;          // 坏源分数也计入均分，否则均分虚高
             if (g.content) usable++; else dead++;
         }
+        // 最近结果历史（FLAPPING 观察）：只记有结论的实测（pass/fail），不可测轮次不计入；
+        // 窗口内既有 pass 又有 fail → 抖动观察期，不删不新增，下轮继续观察
+        const prev = oldMap[k] || {};
+        const recent = (Array.isArray(prev.recent) ? prev.recent : []).slice(-4);
+        if (h !== null) recent.push(g.content ? 'pass' : 'fail');
+        const flapping = recent.includes('pass') && recent.includes('fail');
+        if (flapping) flappingN++;
         sources[k] = {
             name: String(s.bookSourceName || '').slice(0, 30),
             health: h, search: g.search, toc: g.toc, content: g.content,
             chapters: r.chapters || 0, contentLen: r.contentLen || 0,
-            responseTime: ms, note: String(r.reason || '').slice(0, 30), checkedAt: now
+            responseTime: ms, note: String(r.reason || '').slice(0, 30), checkedAt: now,
+            recent, flapping
         };
     }
     // 未实测的源沿用上一轮数据；已不在库里的源丢弃
     const inLib = new Set(list.map(s => norm(s.bookSourceUrl)).filter(Boolean));
     let carried = 0;
     for (const [k, v] of Object.entries(oldMap)) {
-        if (!testedKeys.has(k) && inLib.has(k)) { sources[k] = v; carried++; }
+        if (!testedKeys.has(k) && inLib.has(k)) { sources[k] = v; carried++; if (v.flapping) flappingN++; }
     }
 
     const out = {
         updatedAt: now,
-        summary: { total: list.length, tested: tested.length, usable, broken: dead, untestable, carried },
+        summary: { total: list.length, tested: tested.length, usable, broken: dead, untestable, carried, flapping: flappingN },
         sources
     };
     fs.writeFileSync(HFILE, JSON.stringify(out));
     const avg = scoreN ? Math.round(scoreSum / scoreN) : 0;
     console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（预算' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable);
-    console.log('健康检查: 全库平均健康分 ' + avg + '，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
+    console.log('健康检查: 全库平均健康分 ' + avg + '，抖动观察期(FLAPPING) ' + flappingN + ' 个，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
 })().catch(e => { console.log('健康检查异常(不影响主流程): ' + e.message); process.exit(0); });
