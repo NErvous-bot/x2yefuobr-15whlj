@@ -2,9 +2,14 @@
 // 对老化名单（>365天未更新）的书源做三关真实实测：
 //   ① 搜索"都市"能出书  ② 目录 ≥1 章  ③ 第一章正文 ≥200 字
 // 三关全过 → usable=true（豁免保留）；任一关"确定坏" → usable=false（剔除）；
-// 规则不可测（js/XPath/$./{{}}）或网络级失败 → usable='skip'（豁免不误删，探活层兜底真死源）。
-// 仅支持 legado 静态选择器子集：class./id./tag./.x/#x/@text/@textNodes/@html/@href/@all、
-// 数字索引(.N/:N)、||备选、##清理。GBK 请求体无法编码 → 视为不可测豁免。
+// 规则不可测或网络级失败 → usable='skip'（豁免不误删，探活层兜底真死源）。
+// 支持的规则类型（P0 扩展后）：
+//   - GET/POST 搜索（含 {"method/body/headers/charset"} 选项，含单引号伪 JSON 宽松解析）
+//   - GBK/GB2312 请求编码（TextDecoder 反向编码表）与响应解码
+//   - HTML 静态选择器子集：class./id./tag./.x/#x/@text/@textNodes/@html/@href/@all、
+//     数字索引(.N/:N)、||备选、##清理
+//   - JSON 响应 + JSONPath 常用子集：$.a.b、$.a[0]、$.a[*]、$[*]、$.a['b']、$.*
+// 不支持（→不可测豁免，绝不判死）：<js>/@js: 动态规则、JSONPath 高级语法（$../?()过滤）等
 // 零依赖，Node 20 直接运行
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
@@ -16,29 +21,78 @@ const UAS = [
 const pickUA = () => UAS[Math.floor(Math.random() * UAS.length)];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// 解码：GBK 头部探测（Node 20 全 ICU 支持 gbk 解码；请求侧无法编码 gbk，故 gbk 请求直接豁免）
-function decode(buf) {
+/* ---------- GBK 编码表：Node 只有 gbk 解码器没有编码器，用解码器反向建表 ---------- */
+// 启动时枚举全部 GBK 双字节组合（首字节 0x81-0xFE × 次字节 0x40-0xFE 去 0x7F），
+// 解码得 char→bytes 映射；表外字符（生僻字）→ 编码失败 → 该源视为不可测豁免
+const GBK = (() => {
+    const fail = { has: false, encode: () => null, pct: () => null };
+    try {
+        const dec = new TextDecoder('gbk');
+        const map = new Map();
+        const b2 = Buffer.alloc(2);
+        for (let hi = 0x81; hi <= 0xFE; hi++) {
+            for (let lo = 0x40; lo <= 0xFE; lo++) {
+                if (lo === 0x7F) continue;
+                b2[0] = hi; b2[1] = lo;
+                const s = dec.decode(b2);
+                if (s.length === 1 && s !== '\uFFFD' && !map.has(s)) map.set(s, (hi << 8) | lo);
+            }
+        }
+        if (map.size < 10000) return fail;
+        return {
+            has: true,
+            encode(str) {
+                const out = [];
+                for (const ch of String(str)) {
+                    const c = ch.codePointAt(0);
+                    if (c < 0x80) { out.push(c); continue; }
+                    const v = map.get(ch);
+                    if (v === undefined) return null;
+                    out.push(v >> 8, v & 0xFF);
+                }
+                return Buffer.from(out);
+            },
+            pct(str) {
+                const b = this.encode(str);
+                return b ? Array.from(b).map(x => '%' + x.toString(16).padStart(2, '0').toUpperCase()).join('') : null;
+            }
+        };
+    } catch (e) { return fail; }
+})();
+
+// 解码：优先显式声明的 GBK → 响应头 Content-Type 的 GBK → 页面头部 meta 探测 → 默认 UTF-8
+function decode(buf, forceGbk) {
+    if (forceGbk) { try { return new TextDecoder('gbk').decode(buf); } catch (e) {} }
     const head = buf.slice(0, 2048).toString('latin1').toLowerCase();
     if (/charset=["']?(gb2312|gbk)/.test(head)) { try { return new TextDecoder('gbk').decode(buf); } catch (e) {} }
     return buf.toString('utf8');
 }
 
 // 抓取（跟随重定向、gzip 自动解压、带 1 次网络级重试）；网络失败返回 null
+// opt: {method, body(Buffer|string), headers(对象), charset('gbk'), ref, ms}
 async function fetchPage(url, opt) {
     opt = opt || {};
     for (let i = 0; i < 2; i++) {
         const c = new AbortController();
         const t = setTimeout(() => c.abort(), opt.ms || 15000);
         try {
-            const h = { 'User-Agent': pickUA(), 'Accept': 'text/html,*/*' };
+            const h = { 'User-Agent': pickUA(), 'Accept': 'text/html,application/json,*/*' };
             if (opt.ref) h['Referer'] = opt.ref;
+            if (opt.headers) for (const [k, v] of Object.entries(opt.headers)) {
+                if (k && v != null && String(v).trim() && !/^content-length$/i.test(k)) h[k] = String(v);
+            }
             const r = await fetch(url, {
-                method: opt.method || 'GET', headers: h,
-                body: opt.method === 'POST' ? (opt.body || '') : undefined,
+                method: opt.method || 'GET',
+                headers: h,
+                body: opt.method === 'POST' ? (opt.body != null ? opt.body : '') : undefined,
                 signal: c.signal, redirect: 'follow'
             });
             clearTimeout(t);
-            return { status: r.status, text: decode(Buffer.from(await r.arrayBuffer())) };
+            const buf = Buffer.from(await r.arrayBuffer());
+            const ct = (r.headers.get('content-type') || '').toLowerCase();
+            const text = (opt.charset && /gb/i.test(opt.charset)) || /charset=gb/i.test(ct)
+                ? decode(buf, true) : decode(buf, false);
+            return { status: r.status, text };
         } catch (e) { clearTimeout(t); if (i === 0) await sleep(2000); }
     }
     return null;
@@ -56,6 +110,53 @@ const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function isChallenge(t) {
     const head = String(t).slice(0, 3000);
     return /百度安全验证|安全验证|人机验证|滑动验证|完成验证|<title>[^<]*(验证|安全防护)[^<]*<\/title>|just a moment|cf-browser-verification|challenge-platform|checking your browser|captcha/i.test(head);
+}
+
+/* ---------- JSON 解析与 JSONPath 常用子集 ---------- */
+// 宽松 JSON 解析：直接 parse → 失败则剥离 JSONP 包头/前缀垃圾再试；返回 undefined = 不是 JSON
+function parseJson(t) {
+    if (t == null) return undefined;
+    const s = String(t).trim();
+    if (!s) return undefined;
+    try { return JSON.parse(s); } catch (e) {}
+    const i = s.search(/[{[]/);
+    if (i > 0) { try { return JSON.parse(s.slice(i)); } catch (e) {} }
+    return undefined;
+}
+
+// JSONPath 常用子集求值：$.a.b / $.a[0] / $.a[*] / $[*] / $.a['b'] / $.*
+// 返回匹配值数组；路径含不支持语法（$..递归、?()过滤、脚本断言）返回 null → 不可测
+function jpQuery(root, path) {
+    let s = String(path).trim();
+    if (s !== '$' && !s.startsWith('$.')) return null;
+    s = s.slice(1);
+    const re = /\.(\*|[\w\u4e00-\u9fff\-]+)|\[\s*(\*|\d+)\s*\]|\[\s*'([^']*)'\s*\]/g;
+    let cur = [root], consumed = '', m;
+    while ((m = re.exec(s))) {
+        consumed += m[0];
+        const key = m[1] !== undefined ? m[1] : m[3];
+        const idx = m[2];
+        const next = [];
+        for (const o of cur) {
+            if (o == null || typeof o !== 'object') continue;
+            if (idx !== undefined) {
+                if (!Array.isArray(o)) continue;
+                if (idx === '*') next.push(...o);
+                else if (o[+idx] !== undefined) next.push(o[+idx]);
+            } else if (Array.isArray(o)) {
+                if (key === '*') next.push(...o);
+                else for (const e of o) { if (e != null && typeof e === 'object' && e[key] !== undefined) next.push(e[key]); }
+            } else if (key === '*') next.push(...Object.values(o));
+            else if (o[key] !== undefined) next.push(o[key]);
+        }
+        cur = next;
+        if (!cur.length) return [];
+    }
+    if (consumed !== s) return null; // 有未支持的语法残段
+    const out = cur.slice();
+    // legado 语义：列表规则最后落在单数组上时展开为元素列表
+    if (out.length === 1 && Array.isArray(out[0])) return out[0].slice();
+    return out;
 }
 
 /* ---------- mini 静态选择器解析子集 ---------- */
@@ -122,17 +223,36 @@ function applyClean(items, clean) {
     });
 }
 
-const DYN = /<js>|@js:|\$\./i; // 动态规则（js/JSONPath）不可测
+const DYN = /<js>|@js:|\$\./i; // 动态规则（js/JSONPath）不进 HTML 选择器分支
 // 常见 HTML 标签白名单：裸标签 token（如 h4@a@href 里的 h4/a）必须命中，否则整条规则视为不可测
 const TAGS = new Set(('a abbr article aside b bdi blockquote body br button caption center cite code col dd del details dfn div dl dt em fieldset figcaption figure font footer form h1 h2 h3 h4 h5 h6 head header hr html i iframe img input ins kbd label legend li main mark nav ol optgroup option p pre q rt ruby s section select small source span strong style sub summary sup table tbody td textarea tfoot th thead time tr track tt u ul video wbr').split(' '));
 
 // 解析选择器，返回 {items, isText}；不可测返回 null
-// 支持：class./id./tag./裸标签/.x/#x、@链、空格后代链、数字索引(.N/:N)、||备选、##清理
+// items 元素可为字符串（HTML片段/提取值）或对象（JSONPath 结果）
 function selectAll(html, rule) {
     rule = String(rule || '').trim();
     if (!rule) return null;
-    for (const alt of rule.split('||')) {
-        let sel = alt.trim();
+    const alts = rule.split('||').map(x => x.trim()).filter(Boolean);
+    if (!alts.length) return null;
+    // JSONPath 分支：任一备选以 $ 开头即走 JSON 通道（响应需可解析为 JSON）
+    if (alts.some(a => a === '$' || a.startsWith('$.'))) {
+        const j = (html != null && typeof html === 'object') ? html : parseJson(html);
+        if (j === undefined) return null; // 规则要 JSON 但响应不是 → 不可测
+        for (const alt of alts) {
+            let r = alt, clean = '';
+            const ci = r.indexOf('##');
+            if (ci >= 0) { clean = r.slice(ci + 2); r = r.slice(0, ci).trim(); }
+            if (!(r === '$' || r.startsWith('$.'))) continue;
+            const v = jpQuery(j, r);
+            if (v === null) continue; // 高级语法 → 试下一备选
+            const items = v.map(x => (x != null && typeof x === 'object') ? x : applyClean([String(x)], clean)[0]);
+            return { items, isText: true };
+        }
+        return null; // 所有备选都是不支持的高级语法 → 不可测
+    }
+    // HTML 静态选择器分支
+    for (const alt of alts) {
+        let sel = alt;
         if (!sel || DYN.test(sel)) continue;
         let clean = '';
         const ci = sel.indexOf('##');
@@ -170,37 +290,130 @@ function selectAll(html, rule) {
     return null;
 }
 
+// 从单条结果取值：对象（JSON item）走 JSONPath + 常见字段兜底；字符串（HTML片段）走选择器
+function pickOne(item, rule) {
+    rule = String(rule || '').trim();
+    if (!rule || /<js>|@js:/i.test(rule)) {
+        rule = ''; // 动态规则不解析，直接走兜底
+    }
+    if (rule) {
+        const r = selectAll(item, rule);
+        if (r && r.items.length && r.items[0] != null) {
+            const v = r.items[0];
+            if (typeof v !== 'object') { const t = String(v).trim(); if (t) return t; }
+        }
+    }
+    if (item != null && typeof item === 'object') {
+        for (const k of ['url', 'book_url', 'bookUrl', 'chapter_url', 'chapterUrl', 'href', 'link']) {
+            if (item[k] != null && String(item[k]).trim()) return String(item[k]).trim();
+        }
+    }
+    return '';
+}
+
+// 伪 JSON 宽松解析：legado 允许 {'k':'v'} / {k:"v"} 这类非严格 JSON 选项
+function lenientJson(t) {
+    try { return JSON.parse(t); } catch (e) {}
+    const s = String(t).trim();
+    if (/^\{[\s\S]*\}$/.test(s)) {
+        try { const o = new Function('return (' + s + ')')(); if (o && typeof o === 'object') return o; } catch (e) {}
+    }
+    return null;
+}
+
+// searchUrl 选项里的 headers：对象 {"K":"V"} 或字符串 "K: V\nK2: V2" 都支持
+function normHeaders(h) {
+    const out = {};
+    if (!h) return out;
+    if (typeof h === 'string') {
+        for (const line of h.split(/\n+/)) {
+            const i = line.indexOf(':');
+            if (i > 0) { const k = line.slice(0, i).trim(), v = line.slice(i + 1).trim(); if (k) out[k] = v; }
+        }
+    } else if (typeof h === 'object') {
+        for (const [k, v] of Object.entries(h)) if (k) out[k] = String(v);
+    }
+    return out;
+}
+const hasCT = h => Object.keys(h).some(k => /^content-type$/i.test(k));
+
 // 解析 searchUrl：支持 "path" / "path,{json选项}" / "path,charset=gbk"
-// 返回 {opt} 或 {skip:原因}
-function parseSearch(su, base) {
+// 选项支持 method/body/headers/charset（含伪 JSON）；POST/GBK 均可实测
+// kw：测试用搜索关键词（双关键词防误判需要参数化）
+// 返回 {opt} 或 {skip:原因}；POST 表单额外带 altBody（关键词原文备胎，防转义误杀）
+function parseSearch(su, base, kw) {
+    kw = kw || '都市';
     su = String(su || '').trim();
-    if (!su || DYN.test(su)) return { skip: '无搜索URL或含js' };
+    if (!su || /<js>|@js:/i.test(su)) return { skip: '无搜索URL或含js' };
     const cut = su.indexOf(',');
     let path = (cut === -1 ? su : su.slice(0, cut)).trim();
     const tail = cut === -1 ? '' : su.slice(cut + 1).trim();
-    let method = 'GET', body = null, charset = '';
+    let method = 'GET', body = null, charset = '', headers = {};
     if (tail.startsWith('{')) {
-        let o;
-        try { o = JSON.parse(tail); } catch (e) { return { skip: 'searchUrl选项无法解析' }; }
+        const o = lenientJson(tail);
+        if (!o || typeof o !== 'object') return { skip: 'searchUrl选项无法解析' };
         method = String(o.method || 'GET').toUpperCase();
-        body = o.body != null ? String(o.body) : null;
+        body = o.body == null ? null : (typeof o.body === 'object' ? JSON.stringify(o.body) : String(o.body));
         charset = String(o.charset || '');
+        headers = normHeaders(o.headers);
     } else {
         const cm = /charset=([\w-]+)/i.exec(tail);
         if (cm) charset = cm[1];
     }
-    if (/gb2312|gbk/i.test(charset)) return { skip: 'GBK请求无法编码' }; // Node 无 gbk 编码器
+    const isGbk = /gb2312|gbk/i.test(charset);
+    if (isGbk && !GBK.has) return { skip: 'GBK编码表初始化失败' };
     const hasKey = u => /\{\{key\}\}|\{key\}/.test(u);
     if (!hasKey(path) && !(body && hasKey(body))) return { skip: '搜索无{{key}}槽位' };
-    const K = encodeURIComponent('都市');
+    // 关键词编码：GBK 站按站点编码做百分号转义，UTF-8 站用标准 encodeURIComponent
+    const K = isGbk ? GBK.pct(kw) : encodeURIComponent(kw);
+    if (!K) return { skip: 'GBK表缺字' };
     path = path.replace(/\{\{page\}\}|\{page\}/g, '1');
     if (body != null) body = body.replace(/\{\{page\}\}|\{page\}/g, '1');
-    if (DYN.test(path.replace(/K|都市/g, '')) || (body && DYN.test(body.replace(/\{\{key\}\}|\{key\}/g, 'K')))) return { skip: '搜索URL/body含动态语法' };
+    const dynFree = x => !/<js>|@js:|\$\./i.test(String(x).replace(/\{\{[^}]*\}\}|\{[^}]*\}/g, ''));
+    if (!dynFree(path) || (body != null && !dynFree(body))) return { skip: '搜索URL/body含动态语法' };
     let url;
     try { url = new URL(hasKey(path) ? path.replace(/\{\{key\}\}|\{key\}/g, K) : path, base).href; }
     catch (e) { return { skip: '搜索URL无效' }; }
-    if (method === 'POST' && body != null) body = body.replace(/\{\{key\}\}|\{key\}/g, K);
-    return { opt: { url, method, body: method === 'POST' ? body : undefined } };
+    const opt = { url, method, headers, charset: isGbk ? 'gbk' : '' };
+    if (method === 'POST' && body != null) {
+        if (/^\s*\{/.test(body)) {
+            // JSON body：{{key}} 填原文（JSON 里不做表单转义）
+            if (!hasCT(headers)) headers['Content-Type'] = 'application/json';
+            const b = body.replace(/\{\{key\}\}|\{key\}/g, kw);
+            opt.body = isGbk ? GBK.encode(b) : Buffer.from(b, 'utf8');
+        } else {
+            if (!hasCT(headers)) headers['Content-Type'] = 'application/x-www-form-urlencoded';
+            const enc = body.replace(/\{\{key\}\}|\{key\}/g, K);
+            opt.body = isGbk ? GBK.encode(enc) : Buffer.from(enc, 'utf8');
+            const raw = body.replace(/\{\{key\}\}|\{key\}/g, kw);
+            const rb = isGbk ? GBK.encode(raw) : Buffer.from(raw, 'utf8');
+            if (rb && Buffer.compare(rb, opt.body) !== 0) opt.altBody = rb;
+        }
+        if (!opt.body) return { skip: 'GBK表缺字(body)' };
+    }
+    return { opt };
+}
+
+// 单次搜索（含 POST 备胎编码重试）：返回 {sp, bl} / {skip} / {dead}
+async function doSearch(s, base, rs, kw) {
+    const ps = parseSearch(s.searchUrl, base, kw);
+    if (ps.skip) return { skip: ps.skip };
+    const sopt = { method: ps.opt.method, body: ps.opt.body, headers: ps.opt.headers, charset: ps.opt.charset, ref: base };
+    let sp = await fetchPage(ps.opt.url, sopt);
+    if (!sp) return { skip: '搜索请求失败' };
+    if (sp.status === 404 || sp.status === 410) return { dead: '搜索接口' + sp.status };
+    if (sp.status >= 400) return { skip: '搜索HTTP ' + sp.status };
+    let bl = selectAll(sp.text, rs.bookList);
+    if (!bl) return { skip: 'bookList规则不可测' };
+    if (!bl.items.length && ps.opt.altBody) {
+        // POST 表单双编码兜底：转义关键词无结果时，用原文关键词重试一次（部分站点不认 %XX）
+        const sp2 = await fetchPage(ps.opt.url, Object.assign({}, sopt, { body: ps.opt.altBody }));
+        if (sp2 && sp2.status < 400) {
+            const bl2 = selectAll(sp2.text, rs.bookList);
+            if (bl2 && bl2.items.length) { bl = bl2; sp = sp2; }
+        }
+    }
+    return { sp, bl };
 }
 
 // 活性参考（仅日志，不影响去留）：书页+目录页最新日期 ≤45天 = 活跃
@@ -228,32 +441,43 @@ async function checkSource(s) {
         if (!base) { res.usable = 'skip'; res.reason = '无效URL'; return res; }
         const rs = s.ruleSearch || {}, rb = s.ruleBookInfo || {}, rt = s.ruleToc || {}, rc = s.ruleContent || {};
 
-        // 第①关：搜索"都市"出书
-        const ps = parseSearch(s.searchUrl, base);
-        if (ps.skip) { res.usable = 'skip'; res.reason = ps.skip; return res; }
-        const sp = await fetchPage(ps.opt.url, { method: ps.opt.method, body: ps.opt.body, ref: base });
-        if (!sp) { res.usable = 'skip'; res.reason = '搜索请求失败'; return res; }
-        if (sp.status === 404 || sp.status === 410) { res.reason = '搜索接口' + sp.status; return res; }
-        if (sp.status >= 400) { res.usable = 'skip'; res.reason = '搜索HTTP ' + sp.status; return res; }
-        const bl = selectAll(sp.text, rs.bookList);
-        if (!bl) { res.usable = 'skip'; res.reason = 'bookList规则不可测'; return res; }
-        if (!bl.items.length) {
-            if (isChallenge(sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
-            else res.reason = '搜索无结果';
-            return res;
+        // 第①关：搜索出书（双关键词 + 隔1.5s二次复核，防"站点无此关键词"和瞬时抖动误判死）
+        let r1 = await doSearch(s, base, rs, '都市');
+        if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+        if (r1.dead) { res.reason = r1.dead; return res; }
+        if (!r1.bl.items.length) {
+            r1 = await doSearch(s, base, rs, '重生');
+            if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+            if (r1.dead) { res.reason = r1.dead; return res; }
+            if (!r1.bl.items.length) {
+                await sleep(1500);
+                r1 = await doSearch(s, base, rs, '都市');
+                if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+                if (r1.dead) { res.reason = r1.dead; return res; }
+                if (!r1.bl.items.length) {
+                    if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
+                    else res.reason = '搜索无结果';
+                    return res;
+                }
+            }
         }
         let bookUrl = '';
         const buRule = String(rs.bookUrl || '');
-        for (const f of bl.items) {
-            let u = '';
-            if (buRule && !DYN.test(buRule)) {
-                const r = selectAll(f, buRule);
-                if (r && r.items.length) u = String(r.items[0]).trim();
+        const pat = String(s.bookUrlPattern || '').trim();
+        for (const f of r1.bl.items) {
+            let u = pickOne(f, buRule);
+            if (!u && typeof f !== 'object') u = firstHref(f);
+            if (!u) continue;
+            // 纯短 ID（无 / 和 .）且源声明了 bookUrlPattern 模板拼接 → 测试器无法构造真实 URL → 豁免
+            if (pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u)) {
+                res.usable = 'skip'; res.reason = 'bookUrl需模板拼接'; return res;
             }
-            if (!u) u = firstHref(f);
-            if (u) { try { bookUrl = new URL(u, base).href; break; } catch (e) {} }
+            try { bookUrl = new URL(u, base).href; break; } catch (e) {}
         }
-        if (!bookUrl) { res.reason = '搜索结果无书籍链接'; return res; }
+        if (!bookUrl) {
+            // bookList 有结果但提取不出书籍链接：可能是 bookUrl 规则动态/字段超纲（测试器不会提取 ≠ 源坏）→ 豁免
+            res.usable = 'skip'; res.reason = 'bookUrl无法提取'; return res;
+        }
 
         // 第②关：目录 ≥1 章
         const bp = await fetchPage(bookUrl, { ref: base });
@@ -262,9 +486,9 @@ async function checkSource(s) {
         if (bp.status >= 400) { res.usable = 'skip'; res.reason = '书籍页HTTP ' + bp.status; return res; }
         let tocUrl = bookUrl;
         const tuRule = String(rb.tocUrl || '').trim();
-        if (tuRule && !DYN.test(tuRule)) {
+        if (tuRule && !/<js>|@js:/i.test(tuRule)) {
             const tu = selectAll(bp.text, tuRule);
-            if (tu && tu.items.length && String(tu.items[0]).trim()) {
+            if (tu && tu.items.length && tu.items[0] != null && String(tu.items[0]).trim()) {
                 try { tocUrl = new URL(String(tu.items[0]).trim(), bookUrl).href; } catch (e) {}
             }
         }
@@ -272,17 +496,28 @@ async function checkSource(s) {
         if (!tp) { res.usable = 'skip'; res.reason = '目录页请求失败'; return res; }
         if (tp.status === 404 || tp.status === 410) { res.reason = '目录页' + tp.status; return res; }
         if (tp.status >= 400) { res.usable = 'skip'; res.reason = '目录页HTTP ' + tp.status; return res; }
-        const cl = selectAll(tp.text, rt.chapterList || '');
+        let cl = selectAll(tp.text, rt.chapterList || '');
         if (!cl) { res.usable = 'skip'; res.reason = 'chapterList规则不可测'; return res; }
         if (!cl.items.length) {
-            if (isChallenge(tp.text)) { res.usable = 'skip'; res.reason = '目录触发反爬验证'; }
-            else res.reason = '目录为空';
-            return res;
+            // 站点抖动复核：隔1.5s 重抓目录页再解析一次
+            await sleep(1500);
+            const tpR = tocUrl === bookUrl ? await fetchPage(bookUrl, { ref: base }) : await fetchPage(tocUrl, { ref: bookUrl });
+            let clR = null;
+            if (tpR && tpR.status < 400) clR = selectAll(tpR.text, rt.chapterList || '');
+            if (clR && clR.items.length) {
+                cl = clR; // 复核有结果 → 抖动，继续
+            } else {
+                if (isChallenge(tp.text)) { res.usable = 'skip'; res.reason = '目录触发反爬验证'; }
+                else res.reason = '目录为空';
+                return res;
+            }
         }
         res.chapters = cl.items.length;
         let chUrl = '';
+        const cuRule = String(rt.chapterUrl || '');
         for (const f of cl.items) {
-            const u = firstHref(f);
+            let u = pickOne(f, cuRule);
+            if (!u && typeof f !== 'object') u = firstHref(f);
             if (u) { try { chUrl = new URL(u, tocUrl).href; break; } catch (e) {} }
         }
         if (!chUrl) { res.reason = '目录无章节链接'; return res; }
@@ -294,7 +529,23 @@ async function checkSource(s) {
         if (cp.status >= 400) { res.usable = 'skip'; res.reason = '正文页HTTP ' + cp.status; return res; }
         const con = selectAll(cp.text, rc.content || '');
         if (!con) { res.usable = 'skip'; res.reason = 'content规则不可测'; return res; }
-        const txt = con.items.join('\n').trim();
+        let txt = con.items.filter(x => x != null && typeof x !== 'object').join('\n').trim();
+        if (txt.length < 200) {
+            // 规则声明 webView 渲染 → 测试器无渲染引擎拿不到正文 → 不可测豁免（手机端 WebView 可正常阅读）
+            if (/webView|webview/i.test(JSON.stringify([s.searchUrl, s.ruleToc, s.ruleContent]))) {
+                res.usable = 'skip'; res.reason = '正文需WebView渲染不可测'; return res;
+            }
+            // 站点抖动复核：隔1.5s 重抓正文页再解析一次
+            await sleep(1500);
+            const cpR = await fetchPage(chUrl, { ref: tocUrl });
+            if (cpR && cpR.status < 400) {
+                const conR = selectAll(cpR.text, rc.content || '');
+                if (conR) {
+                    const t2 = conR.items.filter(x => x != null && typeof x !== 'object').join('\n').trim();
+                    if (t2.length > txt.length) txt = t2;
+                }
+            }
+        }
         if (txt.length < 200) {
             if (isChallenge(cp.text)) { res.usable = 'skip'; res.reason = '正文触发反爬验证'; }
             else res.reason = '正文不足200字（实得' + txt.length + '）';
