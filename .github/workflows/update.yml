@@ -29,6 +29,8 @@ jobs:
         run: node probe.js
       - name: 源健康检查（三关实测→source_health.json，带20分钟预算防超时）
         run: node health.js
+      - name: 源评分分层（健康分→核心/稳定/备用/观察→weight自动排序，番茄保底9999不动）
+        run: node score.js
       - name: 发布保险丝（旧可用→新坏复查裁决+数量熔断，BLOCKED时回滚成品只留诊断）
         run: node fuse.js
       - name: 成品校验（防上游返回畸形数据被自动提交）
