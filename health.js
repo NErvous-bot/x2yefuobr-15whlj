@@ -64,8 +64,10 @@ function scoreOf(r, g, ms) {
         const g = gatesOf(r);
         const h = scoreOf(r, g, ms);
         if (h === null) untestable++;
-        else if (g.content) { usable++; scoreSum += h; scoreN++; }
-        else dead++;
+        else {
+            scoreSum += h; scoreN++;          // 坏源分数也计入均分，否则均分虚高
+            if (g.content) usable++; else dead++;
+        }
         sources[k] = {
             name: String(s.bookSourceName || '').slice(0, 30),
             health: h, search: g.search, toc: g.toc, content: g.content,
