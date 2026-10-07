@@ -2,25 +2,25 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   64  available->available
+   63  available->available
     1  available->broken
-    1  available->untestable
+    3  available->untestable
     2  broken->available
-   85  broken->broken
-    2  broken->removed
+   72  broken->broken
+    6  broken->removed
     3  broken->untestable
-    1  untestable->available
-    7  untestable->broken
-    1  untestable->removed
-  229  untestable->untestable
-新增源 5
+    7  untestable->available
+    2  untestable->broken
+    3  untestable->removed
+  232  untestable->untestable
+新增源 6
 
 ━━ 一级复查：旧可用 → 确认坏 1 ━━
-  REAL_DEATH_CANDIDATE 1
-  [REAL_DEATH_CANDIDATE 0/1] 墨坛文学 | 阶段: NETWORK,HTTP_404,NETWORK,NETWORK,NETWORK | 特征: js规则
+  SUSPECT 1
+  [SUSPECT 2/5] 18jinshu✈️ | 阶段: PASS,CONTENT_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

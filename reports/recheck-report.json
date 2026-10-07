@@ -1,48 +1,46 @@
 {
- "generatedAt": 1791194845104,
+ "generatedAt": 1791363290983,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "墨坛文学",
-   "url": "http://www.22mt.net/",
-   "traits": [
-    "js规则"
-   ],
+   "name": "18jinshu✈️",
+   "url": "https://www.18jinshu.com",
+   "traits": [],
    "oldNote": "三关全过",
-   "newNote": "书籍页404",
+   "newNote": "搜索无结果",
    "attempts": [
     {
-     "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "搜索请求失败"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "HTTP_404",
-     "reason": "书籍页404"
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "书籍页请求失败"
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "搜索请求失败"
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
-     "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "搜索请求失败"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     }
    ],
-   "verdict": "REAL_DEATH_CANDIDATE"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": []
