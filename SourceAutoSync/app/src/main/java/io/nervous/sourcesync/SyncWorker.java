@@ -9,6 +9,8 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -28,7 +30,13 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Sync worker: fetch book source JSON from GitHub, then write into
@@ -83,6 +91,39 @@ public class SyncWorker extends Worker {
     }
 
     private static final int BATCH = 80;
+
+    /** 本地健康缓存条目：每个源的手机端可达性记录 */
+    static class HealthEntry {
+        long lastCheck;          // 上次探测时间戳（ms）
+        int failCount;           // 连续失败次数
+        boolean localAvailable;  // 上次探测结果
+        long retryAfter;         // 下次允许重试的时间戳（ms）
+
+        HealthEntry(long lastCheck, int failCount, boolean localAvailable, long retryAfter) {
+            this.lastCheck = lastCheck;
+            this.failCount = failCount;
+            this.localAvailable = localAvailable;
+            this.retryAfter = retryAfter;
+        }
+
+        JSONObject toJson() throws JSONException {
+            JSONObject o = new JSONObject();
+            o.put("lastCheck", lastCheck);
+            o.put("failCount", failCount);
+            o.put("localAvailable", localAvailable);
+            o.put("retryAfter", retryAfter);
+            return o;
+        }
+
+        static HealthEntry fromJson(JSONObject o) {
+            return new HealthEntry(
+                    o.optLong("lastCheck", 0),
+                    o.optInt("failCount", 0),
+                    o.optBoolean("localAvailable", false),
+                    o.optLong("retryAfter", 0)
+            );
+        }
+    }
 
     /** 接口诊断信息（探针失败时写进结果，用户截图即可远程定位） */
     private String authorityDiag = "";
@@ -242,6 +283,15 @@ public class SyncWorker extends Worker {
             return Result.success();
         }
 
+        // 3.6) 本地健康层：手机可达性 → 动态 enabled
+        //      不动 GitHub 原始 JSON（last.json 存原样），
+        //      本地状态单独存 health.json，两者合并后才写入 Legado
+        prog("正在本地探测可达性…");
+        Map<String, HealthEntry> healthCache = loadHealthCache();
+        JSONArray finalSources = applyLocalHealth(all, healthCache);
+        int locallyDead = countDisabled(finalSources);
+        prog("本地暂不可达 " + locallyDead + "/" + total + "，写入 " + finalSources.length() + " 源");
+
         // 4) 发现并验证阅读App接口（探针通过才写入）
         String authority = resolveAuthority();
         if (authority == null) {
@@ -264,24 +314,27 @@ public class SyncWorker extends Worker {
             prog("验签通过，正在写入阅读App…");
             // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
             Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
-            for (int i = 0; i < total; i += BATCH) {
+            int finalTotal = finalSources.length();
+            for (int i = 0; i < finalTotal; i += BATCH) {
                 JSONArray part = new JSONArray();
-                for (int j = i; j < Math.min(i + BATCH, total); j++) {
-                    part.put(all.get(j));
+                for (int j = i; j < Math.min(i + BATCH, finalTotal); j++) {
+                    part.put(finalSources.get(j));
                 }
                 ContentValues v = new ContentValues();
                 v.put("json", part.toString());
                 getApplicationContext().getContentResolver().insert(uri, v);
-                prog("正在写入书源 " + Math.min(i + BATCH, total) + "/" + total + "…");
+                prog("正在写入书源 " + Math.min(i + BATCH, finalTotal) + "/" + finalTotal + "…");
             }
             OutputStream os = new FileOutputStream(cache);
             os.write(json.getBytes("UTF-8"));
             os.close();
+            // 保存本地健康缓存（仅在成功写入后）
+            saveHealthCache(healthCache);
             String ruleMsg = syncRules(lines);
             saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
                     .edit().putLong("lastOk", System.currentTimeMillis()).apply();
-            done(true, "成功：已写入" + total + "源｜" + ruleMsg);
+            done(true, "成功：已写入" + finalTotal + "源（本地禁用" + locallyDead + "）｜" + ruleMsg);
             return Result.success();
         } catch (Exception e) {
             // provider 写入中途失败（版本差异/权限拦截）：唤起官方在线导入兜底
@@ -609,5 +662,219 @@ public class SyncWorker extends Worker {
                     .build();
             nm.notify(1001, n);
         } catch (Exception ignored) {}
+    }
+
+    // ============================================================
+    // 本地健康层：CI 评分 + 手机可达性 → 动态 enabled
+    // 不动 GitHub 原始 JSON，本地状态单独存 health.json
+    // ============================================================
+
+    /** 本地健康缓存文件 */
+    private File healthFile() {
+        return new File(getApplicationContext().getFilesDir(), "health.json");
+    }
+
+    /** 读健康缓存，返回空 Map 若无/损坏 */
+    private Map<String, HealthEntry> loadHealthCache() {
+        Map<String, HealthEntry> map = new HashMap<>();
+        try {
+            File f = healthFile();
+            if (!f.exists()) return map;
+            String txt = readFile(f);
+            if (txt == null || txt.isEmpty()) return map;
+            JSONObject obj = new JSONObject(txt);
+            java.util.Iterator<String> keys = obj.keys();
+            while (keys.hasNext()) {
+                String k = keys.next();
+                map.put(k, HealthEntry.fromJson(obj.getJSONObject(k)));
+            }
+        } catch (Exception ignored) {}
+        return map;
+    }
+
+    /** 写健康缓存（仅在成功写入 Legado 后调用，避免探测失败污染） */
+    private void saveHealthCache(Map<String, HealthEntry> cache) {
+        try {
+            JSONObject obj = new JSONObject();
+            for (Map.Entry<String, HealthEntry> e : cache.entrySet()) {
+                obj.put(e.getKey(), e.getValue().toJson());
+            }
+            writeFile(healthFile(), obj.toString());
+        } catch (Exception ignored) {}
+    }
+
+    /** 统计 JSONArray 中 enabled=false 的源数 */
+    private int countDisabled(JSONArray arr) {
+        int n = 0;
+        for (int i = 0; i < arr.length(); i++) {
+            try { if (!arr.getJSONObject(i).optBoolean("enabled", true)) n++; }
+            catch (Exception ignored) {}
+        }
+        return n;
+    }
+
+    /**
+     * 合并 CI 源 + 本地健康缓存 + 手机轻量探测 → 最终可写入 Legado 的源列表
+     *
+     * 策略：
+     *  - CI 评分筛选：weight > 0 保留（当前 CI 全部 > 0，预留未来 weight=0 给死源）
+     *  - 缓存命中（24h 内且未在冷却期）：直接用上次探测结果
+     *  - 缓存失效或冷却期到期：加入本轮探测队列，每次最多 60 个
+     *  - 优先探测：上次判死且 retryAfter 到期的源（自动恢复）
+     *  - 探测失败：enabled=false，按 failCount 指数退避重试（1h→6h→24h）
+     */
+    private JSONArray applyLocalHealth(JSONArray sources, Map<String, HealthEntry> cache) {
+        long now = System.currentTimeMillis();
+
+        // Step 1: 分类所有源
+        List<JSONObject> toProbe = new ArrayList<>();
+        Map<String, Boolean> cachedResult = new HashMap<>(); // url → localAvailable
+        JSONArray ciAliveOnly = new JSONArray();
+
+        for (int i = 0; i < sources.length(); i++) {
+            try {
+                JSONObject src = sources.getJSONObject(i);
+                // CI 评分筛选：weight == 0 的源 CI 已判死，直接跳过
+                if (src.optInt("weight", 0) == 0) continue;
+                ciAliveOnly.put(src);
+
+                String url = src.optString("bookSourceUrl", "");
+                if (url.isEmpty()) continue;
+
+                HealthEntry h = cache.get(url);
+                if (h != null) {
+                    long age = now - h.lastCheck;
+                    // 缓存有效（24h 内且未在冷却期）→ 直接用
+                    if (age < 24 * 3600 * 1000 && now >= h.retryAfter) {
+                        cachedResult.put(url, h.localAvailable);
+                        continue;
+                    }
+                    // 冷却期还没到 → 沿用上一次结果（不额外探测）
+                    if (now < h.retryAfter) {
+                        cachedResult.put(url, h.localAvailable);
+                        continue;
+                    }
+                }
+                // 无缓存或缓存失效 → 加入探测队列
+                toProbe.add(src);
+            } catch (Exception ignored) {}
+        }
+
+        // Step 2: 从探测队列里优先挑"上次判死且到期"的，最多 60 个
+        toProbe.sort((a, b) -> {
+            try {
+                HealthEntry ha = cache.get(a.optString("bookSourceUrl", ""));
+                HealthEntry hb = cache.get(b.optString("bookSourceUrl", ""));
+                // 上次判死 → 排前面（自动恢复优先）
+                boolean ad = ha != null && !ha.localAvailable;
+                boolean bd = hb != null && !hb.localAvailable;
+                if (ad != bd) return ad ? -1 : 1;
+                // 上次判死中，failCount 多的排后面（退避更深）
+                if (ad && bd) return ha.failCount - hb.failCount;
+                return 0;
+            } catch (Exception e) { return 0; }
+        });
+        // 截断到 60 个以内
+        int probeLimit = Math.min(toProbe.size(), 60);
+        List<JSONObject> actualProbe = toProbe.subList(0, probeLimit);
+
+        // Step 3: 并发探测（12 线程，每个超时 3s）
+        Map<String, Boolean> probeResults = new HashMap<>();
+        if (!actualProbe.isEmpty()) {
+            ExecutorService pool = Executors.newFixedThreadPool(12);
+            CountDownLatch latch = new CountDownLatch(actualProbe.size());
+            AtomicInteger done = new AtomicInteger(0);
+            for (JSONObject src : actualProbe) {
+                pool.execute(() -> {
+                    String url = "";
+                    try {
+                        url = src.optString("bookSourceUrl", "");
+                        // 只探测域名根路径（比完整搜索页轻很多，也足够判断站点存活）
+                        String root = new URL(url).getProtocol() + "://" + new URL(url).getHost() + "/";
+                        boolean ok = probeHost(root);
+                        probeResults.put(url, ok);
+                    } catch (Exception e) {
+                        probeResults.put(url, false);
+                    } finally {
+                        int d = done.incrementAndGet();
+                        if (d % 20 == 0 || d == actualProbe.size()) {
+                            prog("本地探测 " + d + "/" + actualProbe.size());
+                        }
+                        latch.countDown();
+                    }
+                });
+            }
+            try { latch.await(30, java.util.concurrent.TimeUnit.SECONDS); }
+            catch (InterruptedException ignored) {}
+            pool.shutdownNow();
+        }
+
+        // Step 4: 合并结果 → 更新每个源的 enabled + 刷新健康缓存
+        JSONArray finalArr = new JSONArray();
+        for (int i = 0; i < ciAliveOnly.length(); i++) {
+            try {
+                JSONObject src = ciAliveOnly.getJSONObject(i);
+                String url = src.optString("bookSourceUrl", "");
+                if (url.isEmpty()) continue;
+
+                boolean localOk;
+                HealthEntry oldH = cache.get(url);
+                if (probeResults.containsKey(url)) {
+                    localOk = probeResults.get(url);
+                    // 更新缓存
+                    int fc = localOk ? 0 : (oldH != null ? oldH.failCount + 1 : 1);
+                    long retryDelayMs = localOk ? 0 : retryDelayFor(fc);
+                    HealthEntry newH = new HealthEntry(
+                            now, fc, localOk,
+                            localOk ? 0 : now + retryDelayMs
+                    );
+                    cache.put(url, newH);
+                } else if (cachedResult.containsKey(url)) {
+                    localOk = cachedResult.get(url);
+                } else {
+                    // 不在本轮探测队列（比如探测队列超过 60 被截掉的）→ 暂时保持 CI 默认 enabled=true
+                    localOk = src.optBoolean("enabled", true);
+                }
+                src.put("enabled", localOk);
+                finalArr.put(src);
+            } catch (Exception ignored) {}
+        }
+        return finalArr;
+    }
+
+    /** 退避延迟：failCount 1→1h, 2→6h, 3→24h，封顶 48h */
+    private long retryDelayFor(int failCount) {
+        int h;
+        switch (Math.min(failCount, 5)) {
+            case 1: h = 1; break;
+            case 2: h = 6; break;
+            case 3: h = 24; break;
+            default: h = 48; break;
+        }
+        return h * 3600 * 1000L;
+    }
+
+    /** 轻量 HTTP GET 探测（超时 3s，2xx/3xx/405=HEAD 不支持 都算活） */
+    private boolean probeHost(String rootUrl) {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(rootUrl);
+            Proxy proxy = pickProxy(url);
+            conn = (HttpURLConnection) (proxy == Proxy.NO_PROXY
+                    ? url.openConnection() : url.openConnection(proxy));
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/142.0 Mobile");
+            conn.setInstanceFollowRedirects(true);
+            int code = conn.getResponseCode();
+            // 2xx/3xx = 活；405 = HEAD 不支持但 GET 可用 = 活；403 = 反爬但站点存在 = 活
+            return (code >= 200 && code < 400) || code == 403 || code == 405;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
     }
 }
