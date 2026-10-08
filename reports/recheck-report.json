@@ -1,19 +1,69 @@
 {
- "generatedAt": 1791363290983,
+ "generatedAt": 1791454422408,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "18jinshu✈️",
-   "url": "https://www.18jinshu.com",
-   "traits": [],
+   "name": "⭕️PO文学",
+   "url": "https://www.po18to.com",
+   "traits": [
+    "POST"
+   ],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
    "attempts": [
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "998读书",
+   "url": "http://www.998ds.net",
+   "traits": [
+    "GBK"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
@@ -24,23 +74,17 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
     }
    ],
-   "verdict": "SUSPECT"
+   "verdict": "MIXED_DEATH"
   }
  ],
  "tier2": []
