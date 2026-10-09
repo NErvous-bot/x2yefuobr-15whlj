@@ -2,29 +2,24 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   60  available->available
-    3  available->broken
-    9  available->untestable
-    1  broken->available
-   80  broken->broken
-    3  broken->removed
+   62  available->available
+    1  available->broken
+    2  available->untestable
+   82  broken->broken
+    1  broken->removed
     2  broken->untestable
-    4  untestable->available
-    1  untestable->broken
-    4  untestable->removed
-  228  untestable->untestable
-新增源 2
+    3  untestable->available
+    3  untestable->broken
+    2  untestable->removed
+  232  untestable->untestable
+新增源 6
 
-━━ 一级复查：旧可用 → 确认坏 3 ━━
-  REAL_DEATH_CANDIDATE 1
-  SUSPECT 1
-  FLAPPING 1
-  [REAL_DEATH_CANDIDATE 0/5] 版主bzbz | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY
-  [SUSPECT 1/5] 18jinshu✈️ | 阶段: SEARCH_EMPTY,CONTENT_EMPTY,SEARCH_EMPTY,PASS,CONTENT_EMPTY
-  [FLAPPING 4/5] 🎃太子爷小说网🎃 | 阶段: CONTENT_EMPTY,PASS,PASS,PASS,PASS | 特征: GBK
+━━ 一级复查：旧可用 → 确认坏 1 ━━
+  MIXED_DEATH 1
+  [MIXED_DEATH 0/5] 轻次元姬 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
