@@ -70,7 +70,7 @@ async function main() {
   };
 
   stages["搜索"] = "run";
-  const s = await call("/api/search", { keyword: "都市", page: 1 });
+  const s = await call("/api/search", { keyword: "凡人", page: 1 });
   const arr = Array.isArray(s.data) ? s.data : s.data?.list || [];
   if (!arr.length) throw new Error("搜索无结果");
   stages["搜索"] = "ok(" + arr.length + "条)";
@@ -104,14 +104,16 @@ async function main() {
   stages["验证码"] = "ok(图片码" + code.length + "位)";
 
   stages["正文"] = "run";
+  // 多位置采样：部分书（尤合集类）大量章节正文为空，前/中/后多点取样避免误判
   let paras = [];
-  for (let off = Math.floor(chs.length / 2); off < Math.min(chs.length, Math.floor(chs.length / 2) + 4); off++) {
+  const tryIdx = [...new Set([0.08, 0.3, 0.5, 0.7].map(f => Math.floor(chs.length * f)))];
+  for (const off of tryIdx) {
     const cxx = String(chs[off].id || chs[off].chapter_id);
     const ct2 = await call("/api/book/content", { chapter_id: cxx, captcha_token: token }, { bid, cid: cxx });
     paras = ((ct2.data || ct2).paragraphs || []).map((o) => (typeof o === "object" ? (o.text ?? "") : String(o))).filter(Boolean);
     if (paras.length) break;
   }
-  if (!paras.length) throw new Error("正文为空");
+  if (!paras.length) throw new Error("正文为空(采样" + tryIdx.length + "章均无内容)");
   stages["正文"] = "ok(" + paras.length + "段)";
 
   return true;

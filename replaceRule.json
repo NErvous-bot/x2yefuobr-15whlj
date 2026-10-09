@@ -19,5 +19,6 @@
   {"name":"乱码控制符","group":"净化-排版","replacePattern":"[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFD]","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":31},
   {"name":"行尾空白","group":"净化-排版","replacePattern":"[^\\S\\n]+(?=\\n)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":32},
   {"name":"多余空行","group":"净化-排版","replacePattern":"\\n{3,}","replacement":"\\n\\n","scope":"","isEnabled":true,"isRegex":true,"sortNo":33},
-  {"name":"自动·社群引流「加微信」","group":"净化-自动","replacePattern":"加微信","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":34}
+  {"name":"自动·社群引流「加微信」","group":"净化-自动","replacePattern":"加微信","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":34},
+  {"name":"最新网址引流(抗换行拆分)","group":"净化-引流","replacePattern":"(?:最新(?:网址|域名|入口|地址)|永久(?:网址|域名|地址)|本站网址|手机(?:版)?(?:网址|地址))[：:]?\\s*(?:https?://)?(?:[a-zA-Z0-9][a-zA-Z0-9\\-]{0,30}\\s*[\\.．]\\s*)+[a-zA-Z]{2,6}(?![a-zA-Z0-9])\\s*","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":35}
 ]
