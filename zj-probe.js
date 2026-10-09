@@ -1,5 +1,7 @@
 // zjread（纸间）源专属探针 —— 该源为全加密API规则（@js:），静态测试器无法覆盖，
-// 此脚本按其真实协议实测：会话协商→搜索→目录→正文，判断源是否仍然存活。
+// 此脚本按其真实协议实测：会话协商→搜索→目录→验证码→正文，判断源是否仍然存活。
+// 2026-10-09 协议升级适配：challenge 新增 codeChallenge(SVG图片码, <text>明文)，
+// verify 请求改为 {payload: b64(JSON({challenge,solution})), code: 图片码答案}。
 // 纯诊断：结果写 reports/zj-probe.json + GITHUB_STEP_SUMMARY，任何异常 exit 0 不阻塞发布。
 const fs = require("fs");
 const crypto = require("node:crypto");
@@ -13,6 +15,20 @@ const hmac = (k, m) => crypto.createHmac("sha256", k).update(m).digest();
 const sha256hex = (s) => crypto.createHash("sha256").update(s, "utf8").digest("hex");
 // 服务端实际密钥派生方向（2026-10-08 实测确认）：PRK = HMAC(key=sid, msg=key_material)
 const derive = (km, sid, info, len = 32) => Buffer.from(crypto.hkdfSync("sha256", km, sid, info, len));
+// SVG 图片码答案提取：<text> 明文字符按 x 排序拼接（服务端 SVG 未做字符转形状，可全自动）
+const svgCode = (cc) => {
+  try {
+    const dataUri = String((cc && cc.image) || "");
+    const b64part = dataUri.indexOf(",") >= 0 ? dataUri.substring(dataUri.indexOf(",") + 1) : dataUri;
+    const svg = Buffer.from(b64part, "base64").toString("utf8");
+    const chars = [];
+    const re = /<text x="(\d+)"[^>]*>([^<]*)<\/text>/g;
+    let m;
+    while ((m = re.exec(svg))) chars.push([Number(m[1]), m[2]]);
+    chars.sort((a, b) => a[0] - b[0]);
+    return chars.map((c) => c[1]).join("");
+  } catch (e) { return ""; }
+};
 
 const stages = {};
 async function main() {
@@ -67,7 +83,7 @@ async function main() {
   stages["目录"] = "ok(" + chs.length + "章)";
 
   stages["验证码"] = "run";
-  const cid = String(chs[chs.length - 1].id || chs[chs.length - 1].chapter_id);
+  const cid = String(chs[Math.floor(chs.length / 2)].id || chs[Math.floor(chs.length / 2)].chapter_id);
   const ch = await get("/api/captcha/altcha/challenge");
   const p = ch.data || ch;
   let counter = 0, dk = "";
@@ -79,15 +95,22 @@ async function main() {
     if (u.startsWith(prefix)) { counter = i; dk = u.slice(0, p.parameters.keyLength * 2); break; }
   }
   if (!dk) throw new Error("ALTCHA 20万次内未解出");
-  const vBody = { payload: b64(Buffer.from(JSON.stringify({ challenge: ch, solution: { counter, derivedKey: dk, time: 1 } }), "utf8")) };
+  const code = svgCode(p.codeChallenge);
+  const payload = b64(Buffer.from(JSON.stringify({ challenge: ch, solution: { counter, derivedKey: dk, time: 1 } }), "utf8"));
+  const vBody = code ? { payload, code } : { payload };
   const vt = await call("/api/captcha/altcha/verify", vBody);
   const token = (vt.data || vt).captcha_token;
   if (!token) throw new Error("未返回captcha_token");
-  stages["验证码"] = "ok";
+  stages["验证码"] = "ok(图片码" + code.length + "位)";
 
   stages["正文"] = "run";
-  const ct2 = await call("/api/book/content", { chapter_id: cid, captcha_token: token }, { bid, cid });
-  const paras = ((ct2.data || ct2).paragraphs || []).map((o) => (typeof o === "object" ? (o.text ?? "") : String(o))).filter(Boolean);
+  let paras = [];
+  for (let off = Math.floor(chs.length / 2); off < Math.min(chs.length, Math.floor(chs.length / 2) + 4); off++) {
+    const cxx = String(chs[off].id || chs[off].chapter_id);
+    const ct2 = await call("/api/book/content", { chapter_id: cxx, captcha_token: token }, { bid, cid: cxx });
+    paras = ((ct2.data || ct2).paragraphs || []).map((o) => (typeof o === "object" ? (o.text ?? "") : String(o))).filter(Boolean);
+    if (paras.length) break;
+  }
   if (!paras.length) throw new Error("正文为空");
   stages["正文"] = "ok(" + paras.length + "段)";
 
