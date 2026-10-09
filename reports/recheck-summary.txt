@@ -2,25 +2,28 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   67  available->available
-    2  available->broken
-    3  available->untestable
-    2  broken->available
-   74  broken->broken
-    1  broken->removed
-    1  broken->untestable
-    3  untestable->available
-    6  untestable->broken
-  232  untestable->untestable
-新增源 5
+   60  available->available
+    3  available->broken
+    9  available->untestable
+    1  broken->available
+   80  broken->broken
+    3  broken->removed
+    2  broken->untestable
+    4  untestable->available
+    1  untestable->broken
+    4  untestable->removed
+  228  untestable->untestable
+新增源 2
 
-━━ 一级复查：旧可用 → 确认坏 2 ━━
+━━ 一级复查：旧可用 → 确认坏 3 ━━
   REAL_DEATH_CANDIDATE 1
-  MIXED_DEATH 1
-  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
-  [MIXED_DEATH 0/5] 998读书 | 阶段: SEARCH_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY | 特征: GBK
+  SUSPECT 1
+  FLAPPING 1
+  [REAL_DEATH_CANDIDATE 0/5] 版主bzbz | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY
+  [SUSPECT 1/5] 18jinshu✈️ | 阶段: SEARCH_EMPTY,CONTENT_EMPTY,SEARCH_EMPTY,PASS,CONTENT_EMPTY
+  [FLAPPING 4/5] 🎃太子爷小说网🎃 | 阶段: CONTENT_EMPTY,PASS,PASS,PASS,PASS | 特征: GBK
 
-━━ 二级复查：旧BL不可测 → 确认坏 1（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
 BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死

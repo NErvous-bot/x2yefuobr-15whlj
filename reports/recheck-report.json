@@ -1,12 +1,92 @@
 {
- "generatedAt": 1791454422408,
+ "generatedAt": 1791541625797,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "⭕️PO文学",
-   "url": "https://www.po18to.com",
+   "name": "版主bzbz",
+   "url": "https://www.bzbz1024.com",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "18jinshu✈️",
+   "url": "https://www.18jinshu.com",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "正文不足200字（实得0）",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    }
+   ],
+   "verdict": "SUSPECT"
+  },
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
    "traits": [
-    "POST"
+    "GBK"
    ],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
@@ -14,77 +94,35 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  },
-  {
-   "name": "998读书",
-   "url": "http://www.998ds.net",
-   "traits": [
-    "GBK"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
      "stage": "CONTENT_EMPTY",
      "reason": "正文不足200字（实得0）"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     }
    ],
-   "verdict": "MIXED_DEATH"
+   "verdict": "FLAPPING"
   }
  ],
  "tier2": []
