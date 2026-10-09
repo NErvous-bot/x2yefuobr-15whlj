@@ -3,23 +3,25 @@
 
 ━━ 迁移矩阵 ━━
    62  available->available
-    1  available->broken
-    2  available->untestable
-   82  broken->broken
+    2  available->broken
+    1  available->untestable
+    2  broken->available
+   79  broken->broken
     1  broken->removed
-    2  broken->untestable
-    3  untestable->available
-    3  untestable->broken
-    2  untestable->removed
-  232  untestable->untestable
-新增源 6
+    6  broken->untestable
+    5  untestable->available
+    5  untestable->broken
+  230  untestable->untestable
+新增源 2
 
-━━ 一级复查：旧可用 → 确认坏 1 ━━
-  MIXED_DEATH 1
-  [MIXED_DEATH 0/5] 轻次元姬 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY
+━━ 一级复查：旧可用 → 确认坏 2 ━━
+  RECOVERED 1
+  REAL_DEATH_CANDIDATE 1
+  [RECOVERED 5/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,PASS
+  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
+BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

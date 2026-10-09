@@ -1,37 +1,79 @@
 {
- "generatedAt": 1791542298241,
+ "generatedAt": 1791543326008,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "轻次元姬",
-   "url": "https://www.ciyuanji.com/",
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
    "traits": [],
    "oldNote": "三关全过",
-   "newNote": "目录为空",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    }
+   ],
+   "verdict": "RECOVERED"
+  },
+  {
+   "name": "⭕️PO文学",
+   "url": "https://www.po18to.com",
+   "traits": [
+    "POST"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得92）"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
@@ -40,7 +82,7 @@
      "reason": "搜索无结果"
     }
    ],
-   "verdict": "MIXED_DEATH"
+   "verdict": "REAL_DEATH_CANDIDATE"
   }
  ],
  "tier2": []
