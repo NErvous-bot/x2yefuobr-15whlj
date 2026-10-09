@@ -1,24 +1,222 @@
 [
-  {"name":"章节未完引导语","group":"净化-引导语","replacePattern":"(?:本?章[节卷篇]?(?:还)?未完?[，,].{0,15}(?:点击|请)[下下一页]{2,3}.{0,25}?(?:继续阅读|翻页|查看)[^。！？\n】]{0,20}[。】]?)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":1},
-  {"name":"点击下一页翻页提示","group":"净化-引导语","replacePattern":"(?:点击(?:下一页|下一章)(?:继续阅读|继续浏览|翻页)[^。！？\n】]{0,15}[。】]?)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":2},
-  {"name":"手机用户引导","group":"净化-引导语","replacePattern":"手机用户请(?:浏览|到)[^\\n]{0,40}?(?:阅读|访问)[^\\n]{0,30}[.。!！]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":3},
-  {"name":"更多精彩请关注","group":"净化-引导语","replacePattern":"更多精彩.{0,15}?(?:小说|内容|章节)[，,]?请(?:关注|访问|收藏).{0,40}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":4},
-  {"name":"无弹窗广告推广","group":"净化-引导语","replacePattern":"无弹窗(?:广告)?(?:免费|全本|小说)?(?:阅读|小说网)[!！.。]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":5},
-  {"name":"天才记住本站","group":"净化-引流","replacePattern":"天才一秒记住(?:本站|网址|域名)[^】」\n]{0,60}?(?:net|cc|com|org|info|la|top|xyz|vip)[^】」\n]{0,12}[!！.。]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":11},
-  {"name":"一秒记住域名","group":"净化-引流","replacePattern":"[（(]?一?秒?记住本站.{0,40}?(?:net|cc|com|org|info|la|top|xyz|vip)[)）]?[!！.。]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":12},
-  {"name":"最新章节地址","group":"净化-引流","replacePattern":"(?:最新|最快|本章)章节.{0,20}?(?:网址|地址|首发)[:：].{0,60}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":13},
-  {"name":"请记住本书域名","group":"净化-引流","replacePattern":"请?记住本书(?:首发)?(?:域名|网址).{0,50}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":14},
-  {"name":"本站网址更换公告","group":"净化-引流","replacePattern":"本站(?:网址|域名)已?更换为.{0,50}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":15},
-  {"name":"首发声明","group":"净化-引流","replacePattern":"本书首发(?:来自|于)[^，。\n]{2,20}[，。,.]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":16},
-  {"name":"转载注明出处","group":"净化-引流","replacePattern":"转载请注明.{0,40}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":17},
-  {"name":"http网址链接","group":"净化-引流","replacePattern":"https?://[^\\s【】()（）【】]{4,80}","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":18},
-  {"name":"www网址链接","group":"净化-引流","replacePattern":"www\\.[a-zA-Z0-9\\-]{2,30}\\.(?:com|net|org|cc|xyz|top|info|la|me|vip|site|club|online|fun|icu)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":19},
-  {"name":"括号内求票","group":"净化-互动","replacePattern":"[（(【]?(?:求收藏|求推荐票|求月票|求鲜花|求评价票|求订阅|求追读|求打赏|求支持|求关注|求五星好评|求评论)[）)】]","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":21},
-  {"name":"求票短语","group":"净化-互动","replacePattern":"(?:^|\\n)求(?:收藏|推荐票|月票|鲜花|评价票|订阅|追读|打赏)[!！。.]","replacement":"\\n","scope":"","isEnabled":true,"isRegex":true,"sortNo":22},
-  {"name":"作者的话引导","group":"净化-互动","replacePattern":"[（(【]?(?:PS|ps|Ps)[：:][^）)】\n]{0,60}?[求拉投][^）)】\n]{0,30}[)）】]?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":23},
-  {"name":"乱码控制符","group":"净化-排版","replacePattern":"[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFD]","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":31},
-  {"name":"行尾空白","group":"净化-排版","replacePattern":"[^\\S\\n]+(?=\\n)","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":32},
-  {"name":"多余空行","group":"净化-排版","replacePattern":"\\n{3,}","replacement":"\\n\\n","scope":"","isEnabled":true,"isRegex":true,"sortNo":33},
-  {"name":"自动·社群引流「加微信」","group":"净化-自动","replacePattern":"加微信","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":34},
-  {"name":"最新网址引流(抗换行拆分)","group":"净化-引流","replacePattern":"(?:最新(?:网址|域名|入口|地址)|永久(?:网址|域名|地址)|本站网址|手机(?:版)?(?:网址|地址))[：:]?\\s*(?:https?://)?(?:[a-zA-Z0-9][a-zA-Z0-9\\-]{0,30}\\s*[\\.．]\\s*)+[a-zA-Z]{2,6}(?![a-zA-Z0-9])\\s*","replacement":"","scope":"","isEnabled":true,"isRegex":true,"sortNo":35}
+  {
+    "name": "章节未完引导语",
+    "group": "净化-引导语",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "(?:本?章[节卷篇]?(?:还)?未完?[，,].{0,15}(?:点击|请)[下下一页]{2,3}.{0,25}?(?:继续阅读|翻页|查看)[^。！？\n】]{0,20}[。】]?)",
+    "order": 1
+  },
+  {
+    "name": "点击下一页翻页提示",
+    "group": "净化-引导语",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "(?:点击(?:下一页|下一章)(?:继续阅读|继续浏览|翻页)[^。！？\n】]{0,15}[。】]?)",
+    "order": 2
+  },
+  {
+    "name": "手机用户引导",
+    "group": "净化-引导语",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "手机用户请(?:浏览|到)[^\\n]{0,40}?(?:阅读|访问)[^\\n]{0,30}[.。!！]?",
+    "order": 3
+  },
+  {
+    "name": "更多精彩请关注",
+    "group": "净化-引导语",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "更多精彩.{0,15}?(?:小说|内容|章节)[，,]?请(?:关注|访问|收藏).{0,40}",
+    "order": 4
+  },
+  {
+    "name": "无弹窗广告推广",
+    "group": "净化-引导语",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "无弹窗(?:广告)?(?:免费|全本|小说)?(?:阅读|小说网)[!！.。]?",
+    "order": 5
+  },
+  {
+    "name": "天才记住本站",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "天才一秒记住(?:本站|网址|域名)[^】」\n]{0,60}?(?:net|cc|com|org|info|la|top|xyz|vip)[^】」\n]{0,12}[!！.。]?",
+    "order": 11
+  },
+  {
+    "name": "一秒记住域名",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "[（(]?一?秒?记住本站.{0,40}?(?:net|cc|com|org|info|la|top|xyz|vip)[)）]?[!！.。]?",
+    "order": 12
+  },
+  {
+    "name": "最新章节地址",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "(?:最新|最快|本章)章节.{0,20}?(?:网址|地址|首发)[:：].{0,60}",
+    "order": 13
+  },
+  {
+    "name": "请记住本书域名",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "请?记住本书(?:首发)?(?:域名|网址).{0,50}",
+    "order": 14
+  },
+  {
+    "name": "本站网址更换公告",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "本站(?:网址|域名)已?更换为.{0,50}",
+    "order": 15
+  },
+  {
+    "name": "首发声明",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "本书首发(?:来自|于)[^，。\n]{2,20}[，。,.]?",
+    "order": 16
+  },
+  {
+    "name": "转载注明出处",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "转载请注明.{0,40}",
+    "order": 17
+  },
+  {
+    "name": "http网址链接",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "https?://[^\\s【】()（）【】]{4,80}",
+    "order": 18
+  },
+  {
+    "name": "www网址链接",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "www\\.[a-zA-Z0-9\\-]{2,30}\\.(?:com|net|org|cc|xyz|top|info|la|me|vip|site|club|online|fun|icu)",
+    "order": 19
+  },
+  {
+    "name": "括号内求票",
+    "group": "净化-互动",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "[（(【]?(?:求收藏|求推荐票|求月票|求鲜花|求评价票|求订阅|求追读|求打赏|求支持|求关注|求五星好评|求评论)[）)】]",
+    "order": 21
+  },
+  {
+    "name": "求票短语",
+    "group": "净化-互动",
+    "replacement": "\\n",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "(?:^|\\n)求(?:收藏|推荐票|月票|鲜花|评价票|订阅|追读|打赏)[!！。.]",
+    "order": 22
+  },
+  {
+    "name": "作者的话引导",
+    "group": "净化-互动",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "[（(【]?(?:PS|ps|Ps)[：:][^）)】\n]{0,60}?[求拉投][^）)】\n]{0,30}[)）】]?",
+    "order": 23
+  },
+  {
+    "name": "乱码控制符",
+    "group": "净化-排版",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\uFFFD]",
+    "order": 31
+  },
+  {
+    "name": "行尾空白",
+    "group": "净化-排版",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "[^\\S\\n]+(?=\\n)",
+    "order": 32
+  },
+  {
+    "name": "多余空行",
+    "group": "净化-排版",
+    "replacement": "\\n\\n",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "\\n{3,}",
+    "order": 33
+  },
+  {
+    "name": "自动·社群引流「加微信」",
+    "group": "净化-自动",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "加微信",
+    "order": 34
+  },
+  {
+    "name": "最新网址引流(抗换行拆分)",
+    "group": "净化-引流",
+    "replacement": "",
+    "scope": "",
+    "isEnabled": true,
+    "isRegex": true,
+    "pattern": "(?:最新(?:网址|域名|入口|地址)|永久(?:网址|域名|地址)|本站网址|手机(?:版)?(?:网址|地址))[：:]?\\s*(?:https?://)?(?:[a-zA-Z0-9][a-zA-Z0-9\\-]{0,30}\\s*[\\.．]\\s*)+[a-zA-Z]{2,6}(?![a-zA-Z0-9])\\s*",
+    "order": 35
+  }
 ]
