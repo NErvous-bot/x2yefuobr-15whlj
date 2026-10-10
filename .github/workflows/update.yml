@@ -39,8 +39,6 @@ jobs:
           node -e "const a=require('./legado.json');const bad=a.filter(s=>!s.ruleContent).length;if(bad/a.length>0.5)throw new Error('ruleContent缺失率过高:'+bad+'/'+a.length)"
           node -e "const r=require('./replaceRule.json');if(!Array.isArray(r)||r.length<1)throw new Error('净化规则异常:'+r.length)"
           echo "校验通过：legado.json 与 replaceRule.json 结构正常"
-      - name: zjread源专属探针（加密API静态测试器测不了，按真实协议实测死活，纯诊断不阻塞）
-        run: node zj-probe.js
       - name: ECDSA签名（node内置crypto + 自验签，防镜像投毒）
         env:
           # Secret 名沿用 ED25519_KEY，现值为 EC P-256 PKCS#8 PEM 的 base64
