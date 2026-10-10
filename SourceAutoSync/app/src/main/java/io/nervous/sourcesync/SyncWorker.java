@@ -645,7 +645,8 @@ public class SyncWorker extends Worker {
             try { o = arr.get(i); } catch (Exception e) { return "第" + i + "条读取失败"; }
             if (!(o instanceof JSONObject)) return "第" + i + "条不是对象";              // C3
             JSONObject s = (JSONObject) o;
-            if (s.toString().length() > 100_000) return "第" + i + "条体积异常(>100KB)";// C11
+            // 500KB：线上最复杂的合法源约 327KB（松鹤庭沐，大量 JS 规则），留 1.5 倍余量拦畸形膨胀
+            if (s.toString().length() > 500_000) return "第" + i + "条体积异常(>500KB)";// C11
             String url = s.optString("bookSourceUrl", "").trim();
             if (url.isEmpty()) return "第" + i + "条缺少bookSourceUrl";                 // C4
             if (!url.startsWith("http://") && !url.startsWith("https://"))
@@ -659,7 +660,8 @@ public class SyncWorker extends Worker {
             if (ty != null) {
                 if (!(ty instanceof Number)) return "第" + i + "条bookSourceType类型异常";// C9
                 int t = ((Number) ty).intValue();
-                if (t < 0 || t > 3 || t != ((Number) ty).doubleValue())
+                // 合法范围以阅读源码 BookSourceType 为准：0文字/1音频/2图片/3文件/4视频
+                if (t < 0 || t > 4 || t != ((Number) ty).doubleValue())
                     return "第" + i + "条bookSourceType越界";
             }
             String rule = s.optString("ruleContent", "");
