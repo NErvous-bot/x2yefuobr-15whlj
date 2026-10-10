@@ -3,22 +3,25 @@
 
 ━━ 迁移矩阵 ━━
    62  available->available
-    2  available->broken
-    1  available->untestable
-    2  broken->available
-   79  broken->broken
-    1  broken->removed
-    6  broken->untestable
-    5  untestable->available
+    4  available->broken
+    3  available->untestable
+    3  broken->available
+   77  broken->broken
+    3  broken->removed
+    3  broken->untestable
+    2  untestable->available
     5  untestable->broken
-  230  untestable->untestable
-新增源 2
+    4  untestable->removed
+  228  untestable->untestable
+新增源 6
 
-━━ 一级复查：旧可用 → 确认坏 2 ━━
-  RECOVERED 1
+━━ 一级复查：旧可用 → 确认坏 4 ━━
   REAL_DEATH_CANDIDATE 1
-  [RECOVERED 5/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,PASS
-  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  SUSPECT 3
+  [REAL_DEATH_CANDIDATE 0/5] 欲望社🎃 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  [SUSPECT 3/5] 色友小说 | 阶段: CHAPTER_EMPTY,PASS,PASS,PASS,CONTENT_EMPTY
+  [SUSPECT 2/5] 998读书 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,PASS,PASS,CONTENT_EMPTY | 特征: GBK
+  [SUSPECT 2/5] 18jinshu✈️ | 阶段: PASS,PASS,SEARCH_EMPTY,SEARCH_EMPTY,CONTENT_EMPTY
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
