@@ -52,6 +52,13 @@ import java.util.List;
  *    路径上从不执行，属死代码；
  *  - 新增书源 12 项 / 规则 4 项 JSON 结构校验，畸形数据拒绝导入（深链路径同样受保护）；
  *  - 文案如实：深链只代表「已唤起阅读」，导入需用户在手机上点「确认」，不宣称自动完成。
+ *
+ * v5.1（P1 状态机修复，行为变更需重新安装）：
+ *  - 修复「深链唤起成功即写成功指纹」缺陷：未确认导入的版本不再被记为已同步，
+ *    书源/规则在用户漏点确认后仍会在新版本或手动同步时再次提示；
+ *  - 新增与成功指纹严格分离的深链节流状态 prompt_*_md5/_at：同版本 72h 内
+ *    自动同步不重复弹窗，手动「立即同步」绕过，换内容版本自动放行（节流不是成功凭证）；
+ *  - 每日轻量检查按书源(fpJson)/规则(prompt_rules_*)两套独立状态分别判断。
  */
 public class SyncWorker extends Worker {
 
@@ -92,8 +99,14 @@ public class SyncWorker extends Worker {
 
     private static final int BATCH = 80;
 
+    /** 深链唤起节流窗口：同一内容版本 72h 内自动同步不重复弹确认框（手动同步绕过） */
+    private static final long PROMPT_THROTTLE_MS = 72L * 3600 * 1000;
+
     /** 接口诊断信息（探针失败时写进结果，用户截图即可远程定位） */
     private String authorityDiag = "";
+
+    /** syncRules 本轮是否真的成功唤起阅读（区分该发通知还是静默记录） */
+    private boolean rulesFired = false;
 
     public SyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -183,29 +196,45 @@ public class SyncWorker extends Worker {
     public Result doWork() {
         Context ctx = getApplicationContext();
 
-        // 0) v3.15 起每天自动检查：先做轻量指纹探测（约70字节的 version.txt，
-        //    内容为书源+规则两个 md5）。两个 md5 都与本地一致 → 当天到此为止
-        //    （只刷新「上次」状态行，不发通知不下载全量）；探测失败且 7 天内
-        //    有成功记录 → 多为瞬时网络问题，交给 WorkManager 退避重试；
-        //    连续 7 天没检查成功、指纹有变化（有更新）、或手动「立即同步」
-        //    → 走全量下载写入
+        // 0) 每日轻量检查（version.txt 约70字节：书源+规则两个 md5）。v5.1 起
+        //    两类数据的状态彻底分离，「已发起」绝不冒认「已完成」：
+        //    - 书源 fpJson：只在 Provider 确认写入成功后更新（真完成）；
+        //    - 规则 prompt_rules_*：阅读无导入回执，深链只记「已唤起版本+时间」，
+        //      同版本 72h 内不重复弹窗，换版本自动放行，手动同步绕过。
+        //    书源已确认最新 且 规则在节流期 → 当天静默结束；
+        //    书源已确认最新 但 规则该提示 → 只走规则流程，不下载全量书源；
+        //    探测失败且 7 天内有成功记录 → 多为瞬时网络问题，交 WorkManager 退避重试；
+        //    书源有更新、连续 7 天检查失败、或手动「立即同步」 → 走全量下载写入
         if (!"manual".equals(getInputData().getString("mode"))) {
             android.content.SharedPreferences sp0 = ctx.getSharedPreferences("sync", Context.MODE_PRIVATE);
             long lastOk = sp0.getLong("lastOk", 0);
             boolean stale = System.currentTimeMillis() - lastOk > 7L * 24 * 3600 * 1000;
             prog("正在检查是否有更新…");
             String[] fp = fetchFingerprint(decodeRepo());
-            if (fp != null && fp[0].equals(sp0.getString("fpJson", null))
-                    && fp[1].equals(sp0.getString("fpRules", null))) {
-                sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
-                saveQuiet("今日检查：无更新，书源已是最新");
-                return Result.success();
-            }
-            if (fp == null && !stale) {
+            if (fp != null) {
+                boolean booksCurrent = fp[0].equals(sp0.getString("fpJson", null));
+                boolean rulesThrottled = fp[1].equals(sp0.getString("prompt_rules_md5", null))
+                        && System.currentTimeMillis() - sp0.getLong("prompt_rules_at", 0)
+                                < PROMPT_THROTTLE_MS;
+                if (booksCurrent && rulesThrottled) {
+                    sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
+                    saveQuiet("今日检查：无更新，书源已是最新");
+                    return Result.success();
+                }
+                if (booksCurrent) {
+                    // 只有规则待提示（新版本或距上次唤起已超 72h），规则文件很小
+                    prog("正在检查净化规则更新…");
+                    String ruleMsg = syncRules(refreshLines());
+                    sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
+                    if (rulesFired) done(true, ruleMsg);
+                    else saveQuiet(ruleMsg);
+                    return Result.success();
+                }
+            } else if (!stale) {
                 saveQuiet("今日检查失败（网络），稍后自动重试");
                 return Result.retry();
             }
-            // 指纹有变化（有更新）或连续7天没检查成功：继续全量流程
+            // 书源指纹有变化（有更新）或连续7天没检查成功：继续全量流程
         }
 
         // 1) 刷新镜像名单
@@ -257,13 +286,24 @@ public class SyncWorker extends Worker {
         String authority = resolveAuthority();
         if (authority == null) {
             // 兜底：唤起阅读App官方在线导入（legado://import/bookSource 深链，
-            // 阅读App 自己下载并弹出确认框，用户点确认后导入）
+            // 阅读App 自己下载并弹出确认框，用户点确认后导入）。
+            // v5.1：阅读无导入完成回执，唤起 ≠ 导入，因此此路径【不写 last.json、
+            // 不更新 fpJson/lastOk】，只记「已唤起版本+时间」做 72h 节流；
+            // 同一版本自动同步不重复弹窗，手动「立即同步」绕过，换版本自动放行。
+            String jsonMd5 = md5(json);
+            boolean manual = "manual".equals(getInputData().getString("mode"));
+            if (!manual && promptThrottled("book", jsonMd5)) {
+                String quietRule = syncRules(lines);
+                String tail = rulesFired ? "｜" + quietRule : "";
+                if (rulesFired) done(true, "书源更新仍待你在阅读中点「确认」" + tail);
+                else saveQuiet("书源更新已唤起阅读，待点「确认」（72h内不重复提示，点本App「立即同步」可重试）" + tail);
+                return Result.success();
+            }
             String src = defaultLines(decodeRepo())[0] + "?cb=" + System.currentTimeMillis();
             boolean fired = fireOnlineImport("bookSource", src);
             if (fired) {
-                writeFile(cache, json);
+                markPrompted("book", jsonMd5);
                 String ruleMsg = syncRules(lines);
-                saveFingerprints(md5(json));
                 done(true, "接口探针全不通过（" + authorityDiag.trim()
                         + "），已唤起阅读导入，请在手机上点「确认」｜" + ruleMsg);
             } else {
@@ -296,13 +336,23 @@ public class SyncWorker extends Worker {
             done(true, "成功：已写入" + finalTotal + "个书源｜" + ruleMsg);
             return Result.success();
         } catch (Exception e) {
-            // provider 写入中途失败（版本差异/权限拦截）：唤起官方在线导入兜底
+            // provider 写入中途失败（版本差异/权限拦截）：唤起官方在线导入兜底。
+            // v5.1 同样遵守「唤起≠完成」：不写 last.json/成功指纹，同版本 72h 节流，
+            // 下一轮 Provider 恢复后仍会自动重写确认（REPLACE 幂等，可补齐部分写入）。
+            String m = e.getMessage();
+            String reason = m == null ? e.getClass().getSimpleName() : m;
+            String jsonMd5 = md5(json);
+            boolean manual = "manual".equals(getInputData().getString("mode"));
+            if (!manual && promptThrottled("book", jsonMd5)) {
+                saveQuiet("书源写入异常，已唤起阅读待确认（点本App「立即同步」可重试），原因：" + reason);
+                return Result.success();
+            }
             String src = defaultLines(decodeRepo())[0] + "?cb=" + System.currentTimeMillis();
             boolean fired = fireOnlineImport("bookSource", src);
-            String m = e.getMessage();
+            if (fired) markPrompted("book", jsonMd5);
             done(fired,
                     (fired ? "写入异常，已唤起阅读导入，请在手机上点「确认」，原因：" : "失败：")
-                            + (m == null ? e.getClass().getSimpleName() : m));
+                            + reason);
             return Result.success();
         }
     }
@@ -367,6 +417,7 @@ public class SyncWorker extends Worker {
      * 失败只汇报，不影响书源同步。
      */
     private String syncRules(List<String> lines) {
+        rulesFired = false;
         try {
             StringBuilder err = new StringBuilder();
             String rjson = fetchVerified("replaceRule.json", lines, err);
@@ -376,9 +427,18 @@ public class SyncWorker extends Worker {
             String rv = validateReplaceRules(rjson);
             if (rv != null) return "规则未同步：结构异常（" + rv + "）";
 
+            String rMd5 = md5(rjson);
             File rcache = new File(getApplicationContext().getFilesDir(), "last_rules.json");
-            if (rcache.exists() && md5(rcache).equals(md5(rjson))) {
+            // 历史遗留缓存（v3.15 曾在唤起后写此文件）：内容一致视为已处理，免重复提示
+            if (rcache.exists() && md5(rcache).equals(rMd5)) {
                 return "规则无变化";
+            }
+
+            // v5.1：唤起 ≠ 导入。同版本 72h 内自动同步不重复弹窗；
+            // 手动「立即同步」绕过；规则内容换版本（md5 变化）自动放行
+            boolean manual = "manual".equals(getInputData().getString("mode"));
+            if (!manual && promptThrottled("rules", rMd5)) {
+                return "规则更新待在阅读中点「确认」（72h内不重复提示，点「立即同步」可重试）";
             }
 
             String src = defaultLines(decodeRepo())[0].replace("legado.json", "replaceRule.json")
@@ -388,9 +448,8 @@ public class SyncWorker extends Worker {
                 // 后台同步时系统拦截界面启动——引导用户手动同步（前台必唤起）
                 return "规则有更新：请打开本App点「立即同步」并在手机上确认";
             }
-            OutputStream os = new FileOutputStream(rcache);
-            os.write(rjson.getBytes("UTF-8"));
-            os.close();
+            markPrompted("rules", rMd5);
+            rulesFired = true;
             return "规则更新：已唤起阅读导入，请在手机上点「确认」";
         } catch (Exception e) {
             return "规则未同步：异常";
@@ -432,15 +491,42 @@ public class SyncWorker extends Worker {
         return null;
     }
 
-    /** 记录本地已确认的内容指纹：书源取刚处理完的内容 md5；规则取本地规则
-     *  缓存（缓存只在规则内容成功拉取后才写入，天然代表「已拿到最新」）。 */
+    /** 记录书源「已确认写入」的内容指纹：仅在 Provider 写入成功后调用。
+     *  v5.1 起不再包含规则指纹——规则走深链无回执，其「已唤起版本+时间」
+     *  由 prompt_rules_md5 / prompt_rules_at 独立管理，与成功指纹严格分离。 */
     private void saveFingerprints(String jsonMd5) {
+        try {
+            getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE)
+                    .edit().putString("fpJson", jsonMd5).apply();
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * 深链唤起节流（v5.1，与成功指纹严格分离）：同一内容版本在 72h 窗口内
+     * 自动同步不再重复唤起阅读；手动同步由调用方判断绕过；内容 md5 变化
+     * （新版本）自动放行。节流只防打扰，绝不代表导入已完成——阅读没有
+     * 跨进程导入完成回执，这是生态边界。
+     */
+    private boolean promptThrottled(String kind, String contentMd5) {
         try {
             android.content.SharedPreferences sp =
                     getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE);
-            sp.edit().putString("fpJson", jsonMd5).apply();
-            File rcache = new File(getApplicationContext().getFilesDir(), "last_rules.json");
-            if (rcache.exists()) sp.edit().putString("fpRules", md5(rcache)).apply();
+            return contentMd5.equals(sp.getString("prompt_" + kind + "_md5", null))
+                    && System.currentTimeMillis() - sp.getLong("prompt_" + kind + "_at", 0)
+                            < PROMPT_THROTTLE_MS;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** 记录某类数据（book/rules）最近一次深链唤起的内容版本与时间（非成功凭证）。 */
+    private void markPrompted(String kind, String contentMd5) {
+        try {
+            getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("prompt_" + kind + "_md5", contentMd5)
+                    .putLong("prompt_" + kind + "_at", System.currentTimeMillis())
+                    .apply();
         } catch (Exception ignored) {}
     }
 

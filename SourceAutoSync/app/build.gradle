@@ -12,8 +12,9 @@ android {
         // 不降 minSdk 以免扩大兼容面）。目标设备 vivo X200 Pro。
         minSdk 33
         targetSdk 34
-        versionCode 20
-        versionName '5.0'
+        // v5.1：深链状态机 P1 修复（唤起≠完成，72h 独立节流），行为变更不可与 5.0 混同
+        versionCode 21
+        versionName '5.1'
     }
 
     signingConfigs {
