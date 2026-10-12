@@ -1,18 +1,17 @@
 {
- "generatedAt": 1791621688375,
+ "generatedAt": 1791823958718,
  "oldRef": "HEAD",
  "matrix": {
-  "untestable->removed": 4,
-  "available->available": 62,
-  "available->untestable": 3,
-  "available->broken": 4,
-  "untestable->untestable": 228,
-  "untestable->available": 2,
-  "broken->available": 3,
-  "broken->untestable": 3,
-  "broken->broken": 77,
-  "untestable->broken": 5,
-  "broken->removed": 3
+  "untestable->removed": 6,
+  "available->available": 61,
+  "broken->removed": 3,
+  "broken->broken": 79,
+  "broken->available": 2,
+  "available->untestable": 5,
+  "untestable->available": 3,
+  "untestable->untestable": 227,
+  "broken->untestable": 6,
+  "available->broken": 1
  },
- "addedSources": 6
+ "addedSources": 3
 }
