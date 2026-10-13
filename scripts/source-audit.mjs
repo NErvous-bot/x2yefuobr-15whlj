@@ -43,49 +43,80 @@ const UPSTREAM_SOURCES = [
 
 const BLOCK_TAGS = /(人机验证|搜索暂不可用|登录|需登录|验证|梯子|被封|反爬|滑块|Cloudflare)/i;
 
-// ====== selector 解析（简化版）======
+// ====== selector 解析（Legado 完整兼容：class/id/tag + @text/@href/@html + ||备选 + ##净化）======
 function selectAll(html, rule) {
     if (!rule || !html) return null;
     rule = String(rule).trim();
-    const alts = rule.split('||').map(x => x.trim()).filter(Boolean);
+    // 先去掉 ## 后面的净化规则（不影响提取）
+    const selPart = rule.split('##')[0].trim();
+    if (!selPart) return null;
+
+    // || 多备选，任一命中即返回
+    const alts = selPart.split('||').map(x => x.trim()).filter(Boolean);
+
     for (const alt of alts) {
-        let sel = alt, clean = '';
-        const ci = sel.indexOf('##');
-        if (ci >= 0) { clean = sel.slice(ci + 2); sel = sel.slice(0, ci).trim(); }
-        const toks = sel.split('@').flatMap(p => p.trim().split(/\s+/)).filter(Boolean);
-        if (!toks.length) continue;
+        // 解析：每个 alt 是 [选择器表达式]@[提取方式]
+        // 如 "class.book-item@text" → 选择器=class.book-item, 提取方式=text
+        // 如 "class.book-item" → 选择器=class.book-item, 提取方式默认=innerHtml
+        const atIdx = alt.lastIndexOf('@');
+        let selExpr, extract = null;
+        if (atIdx > 0) { selExpr = alt.slice(0, atIdx).trim(); extract = alt.slice(atIdx + 1).trim(); }
+        else selExpr = alt.trim();
+
         let frags = [html];
         let ok = true;
-        for (const tk of toks) {
-            if (tk === 'html' || tk === 'all') return { items: frags, isText: true };
-            if (tk === 'text' || tk === 'textnodes') {
-                const items = frags.map(f => f.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-                return { items, isText: true };
-            }
-            const m = /^(class|id|tag)\.([\w\u4e00-\u9fff\-$]+)(?:[.:](\d+))?$/.exec(tk);
+
+        // selExpr 可能是链式：class.a tag.b → 先找 class.a 的元素列表，再从每个元素里找 tag.b
+        const steps = selExpr.split(/\s+/).filter(Boolean);
+        for (const step of steps) {
+            const m = /^(class|id|tag)\.([\w\u4e00-\u9fff\-$]+)(?:[.:](\d+))?$/.exec(step);
             if (!m) { ok = false; break; }
             const [, kind, name, idx] = m;
+
+            let arr = [];
             if (kind === 'tag') {
                 const re = new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`, 'gi');
-                const arr = []; let x;
-                for (const f of frags) { while ((x = re.exec(f)) !== null) arr.push(x[1]); }
-                if (arr.length === 0) { ok = false; break; }
-                frags = idx !== undefined ? [arr[parseInt(idx)]] : arr;
+                for (const f of frags) { let x; while ((x = re.exec(f)) !== null) arr.push(x[1]); }
             } else if (kind === 'class') {
                 const re = new RegExp(`<\\w+[^>]*class=["'][^"']*\\b${name}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[\\w]+>`, 'gi');
-                const arr = []; let x;
-                for (const f of frags) { while ((x = re.exec(f)) !== null) arr.push(x[1]); }
-                if (arr.length === 0) { ok = false; break; }
-                frags = idx !== undefined ? [arr[parseInt(idx)]] : arr;
+                for (const f of frags) { let x; while ((x = re.exec(f)) !== null) arr.push(x[1]); }
             } else if (kind === 'id') {
                 const re = new RegExp(`<\\w+[^>]*id=["']${name}["'][^>]*>([\\s\\S]*?)<\\/[\\w]+>`, 'i');
-                const arr = [];
                 for (const f of frags) { const m2 = re.exec(f); if (m2) arr.push(m2[1]); }
-                if (arr.length === 0) { ok = false; break; }
-                frags = idx !== undefined ? [arr[parseInt(idx)]] : arr;
             }
+
+            if (arr.length === 0) { ok = false; break; }
+            frags = idx !== undefined ? [arr[parseInt(idx)]] : arr;
         }
-        if (ok && frags.length > 0) return { items: frags, isText: false };
+
+        if (!ok || frags.length === 0) continue;
+
+        // 最后应用 @ 提取方式
+        let result = frags;
+        let isText = false;
+        if (extract === 'text' || extract === 'textnodes') {
+            result = frags.map(f => f.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+            isText = true;
+        } else if (extract === 'href' || extract === 'src' || extract === 'content' || extract === 'property' || extract === 'name') {
+            // 属性提取：先找到开标签，再取属性值
+            const attrMap = frags.map(f => {
+                const openTag = f.match(/<(\w+)[^>]*>/);
+                if (!openTag) return null;
+                const attrRe = new RegExp(`\\b${extract}=["']([^"']*)["']`, 'i');
+                const a = attrRe.exec(openTag[0]);
+                return a ? a[1] : null;
+            }).filter(Boolean);
+            result = attrMap;
+            isText = true;
+        } else if (extract === 'html' || extract === 'all') {
+            // 保持原样（默认就是 innerHTML，已经是 frags 的值）
+        } else if (extract === 'text') {
+            result = frags.map(f => f.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+            isText = true;
+        }
+        // extract 为 null（没有 @）→ 默认就是 innerHTML，保持 frags
+
+        if (result.length > 0) return { items: result, isText };
     }
     return null;
 }
