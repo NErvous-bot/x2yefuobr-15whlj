@@ -34,6 +34,8 @@ jobs:
           node score.js
           node fuse.js
           node sign.js
+        env:
+          ED25519_KEY: ${{ secrets.ED25519_KEY }}
       - name: 成品校验
         run: |
           node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
