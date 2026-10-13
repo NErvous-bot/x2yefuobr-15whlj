@@ -83,8 +83,13 @@ function selectAll(html, rule) {
                 if (m) { try { json = JSON.parse(m[1].trim()); } catch {} }
             }
             if (!json) continue;
-            const items = walkJson(json, alt);
-            if (items && items.length > 0) return { items: items.map(String), isText: true };
+            let items = walkJson(json, alt);
+            if (items && items.length > 0) {
+                // walkJson 可能返回嵌套数组（如 $.data 返回 API 的数组被包了一层）
+                items = items.flatMap(n => Array.isArray(n) ? n : [n]);
+                if (items.length === 0) continue;
+                return { items, isText: false };
+            }
             continue;
         }
 
@@ -156,10 +161,27 @@ function selectAll(html, rule) {
 }
 
 function pickOne(item, rule) {
-    if (!rule || typeof rule !== 'string') return typeof item === 'string' ? item : (item?.bookUrl || item?.url || null);
+    // rule 是 JSONPath 且 item 是对象：直接在对象上 walkJson
+    if (rule && typeof rule === 'string' && rule.startsWith('$')) {
+        if (item && typeof item === 'object') {
+            const v = walkJson(item, rule);
+            if (v?.length) return String(v[0]);
+        }
+    }
+    if (!rule || typeof rule !== 'string') {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+            return item.bookUrl || item.book_id || item.bookId || item.url || item._id || null;
+        }
+        return null;
+    }
     const r = selectAll(typeof item === 'string' ? item : JSON.stringify(item), rule);
     if (r?.items?.length) return String(r.items[0]).trim();
-    return typeof item === 'string' ? item : (item?.bookUrl || item?.url || null);
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+        return item.bookUrl || item.book_id || item.bookId || item.url || item._id || null;
+    }
+    return null;
 }
 
 // ====== 工具 ======
