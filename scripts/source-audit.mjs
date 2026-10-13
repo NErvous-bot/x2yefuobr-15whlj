@@ -43,18 +43,52 @@ const UPSTREAM_SOURCES = [
 
 const BLOCK_TAGS = /(人机验证|搜索暂不可用|登录|需登录|验证|梯子|被封|反爬|滑块|Cloudflare)/i;
 
-// ====== selector 解析（Legado 完整兼容：class/id/tag + @text/@href/@html + ||备选 + ##净化）======
+// ====== JSONPath 简化解析（$.data, $.data[*].name, $.data.books[*].url）======
+function walkJson(obj, path) {
+    if (!path.startsWith('$')) return null;
+    const parts = path.slice(1).split(/[.\[\]]+/).filter(Boolean);
+    let nodes = [obj];
+    for (const p of parts) {
+        if (p === '*') {
+            nodes = nodes.flatMap(n => Array.isArray(n) ? n : Object.values(n || {}));
+        } else if (/^\d+$/.test(p)) {
+            const idx = parseInt(p);
+            nodes = nodes.map(n => Array.isArray(n) ? n[idx] : undefined).filter(v => v !== undefined);
+        } else {
+            nodes = nodes.map(n => n?.[p]).filter(v => v !== undefined);
+        }
+        if (nodes.length === 0) return null;
+    }
+    return nodes;
+}
+
+// ====== selector 解析（Legado 完整兼容：JSONPath + class/id/tag + @提取 + ||备选 + ##净化）======
 function selectAll(html, rule) {
     if (!rule || !html) return null;
     rule = String(rule).trim();
-    // 先去掉 ## 后面的净化规则（不影响提取）
     const selPart = rule.split('##')[0].trim();
     if (!selPart) return null;
-
-    // || 多备选，任一命中即返回
     const alts = selPart.split('||').map(x => x.trim()).filter(Boolean);
 
     for (const alt of alts) {
+        // ---- JSONPath 分支 ----
+        if (alt.startsWith('$')) {
+            let json = null;
+            const trimmed = html.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                try { json = JSON.parse(trimmed); } catch { json = null; }
+            } else {
+                // 可能包在 <pre> 或 <script> 里
+                const m = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i) || html.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+                if (m) { try { json = JSON.parse(m[1].trim()); } catch {} }
+            }
+            if (!json) continue;
+            const items = walkJson(json, alt);
+            if (items && items.length > 0) return { items: items.map(String), isText: true };
+            continue;
+        }
+
+        // ---- HTML selector 分支 ----
         // 解析：每个 alt 是 [选择器表达式]@[提取方式]
         // 如 "class.book-item@text" → 选择器=class.book-item, 提取方式=text
         // 如 "class.book-item" → 选择器=class.book-item, 提取方式默认=innerHtml
@@ -173,15 +207,23 @@ function isRealSearchItem(raw) {
     return clean.length > 5 && !/文章名称|最新章节|作者|th>|<th/i.test(clean);
 }
 
+// ====== Debug 开关 ======
+const DEBUG = process.env.DEBUG_PHASE === '1';
+
 // ====== 阶段 ======
 async function phaseA(page, source) {
     for (const kw of PHASE_A_TESTS) {
-        const html = await pwGet(page, buildSearchUrl(source, kw));
-        if (!html) continue;
+        const url = buildSearchUrl(source, kw);
+        if (DEBUG) console.log(`    [debug] 搜 "${kw}" → ${url.slice(0, 100)}`);
+        const html = await pwGet(page, url);
+        if (!html) { if (DEBUG) console.log('    [debug] HTML 空'); continue; }
+        if (DEBUG) console.log(`    [debug] HTML 长度=${html.length}, 前200字: ${html.slice(0, 200).replace(/\s+/g, ' ')}`);
         const items = selectAll(html, source.ruleSearch?.bookList)?.items;
+        if (DEBUG) console.log(`    [debug] ruleSearch.bookList="${source.ruleSearch?.bookList}", items=${items?.length || 0}`);
         if (!items?.length) continue;
+        if (DEBUG) console.log(`    [debug] 第一个 item: ${String(items[0]).slice(0, 150)}`);
         const realItem = items.find(isRealSearchItem);
-        if (!realItem) continue;
+        if (!realItem) { if (DEBUG) console.log('    [debug] 全是假数据'); continue; }
         let detailUrl = source.ruleSearch?.bookUrl
             ? pickOne(realItem, source.ruleSearch.bookUrl)
             : (typeof realItem === 'string' ? realItem : (realItem.bookUrl || realItem.url));
