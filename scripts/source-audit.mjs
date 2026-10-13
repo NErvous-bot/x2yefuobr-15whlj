@@ -234,14 +234,22 @@ async function fetchHotBooks(page) {
             for (const sel of src.sels) {
                 const names = await page.evaluate((s) => {
                     const out = [];
+                    // 乱码检测：排除私人区（iconfont 替换常用）+ 控制字符 + 不可见字符
+                    const isClean = (t) => {
+                        // 私人区 E000-F8FF、E0100-E01EF、FFF0-FFFF 等
+                        if (/[\uE000-\uF8FF\uFFF0-\uFFFF]/.test(t)) return false;
+                        // 控制字符（除换行制表）
+                        if (/[\u0000-\u0008\u000B-\u001F\u007F]/.test(t)) return false;
+                        // 汉字占比必须 ≥ 60%（排除纯英文/符号）
+                        const han = (t.match(/[\u4e00-\u9fff]/g) || []).length;
+                        return han / t.length >= 0.6;
+                    };
                     document.querySelectorAll(s).forEach(el => {
                         const t = (el.textContent || el.getAttribute('title') || '').trim();
                         if (t && t.length >= 2 && t.length <= 20
                             && !/^\d+$/.test(t)
                             && !/排行榜|分类|首页|书库|完本|连载/.test(t)
-                            // 排除乱码（含替换字符或非中文/英文的）
-                            && !/\uFFFD/.test(t)
-                            && /[\u4e00-\u9fa5]/.test(t)) out.push(t);
+                            && isClean(t)) out.push(t);
                     });
                     return [...new Set(out)];
                 }, sel);
