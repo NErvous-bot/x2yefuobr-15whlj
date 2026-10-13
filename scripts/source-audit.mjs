@@ -199,35 +199,60 @@ async function launchBrowser() {
     catch { throw new Error('Playwright Chromium + system Chrome 都不可用'); } }
 }
 
+// 近年活跃男频（混合完本+连载，2024-2025 仍有热度）
+const RECENT_ACTIVE_BOOKS = [
+    '诡秘之主', '夜无疆', '玄鉴仙族', '没钱修什么仙？', '青山', '武道！',
+    '原来我是仙道天骄', '捞尸人', '剑烛大荒', '神农道君', '北望江山', '廓晋',
+    '我师兄实在太稳健了', '修仙：从金丹圆满开始', '神话版三国', '放开那个女巫',
+    '诡秘之主2', '宿命之环', '全职高手', '斗破苍穹', '凡人修仙传', '斗罗大陆'
+];
+
 async function fetchHotBooks(page) {
-    // 只抓男频多源合并，避免单一平台偏差
     const HOT_URLS = [
-        { label: '起点畅销榜',  url: 'https://www.qidian.com/rank/hotsales/',  sel: 'h2 a, .rank-book-name, .bookname a' },
-        { label: '起点阅读榜',  url: 'https://www.qidian.com/rank/readIndex/', sel: 'h2 a, .rank-book-name, .bookname a' },
-        { label: '起点新书榜',  url: 'https://www.qidian.com/rank/newbook/',   sel: 'h2 a, .rank-book-name, .bookname a' },
-        { label: '番茄男频热榜', url: 'https://fanqienovel.com/rank/hot_male', sel: 'a[href*="/page/"], .book-name, h3, h4' },
+        { label: '起点畅销榜',  url: 'https://www.qidian.com/rank/hotsales/',  sels: ['h2 a', '.rank-book-name', '.bookname a', 'a[href*="/book/"]'] },
+        { label: '起点阅读榜',  url: 'https://www.qidian.com/rank/readIndex/', sels: ['h2 a', '.rank-book-name', '.bookname a', 'a[href*="/book/"]'] },
+        { label: '起点新书榜',  url: 'https://www.qidian.com/rank/newbook/',   sels: ['h2 a', '.rank-book-name', '.bookname a', 'a[href*="/book/"]'] },
+        { label: '起点月票榜',  url: 'https://www.qidian.com/rank/tickets/',    sels: ['h2 a', '.rank-book-name', '.bookname a', 'a[href*="/book/"]'] },
+        { label: '番茄男频热榜', url: 'https://fanqienovel.com/rank/hot_male', sels: ['a[href*="/page/"]', '.book-name', 'h3', 'h4'] },
     ];
     const books = new Set();
-    const sourceCount = {}; // 追踪每源贡献
 
     for (const src of HOT_URLS) {
         try {
             await page.goto(src.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-            await page.waitForTimeout(2500);
-            const names = await page.evaluate((sel) => {
-                const out = [];
-                document.querySelectorAll(sel).forEach(el => {
-                    const t = (el.textContent || el.getAttribute('title') || '').trim();
-                    if (t && t.length >= 2 && t.length <= 20 && !/^\d+$/.test(t) && !/排行榜|分类|首页/.test(t)) out.push(t);
-                });
-                return [...new Set(out)];
-            }, src.sel);
-            const added = [];
-            names.forEach(n => { if (!books.has(n)) { books.add(n); added.push(n); } });
-            sourceCount[src.label] = added.length;
-            console.log(`  ${src.label}: +${added.length} 本`);
+            await page.waitForTimeout(3000);
+
+            // 先检测是否被反爬（Safety check / 验证 等）
+            const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 500) || '');
+            if (/safety|验证|人机|Cloudflare|Just a moment/i.test(bodyText)) {
+                console.log(`  ${src.label}: 反爬拦截`);
+                continue;
+            }
+
+            // 多 selector 遍历取并集
+            const found = new Set();
+            for (const sel of src.sels) {
+                const names = await page.evaluate((s) => {
+                    const out = [];
+                    document.querySelectorAll(s).forEach(el => {
+                        const t = (el.textContent || el.getAttribute('title') || '').trim();
+                        if (t && t.length >= 2 && t.length <= 20
+                            && !/^\d+$/.test(t)
+                            && !/排行榜|分类|首页|书库|完本|连载/.test(t)
+                            // 排除乱码（含替换字符或非中文/英文的）
+                            && !/\uFFFD/.test(t)
+                            && /[\u4e00-\u9fa5]/.test(t)) out.push(t);
+                    });
+                    return [...new Set(out)];
+                }, sel);
+                names.forEach(n => found.add(n));
+            }
+
+            let added = 0;
+            found.forEach(n => { if (!books.has(n)) { books.add(n); added++; } });
+            console.log(`  ${src.label}: +${added} 本`);
         } catch (e) {
-            console.log(`  ${src.label}: 抓取失败`);
+            console.log(`  ${src.label}: 抓取失败 (${String(e.message || e).slice(0, 60)})`);
         }
     }
 
@@ -237,14 +262,21 @@ async function fetchHotBooks(page) {
         const j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    const picked = arr.slice(0, 3);
-    if (picked.length < 3) {
-        console.log(`  ⚠ 热榜只抓到 ${picked.length} 本（共 ${arr.length}），补完本 fallback`);
-        const fb = GOLDEN_BOOKS.slice(0, 3 - picked.length);
-        return [...picked, ...fb];
+
+    if (arr.length >= 3) {
+        console.log(`  📚 多源合并: ${arr.length} 本（去重后）`);
+        return arr.slice(0, 3);
     }
-    console.log(`  📚 多源合并: ${arr.length} 本（去重后）`);
-    return picked;
+
+    // Fallback：近年活跃书单（shuffle 后抽）
+    console.log(`  ⚠ 热榜只抓到 ${arr.length} 本，用近年活跃书 fallback`);
+    const fb = [...RECENT_ACTIVE_BOOKS];
+    for (let i = fb.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fb[i], fb[j]] = [fb[j], fb[i]];
+    }
+    // 热榜抓到的排在前面，补够 3 个
+    return [...arr, ...fb.slice(0, 3 - arr.length)];
 }
 
 async function pwGet(page, url) {
