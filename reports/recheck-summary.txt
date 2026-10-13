@@ -2,21 +2,22 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   60  available->available
+   61  available->available
     1  available->broken
-    7  available->untestable
+    1  available->untestable
     1  broken->available
-   78  broken->broken
+   80  broken->broken
+    3  broken->removed
     2  broken->untestable
-    2  untestable->available
-    4  untestable->broken
-    1  untestable->removed
-  228  untestable->untestable
-新增源 3
+    8  untestable->available
+    5  untestable->broken
+    3  untestable->removed
+  221  untestable->untestable
+新增源 10
 
 ━━ 一级复查：旧可用 → 确认坏 1 ━━
-  SUSPECT 1
-  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,PASS,CHAPTER_EMPTY,CONTENT_EMPTY | 特征: GBK
+  RECOVERED 1
+  [RECOVERED 5/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,PASS
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
