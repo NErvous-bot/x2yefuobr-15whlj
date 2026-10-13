@@ -36,7 +36,7 @@
       "chapterUrl": "tag.a@href"
     },
     "searchUrl": "https://www.dingdian888.com/s.php,{\n  \"body\": \"s={{key}}&submit=\",\n  \"method\": \"POST\"\n}",
-    "weight": 2700
+    "weight": 3700
   },
   {
     "bookSourceComment": "",
@@ -78,7 +78,7 @@
       "chapterUrl": "href"
     },
     "searchUrl": "http://www.booksky.cc/modules/article/search.php?searchkey={{key}}",
-    "weight": 2700,
+    "weight": 3700,
     "lastUsableCheck": 1791138359292
   },
   {
@@ -86,7 +86,7 @@
       "content": "id.chaptercontent@textNodes"
     },
     "ruleExplore": {},
-    "weight": 2700,
+    "weight": 3700,
     "bookSourceGroup": "小说",
     "loginUrl": "",
     "searchUrl": "/modules/article/search.php?searchkey={{key}}",
@@ -175,7 +175,7 @@
       "nextTocUrl": "text.下一页@href"
     },
     "searchUrl": "/s.php?q={{key}}",
-    "weight": 2380,
+    "weight": 3380,
     "lastUsableCheck": 1791138359292
   },
   {
@@ -221,7 +221,7 @@
       "chapterUrl": "a@href"
     },
     "searchUrl": "http://www.yetianlian.info/s.php?ie=utf-8&q={{key}}",
-    "weight": 2380,
+    "weight": 3380,
     "lastUsableCheck": 1791173964833
   },
   {
@@ -16716,6 +16716,98 @@
     "_last_validated_at": "2026-10-04T07:44:22.978154"
   },
   {
+    "bookSourceGroup": "API",
+    "bookSourceName": "酷我小说",
+    "bookSourceType": 0,
+    "bookSourceUrl": "http://appi.kuwo.cn",
+    "customOrder": 4,
+    "enabled": true,
+    "enabledCookieJar": true,
+    "enabledExplore": false,
+    "header": "{\n\t\"Accept\": \"*/*\",\n\t\"Connection\": \"Close\",\n\t\"User-Agent\": \"Dalvik/2.1.0 (Linux; U; Android 8.0.0; LND-AL40 Build/HONORLND-AL40)\"\n}",
+    "lastUpdateTime": 1791916803320,
+    "respondTime": 5653,
+    "ruleBookInfo": {
+      "author": "$.author_name",
+      "coverUrl": "$.cover_url",
+      "init": "$.data",
+      "intro": "$.intro##(^|[。！？]+[”」）】]?)##$1<br>",
+      "kind": "{{$.category_name}},{{$.status}},{{$.update_time}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\").replace(/\\s..:.*/,\"\")",
+      "lastChapter": "$.new_chapter_name##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "name": "$.title",
+      "tocUrl": "/novels/api/book/{{$.book_id}}/chapters?paging=0",
+      "wordCount": "$.all_words"
+    },
+    "ruleContent": {
+      "content": "$.data.content"
+    },
+    "ruleExplore": {},
+    "ruleSearch": {
+      "author": "$.author_name",
+      "bookList": "$.data",
+      "bookUrl": "/novels/api/book/{{$.book_id}}",
+      "coverUrl": "$.cover_url",
+      "intro": "$.intro",
+      "kind": "{{$.category_name}},{{$.status}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\")",
+      "name": "$.title",
+      "wordCount": "$.all_words"
+    },
+    "ruleToc": {
+      "chapterList": "$.data",
+      "chapterName": "$.chapter_title##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "chapterUrl": "/novels/api/book/{{$.book_id}}/chapters/{{$.chapter_id}}",
+      "updateTime": "{{$.volume_name}}•{{$.original_words}}字"
+    },
+    "searchUrl": "/novels/api/book/search?keyword={{key}}&pi={{page}}&ps=30",
+    "weight": 900
+  },
+  {
+    "bookSourceGroup": "API",
+    "bookSourceName": "酷我小说",
+    "bookSourceType": 0,
+    "bookSourceUrl": "http://appi.kuwo.cn",
+    "customOrder": 4,
+    "enabled": true,
+    "enabledCookieJar": true,
+    "enabledExplore": false,
+    "header": "{\n\t\"Accept\": \"*/*\",\n\t\"Connection\": \"Close\",\n\t\"User-Agent\": \"Dalvik/2.1.0 (Linux; U; Android 8.0.0; LND-AL40 Build/HONORLND-AL40)\"\n}",
+    "lastUpdateTime": 1791916803320,
+    "respondTime": 5653,
+    "ruleBookInfo": {
+      "author": "$.author_name",
+      "coverUrl": "$.cover_url",
+      "init": "$.data",
+      "intro": "$.intro##(^|[。！？]+[”」）】]?)##$1<br>",
+      "kind": "{{$.category_name}},{{$.status}},{{$.update_time}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\").replace(/\\s..:.*/,\"\")",
+      "lastChapter": "$.new_chapter_name##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "name": "$.title",
+      "tocUrl": "/novels/api/book/{{$.book_id}}/chapters?paging=0",
+      "wordCount": "$.all_words"
+    },
+    "ruleContent": {
+      "content": "$.data.content"
+    },
+    "ruleExplore": {},
+    "ruleSearch": {
+      "author": "$.author_name",
+      "bookList": "$.data",
+      "bookUrl": "/novels/api/book/{{$.book_id}}",
+      "coverUrl": "$.cover_url",
+      "intro": "$.intro",
+      "kind": "{{$.category_name}},{{$.status}}@js:result.replace(/30/,\"连载\").replace(/50/,\"完结\")",
+      "name": "$.title",
+      "wordCount": "$.all_words"
+    },
+    "ruleToc": {
+      "chapterList": "$.data",
+      "chapterName": "$.chapter_title##正文卷.|正文.|VIP卷.|默认卷.|卷_|VIP章节.|免费章节.|章节目录.|最新章节.|[\\(（【].*?[求更票谢乐发订合补加架字修Kk].*?[】）\\)]",
+      "chapterUrl": "/novels/api/book/{{$.book_id}}/chapters/{{$.chapter_id}}",
+      "updateTime": "{{$.volume_name}}•{{$.original_words}}字"
+    },
+    "searchUrl": "/novels/api/book/search?keyword={{key}}&pi={{page}}&ps=30",
+    "weight": 900
+  },
+  {
     "bookSourceComment": "",
     "bookSourceGroup": "6666666666666666",
     "bookSourceName": "🎃飞卢小说🎃#2",
@@ -16946,7 +17038,7 @@
       "bookUrl": "a@href",
       "name": "tag.p.0@text"
     },
-    "weight": 112,
+    "weight": 45,
     "bookSourceGroup": "小说",
     "searchUrl": "/search/,{\n  \"body\": \"searchkey={{key}}\",\n  \"method\": \"POST\",\n  \"webView\": true\n}",
     "ruleSearch": {
@@ -17002,7 +17094,7 @@
       "bookUrl": "a@href",
       "name": "tag.p.0@text"
     },
-    "weight": 112,
+    "weight": 45,
     "bookSourceGroup": "小说",
     "searchUrl": "/search/,{\n  \"body\": \"searchkey={{key}}\",\n  \"method\": \"POST\",\n  \"webView\": true\n}",
     "ruleSearch": {
@@ -17078,7 +17170,7 @@
       "replaceRegex": "##.*未完.*下一.*阅读.*"
     },
     "searchUrl": "/search.php?searchkey={{key}}",
-    "weight": 112,
+    "weight": 45,
     "enabledExplore": true,
     "header": "{\"User-Agent\":\"Mozilla/5.0 (Linux; U; Android 13; zh-Hans-CN; PFJM10 Build/TP1A.251121.001) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.4896.58 Quark/10.0.6.960 Mobile Safari/537.36\",\"Accept-Language\":\"zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7\"}",
     "ruleToc": {
@@ -18091,7 +18183,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "http://www.tshu8.com/search.php?q={{key}}",
-    "weight": 252
+    "weight": 151
   },
   {
     "bookSourceComment": "",
@@ -18777,7 +18869,7 @@
       "preUpdateJs": ""
     },
     "searchUrl": "s.php?q={{key}}&submit=",
-    "weight": 112,
+    "weight": 45,
     "lastUsableCheck": 1791138359292
   },
   {
@@ -18959,7 +19051,7 @@
       "content": "#ml_imgs@textNodes"
     },
     "searchUrl": "s/,{\n  \"body\": \"s= &s={{key}}\",\n  \"method\": \"POST\"\n}",
-    "weight": 112,
+    "weight": 45,
     "enabledExplore": true,
     "bookSourceComment": "",
     "ruleToc": {
@@ -19033,7 +19125,7 @@
       "nextTocUrl": ".pagination@li.0@a@text\n<js>\n//java.log(result);\nif (res = String(result).match(/\\/(\\d+)/)) {\n  data = [];\n  for (i = 2; i <= res[1]; i++) {\n    data.push(baseUrl.replace(/\\/$/, \"/index_\" + i + \".html\"));\n  }\n  data;\n}\n</js>"
     },
     "searchUrl": "http://www.22mt.net/search.php?q={{key}}&p={{page}}",
-    "weight": 252
+    "weight": 151
   },
   {
     "bookSourceComment": "",
@@ -19081,7 +19173,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 252,
+    "weight": 151,
     "lastUsableCheck": 1791173964833
   },
   {
@@ -19122,7 +19214,7 @@
       "replaceRegex": "##本章未完.*|第.*[(1/2)]页|(?:[^\\u4E00-\\u9FA5\\s！？。”」]|[一二三四五六七八九零壹贰叁肆伍陆柒捌玖点丶]){4,}(?<![\\.．点丶。])[\\.．点丶。]{1,2}(?![\\.．点丶。])(?:[^A-Z\\u4E00-\\u9FA5\\s！？“「]|[一二三四五六七八九零壹贰叁肆伍陆柒捌玖点丶])(?:[^\\u4E00-\\u9FA5\\s！？“「]|[一二三四五六七八九零壹贰叁肆伍陆柒捌玖点丶])+|(?:[^\\u4E00-\\u9FA5\\n！？。”」]|[一二三四五六七八九零壹贰叁肆伍陆柒捌玖点丶]){4,}[\\.．点丶。](?:[^\\n\\u4E00-\\u9FA5A-z]*[cC][^\\n\\u4E00-\\u9FA5A-z]*[oO][^\\n\\u4E00-\\u9FA5A-z]*[mM]|[^\\n\\u4E00-\\u9FA5A-z]*[cC][^\\n\\u4E00-\\u9FA5A-z]*[nN]|[^\\n\\u4E00-\\u9FA5A-z]*[nN][^\\n\\u4E00-\\u9FA5A-z]*[eE][^\\n\\u4E00-\\u9FA5A-z]*[tT])(?![A-z])"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 252,
+    "weight": 151,
     "enabledExplore": true,
     "bookSourceComment": "",
     "ruleToc": {
@@ -19197,7 +19289,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 252
+    "weight": 151
   },
   {
     "bookSourceComment": "",
@@ -19245,7 +19337,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 252
+    "weight": 151
   },
   {
     "bookSourceComment": "",
@@ -19304,7 +19396,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 252
+    "weight": 151
   },
   {
     "ruleExplore": {
@@ -19426,7 +19518,7 @@
       "nextTocUrl": ".page-link@a@href\n@js:\nnext = [];\nurl = result[0];\nlength = result.length;\np = src.match(/page-link\">1\\/(\\d+)/)||[];\npage = Number(p[1]);\nif(length < page){\n\tfor(i = 2; i <= page; i++){\n\t\tlink = String(url).replace(/_\\d+/,`_${i}`);\n\t\tnext.push(link)\n\t\t}\n\t\tnext;\n\t}else result"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 169
+    "weight": 101
   },
   {
     "bookSourceComment": "",
@@ -19516,7 +19608,7 @@
     },
     "searchUrl": "/search.php?q={{key}}<,&p={{page}}>",
     "variableComment": "",
-    "weight": 70,
+    "weight": 28,
     "_validation_status": "valid",
     "_last_validated_at": "2026-09-27T07:31:44.367403"
   },
@@ -19564,7 +19656,7 @@
       "nextTocUrl": ".page-link.0@text##\\d+\\/(\\d+)##$1\n@js:\nres = JSON.parse(result)\nlist = [];\nfor (var i = 2; i <= res; i++) {\n\tlist.push(baseUrl.replace(/\\/$/,\"/index_\" + i + \".html\")); \n}\nlist;"
     },
     "searchUrl": "/search.php?q={{key}}&p={{page}}",
-    "weight": 158,
+    "weight": 95,
     "lastUsableCheck": 1791173964833
   },
   {
@@ -20102,7 +20194,7 @@
       "replaceRegex": "##下一章继续阅读"
     },
     "searchUrl": "/s.php,{method:\"post\",body:\"type=articlename&s={{key}}&submit=\"}",
-    "weight": 2,
+    "weight": 0,
     "enabledExplore": true,
     "header": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\",\n  \"Referer\": \"https://m.41nr.com/\"\n}",
     "ruleToc": {
@@ -20132,7 +20224,7 @@
       "content": ".content@p@textNodes"
     },
     "searchUrl": "/k/{{key}}?page={{page}}#nw",
-    "weight": 15,
+    "weight": 3,
     "enabledExplore": true,
     "ruleToc": {
       "chapterName": "h1@text",
@@ -20194,7 +20286,7 @@
       "isVip": "img@src"
     },
     "searchUrl": "/book/all.html?s={{key}}",
-    "weight": 15,
+    "weight": 3,
     "_validation_status": "valid",
     "_last_validated_at": "2026-09-27T07:31:47.358070",
     "lastUsableCheck": 1791179827768
@@ -20230,7 +20322,7 @@
       "chapterName": "@js:\"详细\""
     },
     "searchUrl": "http://dict.cn/{{key}}",
-    "weight": 15,
+    "weight": 3,
     "_validation_status": "valid",
     "_last_validated_at": "2026-09-27T07:31:48.143735"
   },
@@ -20277,7 +20369,7 @@
       "chapterUrl": "a@href"
     },
     "searchUrl": "<js>\nif(page==1){\nlet url = source.key+'e/search/index.php';\njava.webView('',url,'');\nc = cookie.getCookie(url);\nlet ua=java.getWebViewUA();\nlet body = `show=writer,title&keyboard=${encodeURI(key)}&Submit22=搜索`;\nuri = java.post(url,body,{\t'user-agent': ua}).header(\"location\");\nsource.put(\"shgui\",uri);\n}else{\nuri=String(source.get(\"shgui\")).replace(/\\-\\d{1}\\./,'-{{page}}.');\n}uri;\n</js>",
-    "weight": 15,
+    "weight": 3,
     "lastUsableCheck": 1791175916281
   },
   {
