@@ -229,6 +229,15 @@ function isRealSearchItem(raw) {
     return clean.length > 5 && !/文章名称|最新章节|作者|th>|<th/i.test(clean);
 }
 
+// ====== URL 模板渲染：{{$.field}} → 对象字段值 ======
+function renderTemplate(obj, template) {
+    if (!template || !obj || typeof obj !== 'object') return template;
+    return String(template).replace(/\{\{\s*(\$\.[^}]+)\s*\}\}/g, (m, path) => {
+        const v = walkJson(obj, path);
+        return v?.length ? String(v[0]) : '';
+    });
+}
+
 // ====== Debug 开关 ======
 const DEBUG = process.env.DEBUG_PHASE === '1';
 
@@ -246,27 +255,93 @@ async function phaseA(page, source) {
         if (DEBUG) console.log(`    [debug] 第一个 item: ${String(items[0]).slice(0, 150)}`);
         const realItem = items.find(isRealSearchItem);
         if (!realItem) { if (DEBUG) console.log('    [debug] 全是假数据'); continue; }
-        let detailUrl = source.ruleSearch?.bookUrl
-            ? pickOne(realItem, source.ruleSearch.bookUrl)
-            : (typeof realItem === 'string' ? realItem : (realItem.bookUrl || realItem.url));
+
+        // 构造 detailUrl：ruleSearch.bookUrl 可能是模板 "/xxx/{{$.book_id}}"
+        let detailUrl;
+        const bookUrlRule = source.ruleSearch?.bookUrl;
+        if (bookUrlRule && typeof bookUrlRule === 'string') {
+            if (bookUrlRule.includes('{{') && realItem && typeof realItem === 'object') {
+                detailUrl = renderTemplate(realItem, bookUrlRule);
+            } else if (bookUrlRule.startsWith('$')) {
+                const v = walkJson(realItem, bookUrlRule);
+                detailUrl = v?.length ? String(v[0]) : null;
+            } else if (typeof realItem === 'string') {
+                detailUrl = realItem;
+            } else {
+                detailUrl = pickOne(realItem, bookUrlRule);
+            }
+        } else {
+            detailUrl = typeof realItem === 'string' ? realItem : (realItem?.bookUrl || realItem?.url || null);
+        }
         detailUrl = absUrl(source, detailUrl);
-        if (detailUrl) return { pass: true, firstHit: { kw, detailUrl } };
+        if (DEBUG) console.log(`    [debug] detailUrl=${detailUrl}`);
+        if (detailUrl) return { pass: true, firstHit: { kw, detailUrl, searchItem: realItem } };
     }
     return { pass: false };
 }
 
 async function phaseB(page, source, firstHit) {
-    const tocHtml = await pwGet(page, firstHit.detailUrl);
+    // L2 目录：先确定目录 URL
+    let tocUrl = firstHit.detailUrl;
+
+    // 情况 1：ruleBookInfo.tocUrl 存在（API 源，目录从详情 JSON 拼）
+    const tocRule = source.ruleBookInfo?.tocUrl;
+    if (tocRule && typeof tocRule === 'string' && tocRule.includes('{{')) {
+        // 先抓详情 JSON
+        const detailHtml = await pwGet(page, firstHit.detailUrl);
+        if (!detailHtml) return { pass: false, reason: 'L2 详情页空' };
+        // parse detail JSON → 从 firstHit.searchItem + detail JSON 合并取字段
+        let detailObj = firstHit.searchItem && typeof firstHit.searchItem === 'object'
+            ? firstHit.searchItem
+            : null;
+        try { detailObj = { ...(detailObj || {}), ...JSON.parse(detailHtml) }; } catch(e) { /* not JSON */ }
+        tocUrl = renderTemplate(detailObj, tocRule);
+        tocUrl = absUrl(source, tocUrl);
+        if (DEBUG) console.log(`    [debug] ruleBookInfo.tocUrl → ${tocUrl}`);
+        if (!tocUrl) return { pass: false, reason: 'L2 目录 URL 拼不出' };
+    } else if (tocRule && tocRule.startsWith('$')) {
+        // ruleBookInfo.tocUrl 是 JSONPath（少见）
+        const detailHtml = await pwGet(page, firstHit.detailUrl);
+        let detailObj = firstHit.searchItem;
+        try { detailObj = { ...(detailObj||{}), ...JSON.parse(detailHtml) }; } catch(e){}
+        const v = walkJson(detailObj, tocRule);
+        tocUrl = absUrl(source, v?.length ? String(v[0]) : null);
+    }
+
+    // 情况 2：ruleSearch.bookUrl 是模板但没有 ruleBookInfo.tocUrl — detailUrl 已经是目录 API
+
+    const tocHtml = await pwGet(page, tocUrl);
     if (!tocHtml) return { pass: false, reason: 'L2 目录页空' };
+    if (DEBUG) console.log(`    [debug] tocHtml 长度=${tocHtml.length}, 前200字: ${tocHtml.slice(0, 200).replace(/\s+/g, ' ')}`);
+
     const chapItems = selectAll(tocHtml, source.ruleToc?.chapterList)?.items;
+    if (DEBUG) console.log(`    [debug] ruleToc.chapterList="${source.ruleToc?.chapterList}", chapItems=${chapItems?.length || 0}`);
     if (!chapItems?.length) return { pass: false, reason: 'L2 目录抓不到' };
     if (chapItems.length < L2_MIN_CHAPTERS) return { pass: false, reason: `L2 目录只有 ${chapItems.length} 章` };
-    let chapUrl = source.ruleToc?.chapterUrl
-        ? pickOne(chapItems[0], source.ruleToc.chapterUrl)
-        : (typeof chapItems[0] === 'string' ? chapItems[0] : (chapItems[0].chapterUrl || chapItems[0].url));
+
+    // 构造章节 URL：ruleToc.chapterUrl 可能是模板
+    let chapUrl;
+    const chapUrlRule = source.ruleToc?.chapterUrl;
+    if (chapUrlRule && typeof chapUrlRule === 'string') {
+        const firstChap = chapItems[0];
+        if (chapUrlRule.includes('{{') && firstChap && typeof firstChap === 'object') {
+            // 从目录 JSON 拼（也可能需要详情 JSON 的字段如 book_id）
+            const mergedObj = { ...(firstHit.searchItem || {}), ...firstChap };
+            chapUrl = renderTemplate(mergedObj, chapUrlRule);
+        } else if (chapUrlRule.startsWith('$')) {
+            const v = walkJson(firstChap, chapUrlRule);
+            chapUrl = v?.length ? String(v[0]) : null;
+        } else {
+            chapUrl = pickOne(firstChap, chapUrlRule);
+        }
+    } else {
+        chapUrl = typeof chapItems[0] === 'string' ? chapItems[0] : (chapItems[0]?.chapterUrl || chapItems[0]?.url);
+    }
     chapUrl = absUrl(source, chapUrl);
+    if (DEBUG) console.log(`    [debug] chapUrl=${chapUrl}`);
     if (!chapUrl) return { pass: false, reason: 'L2 章节 URL 拿不到' };
 
+    // L3 正文
     const chapHtml = await pwGet(page, chapUrl);
     if (!chapHtml) return { pass: false, reason: 'L3 正文页空' };
     const cr = selectAll(chapHtml, source.ruleContent?.content);
