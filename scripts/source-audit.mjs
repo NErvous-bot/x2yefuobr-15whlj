@@ -199,14 +199,6 @@ async function launchBrowser() {
     catch { throw new Error('Playwright Chromium + system Chrome 都不可用'); } }
 }
 
-// 近年活跃男频（混合完本+连载，2024-2025 仍有热度）
-const RECENT_ACTIVE_BOOKS = [
-    '诡秘之主', '夜无疆', '玄鉴仙族', '没钱修什么仙？', '青山', '武道！',
-    '原来我是仙道天骄', '捞尸人', '剑烛大荒', '神农道君', '北望江山', '廓晋',
-    '我师兄实在太稳健了', '修仙：从金丹圆满开始', '神话版三国', '放开那个女巫',
-    '诡秘之主2', '宿命之环', '全职高手', '斗破苍穹', '凡人修仙传', '斗罗大陆'
-];
-
 async function fetchHotBooks(page) {
     const HOT_URLS = [
         { label: '起点畅销榜',  url: 'https://www.qidian.com/rank/hotsales/',  sels: ['h2 a', '.rank-book-name', '.bookname a', 'a[href*="/book/"]'] },
@@ -236,11 +228,8 @@ async function fetchHotBooks(page) {
                     const out = [];
                     // 乱码检测：排除私人区（iconfont 替换常用）+ 控制字符 + 不可见字符
                     const isClean = (t) => {
-                        // 私人区 E000-F8FF、E0100-E01EF、FFF0-FFFF 等
                         if (/[\uE000-\uF8FF\uFFF0-\uFFFF]/.test(t)) return false;
-                        // 控制字符（除换行制表）
                         if (/[\u0000-\u0008\u000B-\u001F\u007F]/.test(t)) return false;
-                        // 汉字占比必须 ≥ 60%（排除纯英文/符号）
                         const han = (t.match(/[\u4e00-\u9fff]/g) || []).length;
                         return han / t.length >= 0.6;
                     };
@@ -271,20 +260,21 @@ async function fetchHotBooks(page) {
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
 
+    // 热榜 ≥ 3 本 → 直接用
     if (arr.length >= 3) {
         console.log(`  📚 多源合并: ${arr.length} 本（去重后）`);
         return arr.slice(0, 3);
     }
 
-    // Fallback：近年活跃书单（shuffle 后抽）
-    console.log(`  ⚠ 热榜只抓到 ${arr.length} 本，用近年活跃书 fallback`);
-    const fb = [...RECENT_ACTIVE_BOOKS];
-    for (let i = fb.length - 1; i > 0; i--) {
+    // Fallback: 经典完本 12 本 shuffle 抽 3
+    // 这些书盗版源覆盖广（之前验证酷我 Phase A 2/2 过）
+    console.log(`  ⚠ 热榜只抓到 ${arr.length} 本（反爬/乱码），fallback 经典完本书`);
+    const fallback = [...GOLDEN_BOOKS];
+    for (let i = fallback.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [fb[i], fb[j]] = [fb[j], fb[i]];
+        [fallback[i], fallback[j]] = [fallback[j], fallback[i]];
     }
-    // 热榜抓到的排在前面，补够 3 个
-    return [...arr, ...fb.slice(0, 3 - arr.length)];
+    return [...arr, ...fallback.slice(0, 3 - arr.length)];
 }
 
 async function pwGet(page, url) {
