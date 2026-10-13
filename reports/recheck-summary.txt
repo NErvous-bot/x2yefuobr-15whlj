@@ -2,24 +2,24 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   61  available->available
+   60  available->available
     1  available->broken
-    5  available->untestable
-    2  broken->available
-   79  broken->broken
-    3  broken->removed
-    6  broken->untestable
-    3  untestable->available
-    6  untestable->removed
-  227  untestable->untestable
+    7  available->untestable
+    1  broken->available
+   78  broken->broken
+    2  broken->untestable
+    2  untestable->available
+    4  untestable->broken
+    1  untestable->removed
+  228  untestable->untestable
 新增源 3
 
 ━━ 一级复查：旧可用 → 确认坏 1 ━━
-  REAL_DEATH_CANDIDATE 1
-  [REAL_DEATH_CANDIDATE 0/5] 版主bzbz | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY
+  SUSPECT 1
+  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,PASS,CHAPTER_EMPTY,CONTENT_EMPTY | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

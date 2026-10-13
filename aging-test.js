@@ -567,4 +567,4 @@ async function checkSource(s) {
     }
 }
 
-module.exports = { checkSource };
+module.exports = { checkSource, doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep, parseSearch };

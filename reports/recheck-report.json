@@ -1,13 +1,15 @@
 {
- "generatedAt": 1791823958719,
+ "generatedAt": 1791884257537,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "版主bzbz",
-   "url": "https://www.bzbz1024.com",
-   "traits": [],
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "traits": [
+    "GBK"
+   ],
    "oldNote": "三关全过",
-   "newNote": "目录为空",
+   "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": false,
@@ -18,8 +20,14 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     },
     {
      "pass": false,
@@ -30,17 +38,11 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
     }
    ],
-   "verdict": "REAL_DEATH_CANDIDATE"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": []
