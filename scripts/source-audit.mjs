@@ -24,7 +24,6 @@ const GOLDEN_BOOKS = [
     '斗罗大陆', '凡人修仙传', '诡秘之主', '全职高手', '遮天', '仙逆',
     '玄鉴仙族', '全球高武', '夜无疆', '斗破苍穹', '星辰变', '吞噬星空'
 ];
-const PHASE_A_TESTS = GOLDEN_BOOKS.slice(0, 3); // 快速筛用前 3 本
 const L1_MIN_HITS = 1;
 const L2_MIN_CHAPTERS = 10;
 const L3_MIN_TEXT = 500;
@@ -200,6 +199,44 @@ async function launchBrowser() {
     catch { throw new Error('Playwright Chromium + system Chrome 都不可用'); } }
 }
 
+async function fetchHotBooks(page) {
+    const HOT_URLS = [
+        'https://fanqienovel.com/rank/hot_male',
+        'https://fanqienovel.com/rank/hot_female',
+    ];
+    const books = new Set();
+    for (const url of HOT_URLS) {
+        try {
+            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            await page.waitForTimeout(2000);
+            // 从所有链接的 title 或可见文字里抓书名
+            const names = await page.evaluate(() => {
+                const out = [];
+                document.querySelectorAll('a[href*="/page/"], a.title, .book-name, h3, h4').forEach(el => {
+                    const t = (el.textContent || el.getAttribute('title') || '').trim();
+                    if (t && t.length >= 2 && t.length <= 20 && !/^\d+$/.test(t)) out.push(t);
+                });
+                return [...new Set(out)];
+            });
+            names.forEach(n => books.add(n));
+            if (books.size >= 10) break;
+        } catch (e) { /* 一个榜单抓不到就算了 */ }
+    }
+    const arr = [...books];
+    // shuffle
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    const picked = arr.slice(0, 3);
+    if (picked.length < 3) {
+        console.log(`  ⚠ 热榜只抓到 ${picked.length} 本，补完本 fallback`);
+        const fb = GOLDEN_BOOKS.slice(0, 3 - picked.length);
+        return [...picked, ...fb];
+    }
+    return picked;
+}
+
 async function pwGet(page, url) {
     try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -242,8 +279,8 @@ function renderTemplate(obj, template) {
 const DEBUG = process.env.DEBUG_PHASE === '1';
 
 // ====== 阶段 ======
-async function phaseA(page, source) {
-    for (const kw of PHASE_A_TESTS) {
+async function phaseA(page, source, tests) {
+    for (const kw of tests) {
         const url = buildSearchUrl(source, kw);
         if (DEBUG) console.log(`    [debug] 搜 "${kw}" → ${url.slice(0, 100)}`);
         const html = await pwGet(page, url);
@@ -356,7 +393,7 @@ async function phaseB(page, source, firstHit) {
 async function main() {
     console.log('========================================');
     console.log('Playwright 三重验收 Pipeline');
-    console.log('金标准:', GOLDEN_BOOKS.join('/'));
+    console.log('Phase A: 实时热榜抽 3 本（fallback:', GOLDEN_BOOKS.slice(0,3).join('/') + ')');
     console.log('========================================\n');
 
     // 1. 下载上游候选源
@@ -386,19 +423,21 @@ async function main() {
 
     if (filtered.length === 0) { console.log('没有新候选，退出。'); process.exit(0); }
 
-    // 3. Playwright Phase A
-    console.log('[3/6] Phase A: L1 快速筛（前 3 本）\n');
+    // 3. Playwright Phase A — 先抓实时热榜抽 3 本
+    console.log('[3/6] Phase A: L1 快速筛（实时热榜抽 3 本）\n');
     const browser = await launchBrowser();
     const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
     });
     const page = await context.newPage();
+    const phaseATests = await fetchHotBooks(page);
+    console.log(`  📌 本轮测试热书: ${phaseATests.join(' / ')}\n`);
 
     const survivors = [];
     for (let i = 0; i < filtered.length; i++) {
         const src = filtered[i];
         process.stdout.write(`  A [${i + 1}/${filtered.length}] ${src.bookSourceName.padEnd(18, ' ')} `);
-        const r = await phaseA(page, src);
+        const r = await phaseA(page, src, phaseATests);
         if (r.pass) { survivors.push({ source: src, firstHit: r.firstHit }); process.stdout.write(`✅ (${r.firstHit.kw})\n`); }
         else process.stdout.write('❌\n');
         await page.waitForTimeout(200);
@@ -464,7 +503,8 @@ async function main() {
     // 7. 写审计报告
     const summary = {
         runAt: new Date().toISOString(),
-        goldenBooks: GOLDEN_BOOKS,
+        phaseATests: phaseATests,
+        phaseAFallback: GOLDEN_BOOKS.slice(0,3),
         phaseA: { candidates: filtered.length, survivors: survivors.length },
         phaseB: { survivors: survivors.length, passed: PASS.length, failed: FAIL.length },
         passed: PASS.map(p => ({ name: p.source.bookSourceName, url: p.source.bookSourceUrl, chapters: p.chapters, textLen: p.textLen })),
