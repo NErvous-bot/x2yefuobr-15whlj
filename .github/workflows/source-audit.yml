@@ -1,0 +1,47 @@
+name: 三重验源 (Playwright)
+
+on:
+  # 每周日 04:00 UTC ≈ 北京时间 12:00 错峰跑一次
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 装 Playwright + Chromium
+        run: |
+          npm install playwright@latest
+          npx playwright install chromium
+      - name: 三重验收
+        run: node scripts/source-audit.mjs
+      - name: 接现有 pipeline（filter → health → score → fuse → sign）
+        run: |
+          node filter.js
+          node health.js
+          node score.js
+          node fuse.js
+          node sign.js
+      - name: 成品校验
+        run: |
+          node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
+          node -e "const a=require('./legado.json');const bad=a.filter(s=>!s.ruleContent).length;if(bad/a.length>0.5)throw new Error('ruleContent缺失率过高:'+bad+'/'+a.length)"
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig
+          git add reports/ health/
+          git diff --cached --quiet || (git commit -m "auto audit: $(date +%F)" && git pull --rebase origin main && git push origin HEAD)
