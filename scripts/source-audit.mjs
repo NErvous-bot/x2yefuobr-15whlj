@@ -200,28 +200,37 @@ async function launchBrowser() {
 }
 
 async function fetchHotBooks(page) {
+    // 只抓男频多源合并，避免单一平台偏差
     const HOT_URLS = [
-        'https://fanqienovel.com/rank/hot_male',
-        'https://fanqienovel.com/rank/hot_female',
+        { label: '起点畅销榜',  url: 'https://www.qidian.com/rank/hotsales/',  sel: 'h2 a, .rank-book-name, .bookname a' },
+        { label: '起点阅读榜',  url: 'https://www.qidian.com/rank/readIndex/', sel: 'h2 a, .rank-book-name, .bookname a' },
+        { label: '起点新书榜',  url: 'https://www.qidian.com/rank/newbook/',   sel: 'h2 a, .rank-book-name, .bookname a' },
+        { label: '番茄男频热榜', url: 'https://fanqienovel.com/rank/hot_male', sel: 'a[href*="/page/"], .book-name, h3, h4' },
     ];
     const books = new Set();
-    for (const url of HOT_URLS) {
+    const sourceCount = {}; // 追踪每源贡献
+
+    for (const src of HOT_URLS) {
         try {
-            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-            await page.waitForTimeout(2000);
-            // 从所有链接的 title 或可见文字里抓书名
-            const names = await page.evaluate(() => {
+            await page.goto(src.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+            await page.waitForTimeout(2500);
+            const names = await page.evaluate((sel) => {
                 const out = [];
-                document.querySelectorAll('a[href*="/page/"], a.title, .book-name, h3, h4').forEach(el => {
+                document.querySelectorAll(sel).forEach(el => {
                     const t = (el.textContent || el.getAttribute('title') || '').trim();
-                    if (t && t.length >= 2 && t.length <= 20 && !/^\d+$/.test(t)) out.push(t);
+                    if (t && t.length >= 2 && t.length <= 20 && !/^\d+$/.test(t) && !/排行榜|分类|首页/.test(t)) out.push(t);
                 });
                 return [...new Set(out)];
-            });
-            names.forEach(n => books.add(n));
-            if (books.size >= 10) break;
-        } catch (e) { /* 一个榜单抓不到就算了 */ }
+            }, src.sel);
+            const added = [];
+            names.forEach(n => { if (!books.has(n)) { books.add(n); added.push(n); } });
+            sourceCount[src.label] = added.length;
+            console.log(`  ${src.label}: +${added.length} 本`);
+        } catch (e) {
+            console.log(`  ${src.label}: 抓取失败`);
+        }
     }
+
     const arr = [...books];
     // shuffle
     for (let i = arr.length - 1; i > 0; i--) {
@@ -230,10 +239,11 @@ async function fetchHotBooks(page) {
     }
     const picked = arr.slice(0, 3);
     if (picked.length < 3) {
-        console.log(`  ⚠ 热榜只抓到 ${picked.length} 本，补完本 fallback`);
+        console.log(`  ⚠ 热榜只抓到 ${picked.length} 本（共 ${arr.length}），补完本 fallback`);
         const fb = GOLDEN_BOOKS.slice(0, 3 - picked.length);
         return [...picked, ...fb];
     }
+    console.log(`  📚 多源合并: ${arr.length} 本（去重后）`);
     return picked;
 }
 
