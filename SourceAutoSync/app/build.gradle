@@ -12,9 +12,8 @@ android {
         // 不降 minSdk 以免扩大兼容面）。目标设备 vivo X200 Pro。
         minSdk 33
         targetSdk 34
-        versionCode 19
-        versionName '3.15'
-    }
+        versionCode 21
+        versionName '5.1'
 
     signingConfigs {
         release {
