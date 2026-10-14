@@ -99,4 +99,4 @@ function scoreOf(r, g, ms) {
     const avg = scoreN ? Math.round(scoreSum / scoreN) : 0;
     console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（预算' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable);
     console.log('健康检查: 全库平均健康分 ' + avg + '，抖动观察期(FLAPPING) ' + flappingN + ' 个，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
-})().catch(e => { console.log('健康检查异常(不影响主流程): ' + e.message); process.exit(0); });
+})().catch(e => { console.error('健康检查失败（致命异常，阻断发布）:', e); process.exit(1); });

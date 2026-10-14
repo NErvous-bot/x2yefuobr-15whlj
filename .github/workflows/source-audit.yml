@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: source-audit
+  group: repo-main-writer
   cancel-in-progress: false
 
 jobs:
@@ -40,12 +40,17 @@ jobs:
         run: |
           node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
           node -e "const a=require('./legado.json');const bad=a.filter(s=>!s.ruleContent).length;if(bad/a.length>0.5)throw new Error('ruleContent缺失率过高:'+bad+'/'+a.length)"
-      - name: commit
+      - name: commit（脚本不再自行 commit，发布权统一在 workflow）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 清理 Playwright/npm 等步骤留下的无关改动
-          git checkout -- . 2>/dev/null || true
-          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json
-          git add reports/ 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "auto audit: $(date +%F)" && git pull --rebase --autostash origin main && git push origin HEAD)
+          # 只暂存明确允许发布的输出文件——不盲目 git add .
+          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt
+          git add reports/source-audit.json reports/rank-report.md 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "没有需要提交的变更"
+            exit 0
+          fi
+          git pull --rebase --autostash origin main
+          git commit -m "auto audit: $(date +%F)"
+          git push origin HEAD

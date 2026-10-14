@@ -33,9 +33,11 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -779,7 +781,14 @@ public class SyncWorker extends Worker {
         List<JSONObject> actualProbe = toProbe.subList(0, probeLimit);
 
         // Step 3: 并发探测（12 线程，每个超时 3s）
-        Map<String, Boolean> probeResults = new HashMap<>();
+        // 用 ConcurrentHashMap：多线程并发 put，HashMap 非线程安全会丢数据
+        Map<String, Boolean> probeResults = new ConcurrentHashMap<>();
+        // 记录哪些 URL 在本轮探测队列里（用于区分"队列溢出未测"和"超时未完成"）
+        Set<String> probeQueue = new java.util.HashSet<>();
+        for (JSONObject src : actualProbe) {
+            try { probeQueue.add(src.optString("bookSourceUrl", "")); } catch (Exception ignored) {}
+        }
+        int probeTimeoutCount = 0;
         if (!actualProbe.isEmpty()) {
             ExecutorService pool = Executors.newFixedThreadPool(12);
             CountDownLatch latch = new CountDownLatch(actualProbe.size());
@@ -804,12 +813,26 @@ public class SyncWorker extends Worker {
                     }
                 });
             }
-            try { latch.await(30, java.util.concurrent.TimeUnit.SECONDS); }
-            catch (InterruptedException ignored) {}
+            boolean completed = true;
+            try { completed = latch.await(30, TimeUnit.SECONDS); }
+            catch (InterruptedException ie) {
+                Thread.currentThread().interrupt(); // 恢复中断标志，让上层决定
+                completed = false;
+            }
             pool.shutdownNow();
+            if (!completed) {
+                probeTimeoutCount = actualProbe.size() - done.get();
+                android.util.Log.w("SyncWorker", "部分书源探测未完成（超时" + probeTimeoutCount + "个），保留历史状态");
+            }
         }
 
         // Step 4: 合并结果 → 更新每个源的 enabled + 刷新健康缓存
+        // 合并优先级：
+        //   1. 本轮有明确探测结果（probeResults.containsKey） → 用本轮结果
+        //   2. 本轮队列里但超时未完成（pro Queue 有但 probeResults 无） → 保留历史状态 oldH.localAvailable
+        //   3. 队列外（队列超过 60 被截掉的，即既不在 probeQueue 也不在 probeResults）：
+        //      a. 有 cachedResult（24h 内缓存）→ 用缓存
+        //      b. 没缓存 → 保持 CI 默认 enabled=true（新源首次进入）
         JSONArray finalArr = new JSONArray();
         for (int i = 0; i < ciAliveOnly.length(); i++) {
             try {
@@ -829,15 +852,25 @@ public class SyncWorker extends Worker {
                             localOk ? 0 : now + retryDelayMs
                     );
                     cache.put(url, newH);
+                } else if (pro Queue.contains(url)) {
+                    // 在本轮队列里但超时未完成 → 保留历史状态（关键：不能把之前禁用的重新启用）
+                    if (oldH != null) {
+                        localOk = oldH.localAvailable; // 保留历史
+                    } else {
+                        localOk = src.optBoolean("enabled", true); // 首次进入
+                    }
                 } else if (cachedResult.containsKey(url)) {
                     localOk = cachedResult.get(url);
                 } else {
-                    // 不在本轮探测队列（比如探测队列超过 60 被截掉的）→ 暂时保持 CI 默认 enabled=true
+                    // 队列外 + 没缓存 → 保持 CI 默认 enabled=true
                     localOk = src.optBoolean("enabled", true);
                 }
                 src.put("enabled", localOk);
                 finalArr.put(src);
             } catch (Exception ignored) {}
+        }
+        if (probeTimeoutCount > 0) {
+            prog("探测超时" + probeTimeoutCount + "个，已保留历史状态");
         }
         return finalArr;
     }

@@ -14,7 +14,6 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, '..');
@@ -253,28 +252,19 @@ async function fetchHotBooks(page) {
         }
     }
 
+    // 确定性顺序（按抓到的先后顺序 + GOLDEN_BOOKS 固定顺序），不再 shuffle。
+    // 同一输入得到相同审计顺序，便于回归验证。
     const arr = [...books];
-    // shuffle
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
 
-    // 热榜 ≥ 3 本 → 直接用
+    // 热榜 ≥ 3 本 → 直接用前 3
     if (arr.length >= 3) {
         console.log(`  📚 多源合并: ${arr.length} 本（去重后）`);
         return arr.slice(0, 3);
     }
 
-    // Fallback: 经典完本 12 本 shuffle 抽 3
-    // 这些书盗版源覆盖广（之前验证酷我 Phase A 2/2 过）
+    // Fallback: 经典完本按固定顺序补齐
     console.log(`  ⚠ 热榜只抓到 ${arr.length} 本（反爬/乱码），fallback 经典完本书`);
-    const fallback = [...GOLDEN_BOOKS];
-    for (let i = fallback.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [fallback[i], fallback[j]] = [fallback[j], fallback[i]];
-    }
-    return [...arr, ...fallback.slice(0, 3 - arr.length)];
+    return [...arr, ...GOLDEN_BOOKS.slice(0, 3 - arr.length)];
 }
 
 async function pwGet(page, url) {
@@ -461,7 +451,31 @@ async function main() {
     });
     console.log('[2/6] 去重+预筛:', candidates.length, '→', filtered.length, '候选\n');
 
-    if (filtered.length === 0) { console.log('没有新候选，退出。'); process.exit(0); }
+    // ====== 先写审计报告骨架，保证任何 exit 都有完整报告 ======
+    const summary = {
+        runAt: new Date().toISOString(),
+        upstreamCandidates: candidates.length,
+        filteredCandidates: filtered.length,
+        phaseAFallback: GOLDEN_BOOKS.slice(0,3),
+        phaseATests: [],
+        phaseA: { candidates: filtered.length, survivors: 0 },
+        phaseB: { survivors: 0, passed: 0, failed: 0 },
+        passed: [],
+        failed: [],
+        note: ''
+    };
+
+    const writeReport = () => {
+        fs.mkdirSync(path.join(REPO, 'reports'), { recursive: true });
+        fs.writeFileSync(path.join(REPO, 'reports/source-audit.json'), JSON.stringify(summary, null, 2), 'utf8');
+    };
+
+    if (filtered.length === 0) {
+        summary.note = '没有新候选源，已完整写报告后退出';
+        writeReport();
+        console.log('没有新候选，退出（已写报告）。');
+        process.exit(0);
+    }
 
     // 3. Playwright Phase A — 先抓实时热榜抽 3 本
     console.log('[3/6] Phase A: L1 快速筛（实时热榜抽 3 本）\n');
@@ -501,7 +515,16 @@ async function main() {
     console.log(`\nPhase B: ✅ ${PASS.length}/${survivors.length} 三重全过\n`);
 
     // 5. Merge + rank-legado.js
-    if (PASS.length === 0) { console.log('没有新源通过，跳过 merge。'); process.exit(0); }
+    if (PASS.length === 0) {
+        summary.phaseATests = phaseATests;
+        summary.phaseA = { candidates: filtered.length, survivors: survivors.length };
+        summary.phaseB = { survivors: survivors.length, passed: 0, failed: FAIL.length };
+        summary.failed = FAIL;
+        summary.note = '没有新源通过三重验收，已完整写报告后退出（CI workflow 仍按正常闸门继续）';
+        writeReport();
+        console.log('没有新源通过，跳过 merge（已写报告）。');
+        process.exit(0);
+    }
     console.log('[5/6] Merge + rank-legado.js\n');
     const toAdd = PASS.map(p => {
         const s = JSON.parse(JSON.stringify(p.source));
@@ -522,39 +545,21 @@ async function main() {
         console.log(`  rank-legado.js OK → ${clean.length} 源`);
     } catch (e) { console.error('  rank-legado.js 失败:', String(e.message || e)); process.exit(1); }
 
-    // 6. Commit + push
-    console.log('\n[6/6] Commit + push');
+    // 6. 汇总 + 写审计报告（不再自行提交/推送——发布权统一交给 .github/workflows/source-audit.yml）
+    console.log('\n[6/6] 汇总审计报告');
+    summary.phaseATests = phaseATests;
+    summary.phaseA = { candidates: filtered.length, survivors: survivors.length };
+    summary.phaseB = { survivors: survivors.length, passed: PASS.length, failed: FAIL.length };
+    summary.passed = PASS.map(p => ({ name: p.source.bookSourceName, url: p.source.bookSourceUrl, chapters: p.chapters, textLen: p.textLen }));
+    summary.failed = FAIL;
+    summary.note = `三重验收完成，引入 ${PASS.length} 个活源。脚本不再自行 commit/push，发布权统一交给 workflow。`;
+
+    writeReport();
+
+    // 控制台汇总（供 workflow Step 日志显示）
     const report = PASS.map((p, i) => `  ${i + 1}. ${p.source.bookSourceName} | L2=${p.chapters}章 | L3=${p.textLen}字 | ${p.source.bookSourceUrl}`).join('\n');
-    const shortMsg = `feat: 三重验收引入 ${PASS.length} 个活源\n\n` +
-        `Playwright 浏览器验收\n上游: tickmao/Novel + aoaostar/XIU2精品\n` +
-        `Phase A ${filtered.length}→${survivors.length} | Phase B ${survivors.length}→${PASS.length}\n\n通过:\n${report}`;
-
-    try {
-        execSync('git config user.name "github-actions[bot]"', { cwd: REPO, stdio: 'pipe' });
-        execSync('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"', { cwd: REPO, stdio: 'pipe' });
-        execSync('git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig', { cwd: REPO, stdio: 'pipe' });
-        execSync('git add reports/ health/', { cwd: REPO, stdio: 'pipe' });
-        execSync(`git commit -m "${shortMsg.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`, { cwd: REPO, stdio: 'pipe' });
-        execSync('git pull --rebase origin main 2>&1 || true', { cwd: REPO, stdio: 'pipe' });
-        execSync('git push origin HEAD', { cwd: REPO, stdio: 'pipe' });
-        console.log('  ✅ push 成功');
-    } catch (e) { console.error('  ❌ commit/push 失败:', String(e.message || e).slice(0, 120)); process.exit(1); }
-
-    // 7. 写审计报告
-    const summary = {
-        runAt: new Date().toISOString(),
-        phaseATests: phaseATests,
-        phaseAFallback: GOLDEN_BOOKS.slice(0,3),
-        phaseA: { candidates: filtered.length, survivors: survivors.length },
-        phaseB: { survivors: survivors.length, passed: PASS.length, failed: FAIL.length },
-        passed: PASS.map(p => ({ name: p.source.bookSourceName, url: p.source.bookSourceUrl, chapters: p.chapters, textLen: p.textLen })),
-        failed: FAIL
-    };
-    fs.mkdirSync(path.join(REPO, 'reports'), { recursive: true });
-    fs.writeFileSync(path.join(REPO, 'reports/source-audit.json'), JSON.stringify(summary, null, 2), 'utf8');
-
     console.log('\n========================================');
-    console.log(`✅ 完成！引入 ${PASS.length} 个活源`);
+    console.log(`✅ 三重验收完成！引入 ${PASS.length} 个活源（脚本不自行提交，由 workflow 统一发布）`);
     console.log('========================================');
     console.log(report);
 }
