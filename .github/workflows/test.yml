@@ -49,10 +49,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: 安装 Gradle
+      - name: 安装 Gradle（8.7 匹配项目 AGP 8.5.2）
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.7'
 
       - name: Android APK 构建（debug，硬门槛——SyncWorker.java 编译必须通过）
         run: |
