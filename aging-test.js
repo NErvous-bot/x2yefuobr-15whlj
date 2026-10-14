@@ -517,6 +517,41 @@ async function checkSource(s) {
             }
         }
         res.chapters = cl.items.length;
+
+        // 第②关补充：分页链接轻量验证
+        // 只抓一次 nextTocUrl（如果规则有），不遍历全部分页——预算不允许。
+        // 目的不是证明完整目录，而是证明"分页不是死链"。
+        // 分页挂了 → skip（不是 dead，因为第一页正常；说明源可能只有单页，或者分页逻辑有问题）
+        const nuRule = String(rt.nextTocUrl || '').trim();
+        if (nuRule && !/<js>|@js:/i.test(nuRule) && cl.items.length >= 5) {
+            // 先从目录页里找分页链接
+            const nxt = selectAll(tp.text, nuRule);
+            if (nxt && nxt.items.length) {
+                let nextUrl = null;
+                const f0 = nxt.items[0];
+                if (typeof f0 === 'string' && f0.trim()) nextUrl = f0.trim();
+                else if (typeof f0 === 'object' && f0.href) nextUrl = String(f0.href).trim();
+                if (nextUrl) {
+                    try { nextUrl = new URL(nextUrl, tocUrl).href; } catch (e) { nextUrl = null; }
+                }
+                if (nextUrl) {
+                    try {
+                        const np = await fetchPage(nextUrl, { ref: tocUrl });
+                        if (np && np.status < 400) {
+                            // 分页链接有效，不影响结论
+                        } else if (np && (np.status === 404 || np.status === 410)) {
+                            res.usable = 'skip'; res.reason = '分页链接404/410（目录第一页正常但后续页挂了）'; return res;
+                        }
+                        // 其他 HTTP 错误（超时、5xx）：保持 skip 但说明原因
+                        else if (!np || np.status >= 500) {
+                            res.usable = 'skip'; res.reason = '分页链接请求失败（' + (np ? np.status : 'timeout') + '）'; return res;
+                        }
+                    } catch (e) { /* fetchPage 内部会处理异常 */ }
+                }
+            }
+            // 规则有 nextTocUrl 但解析不到链接 → 可能是单页目录，保持 pass 不跳过
+        }
+
         let chUrl = '';
         const cuRule = String(rt.chapterUrl || '');
         for (const f of cl.items) {
