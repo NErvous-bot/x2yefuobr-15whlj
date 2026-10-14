@@ -2,7 +2,6 @@
 // 用途：上传新 filter.js 前，先本地跑一遍看看预期效果（剔除/新增/阈值）
 // 用法：node preflight.js
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 const { execSync } = require('child_process');
 

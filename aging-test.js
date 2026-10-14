@@ -11,7 +11,7 @@
 //   - JSON 响应 + JSONPath 常用子集：$.a.b、$.a[0]、$.a[*]、$[*]、$.a['b']、$.*
 // 不支持（→不可测豁免，绝不判死）：<js>/@js: 动态规则、JSONPath 高级语法（$../?()过滤）等
 // 零依赖，Node 20 直接运行
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+const https = require('https');
 
 const UAS = [
     'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',

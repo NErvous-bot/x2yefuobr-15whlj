@@ -16,7 +16,6 @@
 //   ✅ 网络失败/搜索无结果/章节无法识别 → result=unknown
 //
 // 依赖：aging-test.js（共享 fetchPage / selectAll / doSearch 等经过实测的函数）
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 const crypto = require('crypto');
 const { doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep } = require('./aging-test');

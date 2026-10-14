@@ -1,6 +1,5 @@
 // test-p0.js — P0 本地预演：新实测器 vs 首份健康报告基线（271不可测/94坏/28可用）
 // 验收标准：①旧不可测源显著转为可判定 ②旧可用源零误杀 ③旧确认坏不得因测试器缺陷虚增
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 const { checkSource } = require('./aging-test');
 

@@ -14,7 +14,6 @@
 //   · 复查脚本异常 / 复查报告损坏 → exit 1（无法可信裁决时不放行）
 //   · 仅「HEAD 无基线（首次运行）」保留 fail-open；保险丝其余任何异常 fail-closed
 // 首次运行无基线报告时直接放行。
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 const crypto = require('crypto');
 const { execSync, spawnSync } = require('child_process');

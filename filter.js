@@ -1,7 +1,6 @@
 // legado 书源自动维护流水线
 // 流程：上游更新合并 → 域名探测 → 域名变体修复 → 阈值保护(失败保留旧版) → 写回提交
 // 无任何依赖，GitHub Actions 的 Node 20 可直接运行
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 const { checkSource } = require('./aging-test');
 // 多 UA 池：随机选，绕过部分站点的反爬 UA 黑名单（参考 tickmao AUTO_SUPPLEMENT 思路）
@@ -74,24 +73,24 @@ async function alive(o) {
 }
 
 // 真实搜索实测：域名活着 ≠ 规则能用（盗版站常见首页正常、搜索接口已废）。
-// 只测 GET 型且带 {{key}} 槽位的规则（POST/特殊规则跳过实测，避免误杀）；
-// 返回页 >500 字节视为有实质内容。仅用于扩容候选（每轮≤60个），控制成本。
+// 返回三态：true=明确可用 / false=明确不可用 / 'skip'=无法判断（POST/无{{key}}/URL异常/请求异常）。
+// 扩容池只收 true，skip 进入隔离候选不误删但也不批量引入。
 async function usable(s) {
     try {
         const su = String(s.searchUrl || '');
-        if (/POST/i.test(su) || (su.indexOf('{{key}}') === -1 && su.indexOf('{key}') === -1)) return true;
+        if (/POST/i.test(su) || (su.indexOf('{{key}}') === -1 && su.indexOf('{key}') === -1)) return 'skip';
         const cut = su.indexOf(',');
         const path = (cut === -1 ? su : su.slice(0, cut))
             .replace(/\{\{key\}\}|\{key\}/g, encodeURIComponent('都市'))
             .replace(/\{\{page\}\}|\{page\}/g, '1');
         const base = originOf(s.bookSourceUrl);
-        if (!base) return true;
+        if (!base) return 'skip';
         const r = await get(new URL(path, base).href, 15000);
         if (!r || !r.ok) return false;
         const t = await r.text();
         return t.length > 500;
     } catch (e) {
-        return true; // 实测自身异常不拦候选，交给域名探活结果
+        return 'skip'; // 实测器自身异常 → 无法判断，交给域名探活层
     }
 }
 
@@ -258,9 +257,9 @@ function variants(o) {
         // 通用：优先上游最近更新的，探活+搜索实测各一道，前 60 个候选
         cand.sort((a, b) => (b.lastUpdateTime || 0) - (a.lastUpdateTime || 0));
         const ok = (await pool(cand.slice(0, 60), 10,
-            s => alive(originOf(s.bookSourceUrl)).then(a => a && usable(s) ? s : null))).filter(Boolean);
+            s => alive(originOf(s.bookSourceUrl)).then(a => a && usable(s).then(u => u === true ? s : null)).catch(() => null))).filter(Boolean);
         for (const s of ok.slice(0, 15)) { out.push(s); added++; }
-        console.log('扩容: 候选 ' + cand.length + ' / 探活+实测通过 ' + ok.length + ' / 新增 ' + added);
+        console.log('扩容: 候选 ' + cand.length + ' / 探活+实测明确可用 ' + ok.length + ' / 新增 ' + added);
 
         // 番茄专项：广撒网，每个候选单独探活（不批量并发避免触反爬）
         // 优先级：_validation_status === 'valid' > 最近更新 > 默认
@@ -273,7 +272,7 @@ function variants(o) {
         let fanqieProbed = 0;
         for (const s of fanqieCand.slice(0, 30)) {
             if (!await alive(originOf(s.bookSourceUrl))) continue;
-            if (!await usable(s)) continue;
+            if (await usable(s) !== true) continue;
             // 已存在的跳过
             if (out.some(x => norm(x.bookSourceUrl) === norm(s.bookSourceUrl))) continue;
             out.push(s); fanqieAdded++; fanqieProbed++;

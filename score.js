@@ -6,7 +6,6 @@
 // 分层：≥90核心(weight500~900) / 75~89稳定(300~490) / 60~74备用(150~290) / <60观察(50)
 //       连续失败≥3→观察(30) / 不可测保护池(曾经实测通过440,从未验证380 — "测不了"不判死但也不绝对置顶) / 确认坏(5,待老化剔除)
 // 历史记录复用 health.json 的 recent 数组（最近5次有结论实测），不另建文件避免状态漂移
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const fs = require('fs');
 
 const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
