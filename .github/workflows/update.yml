@@ -7,9 +7,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-# 并发锁：手动触发和 cron 撞车时排队执行，避免 rebase 冲突和重复提交
+# 并发锁：所有 main 写入工作流（update.yml / source-audit.yml / build-sync.yml）统一排队，
+# 避免两个工作流同时读取旧版本、生成不同结果并争抢推送
 concurrency:
-  group: update-book-sources
+  group: repo-main-writer
   cancel-in-progress: false
 
 jobs:

@@ -39,6 +39,14 @@
 const fs = require('fs');
 const path = require('path');
 
+// ====== URL 规范化（与 health.js 一致：去首尾空格、片段、末尾斜杠）======
+function normUrl(u) {
+    try {
+        const x = new URL(String(u).trim().split('#')[0]);
+        return x.origin + x.pathname.replace(/\/$/, '');
+    } catch (e) { return null; }
+}
+
 // ====== 输入路径 ======
 const REPO = __dirname;
 const LEGADO = path.join(REPO, 'legado.json');
@@ -68,46 +76,64 @@ function diffScore(diff) {
 //   UNDERPERFORMER: final_score < 0
 //   NEUTRAL:        其余
 
-const sourceScores = {}; // name → { score, weight, diffs, truncCount, lagCount, emptyCount, dormantCount, positiveCount }
-const nameToIndex = {};
+const sourceScores = {}; // normUrl → { score, weight, diffs, ... }
+const urlToIndex = {};   // normUrl → [indices in legado]
 
 for (let i = 0; i < legado.length; i++) {
-    const n = legado[i].bookSourceName;
-    if (!nameToIndex[n]) nameToIndex[n] = [];
-    nameToIndex[n].push(i);
-    if (!sourceScores[n]) {
-        sourceScores[n] = { score: 0, weight: 0, diffs: [], truncCount: 0, lagCount: 0, emptyCount: 0, dormantCount: 0, positiveCount: 0 };
+    const u = normUrl(legado[i].bookSourceUrl);
+    if (!u) continue;
+    if (!urlToIndex[u]) urlToIndex[u] = [];
+    urlToIndex[u].push(i);
+    if (!sourceScores[u]) {
+        sourceScores[u] = { score: 0, weight: 0, diffs: [], truncCount: 0, lagCount: 0, emptyCount: 0, dormantCount: 0, positiveCount: 0 };
     }
+}
+
+// name 回退映射：仅当某个 bookSourceName 在 legado 中唯一时才保留
+// 用于处理 freshness-summary.json 里 s.url 缺失的历史数据
+const uniqueNameToUrl = {};
+const nameUrlMap = {};
+for (let i = 0; i < legado.length; i++) {
+    const n = String(legado[i].bookSourceName || '');
+    const u = normUrl(legado[i].bookSourceUrl);
+    if (!n || !u) continue;
+    if (!nameUrlMap[n]) nameUrlMap[n] = new Set();
+    nameUrlMap[n].add(u);
+}
+for (const [n, urls] of Object.entries(nameUrlMap)) {
+    if (urls.size === 1) uniqueNameToUrl[n] = [...urls][0];
 }
 
 for (const book of books) {
     const ref = book.reference || 0;
     const w = Math.min(ref, 1000);
     for (const s of book.bySource || []) {
-        const name = s.name;
-        if (!sourceScores[name]) continue;
+        // 主键优先用 url，缺失则回退到唯一的 name
+        let u = normUrl(s.url);
+        if (!u && s.name) u = uniqueNameToUrl[s.name];
+        if (!u || !sourceScores[u]) continue;
         const sc = diffScore(s.diff);
-        sourceScores[name].score += sc * w;
-        sourceScores[name].weight += w;
-        sourceScores[name].diffs.push({ book: book.title, diff: s.diff, chapters: s.observed_chapters, conf: s.confidence });
-        if (s.diff != null && s.diff >= -5) sourceScores[name].positiveCount++;
-        if (s.suspicious_truncation) sourceScores[name].truncCount++;
-        if (s.diff != null && s.diff < -200 && s.confidence !== 'low') sourceScores[name].lagCount++;
-        if (s.observed_chapters <= 10) sourceScores[name].emptyCount++;
-        if (s.pagination_rule_dormant) sourceScores[name].dormantCount++;
+        sourceScores[u].score += sc * w;
+        sourceScores[u].weight += w;
+        sourceScores[u].diffs.push({ book: book.title, diff: s.diff, chapters: s.observed_chapters, conf: s.confidence });
+        if (s.diff != null && s.diff >= -5) sourceScores[u].positiveCount++;
+        if (s.suspicious_truncation) sourceScores[u].truncCount++;
+        if (s.diff != null && s.diff < -200 && s.confidence !== 'low') sourceScores[u].lagCount++;
+        if (s.observed_chapters <= 10) sourceScores[u].emptyCount++;
+        if (s.pagination_rule_dormant) sourceScores[u].dormantCount++;
     }
 }
 
 // 归一化
-for (const name of Object.keys(sourceScores)) {
-    const s = sourceScores[name];
+for (const url of Object.keys(sourceScores)) {
+    const s = sourceScores[url];
     s.final_score = s.weight > 0 ? s.score / s.weight : 0;
     s.tested = s.diffs.length;
     s.positiveRatio = s.tested > 0 ? s.positiveCount / s.tested : 0;
 }
 
 // ====== R2v2: 降级标记（置信度修正） ======
-function classifySource(name, sc) {
+function classifySource(url, sc) {
     const tags = [];
     let mult = 1.0;
 
@@ -134,9 +160,9 @@ function classifySource(name, sc) {
 
 // ====== 排序 ======
 // HIGH_PERFORMER → GOOD → GOOD_MINOR → 中性 → UNDERPERFORMER → 降级组
-function groupRank(name) {
-    const sc = sourceScores[name];
-    const { tags } = classifySource(name, sc);
+function groupRank(url) {
+    const sc = sourceScores[url];
+    const { tags } = classifySource(url, sc);
     if (tags.includes('HIGH_PERFORMER')) return 0;
     if (tags.includes('GOOD')) return 1;
     if (tags.includes('GOOD_MINOR')) return 2;  // 注意：GOOD_MINOR 排中性前面（好源但置信度不足）
@@ -148,26 +174,30 @@ function groupRank(name) {
 }
 
 // 每个源的所有副本一起移动（保持内部相对顺序）
-const orderedNames = Object.keys(sourceScores).sort((a, b) => {
+const orderedUrls = Object.keys(sourceScores).sort((a, b) => {
     const ga = groupRank(a), gb = groupRank(b);
     if (ga !== gb) return ga - gb;
     // 组内按 first appearance 顺序
-    return nameToIndex[a][0] - nameToIndex[b][0];
+    return urlToIndex[a][0] - urlToIndex[b][0];
 });
 
 // ====== 构建 ranked 文件 ======
 const ranked = [];
-for (const name of orderedNames) {
-    const indices = nameToIndex[name];
-    const sc = sourceScores[name];
-    const { tags, weightMult } = classifySource(name, sc);
+for (const url of orderedUrls) {
+    const indices = urlToIndex[url];
+    const sc = sourceScores[url];
+    const { tags, weightMult } = classifySource(url, sc);
 
     for (const idx of indices) {
         const orig = legado[idx];
         // 深拷贝 + 附加 _diagnosis
         const copy = JSON.parse(JSON.stringify(orig));
-        const origWeight = copy.weight != null ? copy.weight : 0;
-        copy.weight = Math.round(origWeight * weightMult) + (tags.includes('HIGH_PERFORMER') ? 1000 : 0);
+        // 安全权重计算：先 clamp 原权重到 [0,1000]，再乘倍率，再 clamp 最终值到 [0,1000]
+        const rawWeight = Number(copy.weight);
+        const safeOrig = Number.isFinite(rawWeight) ? Math.max(0, Math.min(1000, rawWeight)) : 0;
+        const scaled = Math.round(safeOrig * weightMult);
+        const bonus = tags.includes('HIGH_PERFORMER') ? 1000 : 0;
+        copy.weight = Math.max(0, Math.min(1000, scaled + bonus));
         copy._diagnosis = {
             score: Math.round(sc.final_score * 100) / 100,
             weight_mult: weightMult,
@@ -216,6 +246,13 @@ if (errors.length > 0) {
 fs.writeFileSync(OUT_RANKED, JSON.stringify(ranked, null, 2), 'utf8');
 
 // 排名报告（Markdown）
+// 为了人类可读，用第一个 legado 条目的 bookSourceName 展示
+function displayName(url) {
+    const idxs = urlToIndex[url];
+    if (!idxs || idxs.length === 0) return url.slice(0, 50);
+    return String(legado[idxs[0]].bookSourceName || url).slice(0, 40);
+}
+
 let report = '# legado.json 排名报告\n\n';
 report += `生成时间: ${new Date().toISOString()}\n`;
 report += `测试书籍: ${books.length} 本 (${books.map(b => b.title + '(' + b.reference + ')').join(', ')})\n`;
@@ -224,43 +261,43 @@ report += `总源数: ${ranked.length}\n\n`;
 report += '## 分组统计\n\n';
 const groupNames = ['HIGH_PERFORMER', 'GOOD', 'GOOD_MINOR', 'NEUTRAL', 'UNDERPERFORMER+降级', 'ALMOST_EMPTY'];
 const groups = [[], [], [], [], [], []];
-for (const name of orderedNames) { groups[groupRank(name)].push(name); }
+for (const url of orderedUrls) { groups[groupRank(url)].push(url); }
 for (let g = 0; g < 6; g++) {
     report += `- **${groupNames[g]}**: ${groups[g].length} 源\n`;
 }
 report += '\n';
 
 report += '## HIGH_PERFORMER（positiveRatio ≥ 0.75 且 tested ≥ 3，boost +1000 weight）\n\n';
-for (const name of groups[0]) {
-    const sc = sourceScores[name];
-    report += `- **${name}** score=${sc.final_score.toFixed(2)} ratio=${sc.positiveRatio.toFixed(2)} tested=${sc.tested} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
+for (const url of groups[0]) {
+    const sc = sourceScores[url];
+    report += `- **${displayName(url)}** score=${sc.final_score.toFixed(2)} ratio=${sc.positiveRatio.toFixed(2)} tested=${sc.tested} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
 }
 report += '\n';
 
 report += '## GOOD（positiveRatio ≥ 0.60 且 tested ≥ 2）\n\n';
-for (const name of groups[1]) {
-    const sc = sourceScores[name];
-    report += `- **${name}** score=${sc.final_score.toFixed(2)} ratio=${sc.positiveRatio.toFixed(2)} tested=${sc.tested} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
+for (const url of groups[1]) {
+    const sc = sourceScores[url];
+    report += `- **${displayName(url)}** score=${sc.final_score.toFixed(2)} ratio=${sc.positiveRatio.toFixed(2)} tested=${sc.tested} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
 }
 report += '\n';
 
 report += '## GOOD_MINOR（单本好但置信度不足 tested=1）\n\n';
-for (const name of groups[2]) {
-    const sc = sourceScores[name];
-    report += `- **${name}** score=${sc.final_score.toFixed(2)} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
+for (const url of groups[2]) {
+    const sc = sourceScores[url];
+    report += `- **${displayName(url)}** score=${sc.final_score.toFixed(2)} | ${sc.diffs.map(d => d.diff).join('/')}\n`;
 }
 report += '\n';
 
 report += '## UNDERPERFORMER / 降级候选（保留但降权）\n\n';
 report += '| 源 | score | ratio | tested | 标签 | weight× | 跨书表现 |\n|---|---|---|---|---|---|---|\n';
 const under = new Set([...groups[4], ...groups[5]]);
-for (const name of orderedNames) {
-    if (!under.has(name)) continue;
-    const sc = sourceScores[name];
-    const { tags, weightMult } = classifySource(name, sc);
+for (const url of orderedUrls) {
+    if (!under.has(url)) continue;
+    const sc = sourceScores[url];
+    const { tags, weightMult } = classifySource(url, sc);
     const tagStr = tags.filter(t => ['SEVERE_LAGGING', 'SUSPICIOUS_TRUNCATION', 'ALMOST_EMPTY', 'DORMANT_RULE', 'UNDERPERFORMER'].includes(t)).join(',');
     const diffs = sc.diffs.map(d => `${d.book.slice(0,4)}=${d.diff}`).join(' ');
-    report += `| ${name} | ${sc.final_score.toFixed(2)} | ${sc.positiveRatio.toFixed(2)} | ${sc.tested} | ${tagStr} | ×${weightMult} | ${diffs} |\n`;
+    report += `| ${displayName(url)} | ${sc.final_score.toFixed(2)} | ${sc.positiveRatio.toFixed(2)} | ${sc.tested} | ${tagStr} | ×${weightMult} | ${diffs} |\n`;
 }
 report += '\n';
 

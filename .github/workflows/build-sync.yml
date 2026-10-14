@@ -3,6 +3,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: repo-main-writer
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -57,7 +60,5 @@ jobs:
           git add sync-app.apk
           git diff --cached --quiet && echo "APK未变化，跳过发布" && exit 0
           git commit -m "发布 sync-app.apk"
-          # 直接 force-with-lease 推送：fetch-depth=0 已保证本地有最新历史，
-          # 不需要 rebase（rebase 会和远端的并发提交冲突）。
-          # force-with-lease 避免误覆盖远端新提交。
-          git push --force-with-lease origin HEAD:main
+          # 普通 push：远端已变化会失败，不会强制覆盖——与 update.yml/source-audit.yml 统一走 repo-main-writer 并发锁
+          git push origin HEAD:main
