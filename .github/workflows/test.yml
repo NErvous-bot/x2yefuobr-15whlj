@@ -49,14 +49,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: 安装 Gradle（8.7 匹配项目 AGP 8.5.2）
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
+      - name: 安装 Gradle 8.7（直接下载二进制，绕开 GitHub Cache）
+        run: |
+          cd SourceAutoSync
+          curl -L -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q gradle-8.7-bin.zip
+          echo "$(pwd)/gradle-8.7/bin" >> $GITHUB_PATH
 
       - name: Android APK 构建（debug，硬门槛——SyncWorker.java 编译必须通过）
         run: |
           cd SourceAutoSync
-          set -o pipefail
           gradle assembleDebug --no-build-cache --rerun-tasks 2>&1 | tee build.log
         # 不再 continue-on-error：Java 编译失败必须阻断验收
