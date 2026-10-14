@@ -2,25 +2,26 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   69  available->available
-    1  available->broken
-    1  available->untestable
-    1  broken->available
-   77  broken->broken
-   10  broken->removed
-    3  broken->untestable
-    1  untestable->available
-    1  untestable->broken
-    4  untestable->removed
-  222  untestable->untestable
-新增源 4
+   67  available->available
+    2  available->broken
+    2  available->untestable
+    2  broken->available
+   71  broken->broken
+    1  broken->removed
+    6  broken->untestable
+    2  untestable->broken
+    2  untestable->removed
+  221  untestable->untestable
+新增源 2
 
-━━ 一级复查：旧可用 → 确认坏 1 ━━
+━━ 一级复查：旧可用 → 确认坏 2 ━━
+  FLAPPING 1
   SUSPECT 1
-  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: CONTENT_EMPTY,SEARCH_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,PASS | 特征: GBK
+  [FLAPPING 4/5] 色友小说 | 阶段: PASS,PASS,PASS,CHAPTER_EMPTY,PASS
+  [SUSPECT 2/5] 豆花文学 | 阶段: CHAPTER_EMPTY,PASS,PASS,CHAPTER_EMPTY,CHAPTER_EMPTY
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
+PASS：旧可用 → 确认坏 = 2（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
