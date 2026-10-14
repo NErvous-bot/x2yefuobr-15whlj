@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: P0 Smoke（上游拉取+健康+签名三关，exit 非 0 阻断发布）
+        run: node smoke-p0.js
       - run: node filter.js
       # 规则自维护：抓真实正文巡检漏网广告，误伤0段+净化率提升才追加规则；
       # 脚本内部对任何异常 exit 0 跳过写入，失败不影响主流程

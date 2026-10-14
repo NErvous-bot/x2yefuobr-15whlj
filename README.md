@@ -52,6 +52,7 @@ node preflight.js
 
 ## 实现说明
 
-- filter.js 有意设置 NODE_TLS_REJECT_UNAUTHORIZED=0（全局关闭 Node TLS 校验）：上游源与书源站普遍存在自签或过期证书，强校验会误杀可用源。该设置仅在 GitHub Actions 受控环境内运行。
 - 签名使用 node 内置 crypto（sign.js）而非 openssl：2026-10-04 起 runner 镜像的 openssl 签名报 unsupported，旧管道写法会把 0 字节签名静默提交，现改为签名后自验签、失败即 CI 失败。
+- HTTPS 安全：2026-10-14 起移除全局 NODE_TLS_REJECT_UNAUTHORIZED=0（8 个脚本），上游 jsdelivr/GitHub raw 证书链完整，正常强校验无问题。
+- 审计脚本：smoke-p0.js（上游拉取+实测 smoke）、test-p0.js（P0 回归）、freshness-audit.js（分页完整性）、rank-legado.js（跨书排序）独立运行。
 - 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js动态语法、JSONPath高级语法、bookUrl模板拼接）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
