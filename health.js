@@ -87,15 +87,19 @@ function scoreOf(r, g, ms) {
     const inLib = new Set(list.map(s => norm(s.bookSourceUrl)).filter(Boolean));
     let carried = 0;
     let carriedAgeSum = 0;
+    let carriedMaxAge = 0;
     for (const [k, v] of Object.entries(oldMap)) {
         if (!testedKeys.has(k) && inLib.has(k)) {
             sources[k] = v;
             carried++;
-            carriedAgeSum += Math.max(0, Math.round((now - (v.checkedAt || 0)) / 86400000));
+            const age = Math.max(0, Math.round((now - (v.checkedAt || 0)) / 86400000));
+            carriedAgeSum += age;
+            if (age > carriedMaxAge) carriedMaxAge = age;
             if (v.flapping) flappingN++;
         }
     }
     const carriedAvgAge = carried > 0 ? (carriedAgeSum / carried).toFixed(1) + '天' : 'N/A';
+    const coverage = list.length > 0 ? Math.round(tested.length / list.length * 100) + '%' : 'N/A';
 
     const out = {
         updatedAt: now,
@@ -104,6 +108,6 @@ function scoreOf(r, g, ms) {
     };
     fs.writeFileSync(HFILE, JSON.stringify(out));
     const avg = scoreN ? Math.round(scoreSum / scoreN) : 0;
-    console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（预算' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable + ' / 沿用上轮 ' + carried + '（平均年龄 ' + carriedAvgAge + '）');
+    console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（覆盖率 ' + coverage + '，预算 ' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable + ' / 沿用上轮 ' + carried + '（平均 ' + carriedAvgAge + '，最老 ' + (carriedMaxAge || 'N/A') + '天）');
     console.log('健康检查: 全库平均健康分 ' + avg + '，抖动观察期(FLAPPING) ' + flappingN + ' 个，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
 })().catch(e => { console.error('健康检查失败（致命异常，阻断发布）:', e); process.exit(1); });
