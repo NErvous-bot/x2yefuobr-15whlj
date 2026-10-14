@@ -27,6 +27,10 @@ jobs:
           npx playwright install chromium
       - name: 三重验收
         run: node scripts/source-audit.mjs
+      - name: 基线同步（在签名前 rebase，避免签名后文件变化导致签名失效）
+        run: |
+          git pull --rebase --autostash origin main
+
       - name: 接现有 pipeline（filter → health → score → fuse → sign）
         run: |
           node filter.js
@@ -46,11 +50,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # 只暂存明确允许发布的输出文件——不盲目 git add .
           git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt
-          git add reports/source-audit.json reports/rank-report.md 2>/dev/null || true
+          git add reports/source-audit.json reports/rank-report.md reports/fuse-summary.txt 2>/dev/null || true
+          # 基线已在签名前同步，这里不再 rebase（签名后文件不能再变）
           if git diff --cached --quiet; then
             echo "没有需要提交的变更"
             exit 0
           fi
-          git pull --rebase --autostash origin main
           git commit -m "auto audit: $(date +%F)"
           git push origin HEAD

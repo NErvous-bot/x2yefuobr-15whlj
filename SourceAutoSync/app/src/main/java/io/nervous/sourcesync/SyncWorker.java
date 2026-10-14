@@ -852,7 +852,7 @@ public class SyncWorker extends Worker {
                             localOk ? 0 : now + retryDelayMs
                     );
                     cache.put(url, newH);
-                } else if (pro Queue.contains(url)) {
+                } else if (probeQueue.contains(url)) {
                     // 在本轮队列里但超时未完成 → 保留历史状态（关键：不能把之前禁用的重新启用）
                     if (oldH != null) {
                         localOk = oldH.localAvailable; // 保留历史

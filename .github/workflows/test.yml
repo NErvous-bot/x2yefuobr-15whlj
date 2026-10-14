@@ -15,7 +15,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  # 只做测试，不发布——收紧为只读
+  contents: read
 
 jobs:
   test:
@@ -36,7 +37,7 @@ jobs:
           echo "  检查 scripts/source-audit.mjs (ESM)" >> $GITHUB_STEP_SUMMARY
           node --check "scripts/source-audit.mjs" || exit 1
 
-      - name: 回归测试（14 项，含 URL 主键 + 权重 clamp + 安全检查）
+      - name: 回归测试（含 URL 主键 + 权重 clamp + Java 语法扫描）
         run: node tests/repo-regression.test.js
 
       - name: 离线冒烟（mock HTTP，不代表真实上游验收）
@@ -53,11 +54,9 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Android APK 构建（debug，验证 SyncWorker.java 能编译）
+      - name: Android APK 构建（debug，硬门槛——SyncWorker.java 编译必须通过）
         run: |
           cd SourceAutoSync
           set -o pipefail
-          # 用 debug 构建，不需要签名密钥——只验证 Java 源码能编译通过
           gradle assembleDebug --no-build-cache --rerun-tasks 2>&1 | tee build.log
-        continue-on-error: true
-        if: always()
+        # 不再 continue-on-error：Java 编译失败必须阻断验收

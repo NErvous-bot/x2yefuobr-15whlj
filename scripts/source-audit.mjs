@@ -525,7 +525,7 @@ async function main() {
         console.log('没有新源通过，跳过 merge（已写报告）。');
         process.exit(0);
     }
-    console.log('[5/6] Merge + rank-legado.js\n');
+    console.log('[5/6] Merge + 跨书诊断\n');
     const toAdd = PASS.map(p => {
         const s = JSON.parse(JSON.stringify(p.source));
         delete s._upstream; delete s._diagnosis;
@@ -538,11 +538,11 @@ async function main() {
     console.log(`  legado.json: ${legado.length} → ${merged.length}`);
 
     try {
+        // rank-legado.js 生成跨书诊断（ranked-legado.json + rank-report.md），
+        // 但不再把它的 weight 写回 legado.json——最终 weight 由后续 score.js（健康评分）统一决策。
+        // 跨书诊断结果保留在 reports/ 里供人工审查。
         execSync('node rank-legado.js', { cwd: REPO, timeout: 60000, encoding: 'utf8', stdio: 'pipe' });
-        const ranked = JSON.parse(fs.readFileSync(path.join(REPO, 'ranked-legado.json'), 'utf8'));
-        const clean = ranked.map(s => { const c = { ...s }; delete c._diagnosis; return c; });
-        fs.writeFileSync(path.join(REPO, 'legado.json'), JSON.stringify(clean, null, 2), 'utf8');
-        console.log(`  rank-legado.js OK → ${clean.length} 源`);
+        console.log(`  rank-legado.js → 跨书诊断完成（权重由 score.js 最终决定）`);
     } catch (e) { console.error('  rank-legado.js 失败:', String(e.message || e)); process.exit(1); }
 
     // 6. 汇总 + 写审计报告（不再自行提交/推送——发布权统一交给 .github/workflows/source-audit.yml）
