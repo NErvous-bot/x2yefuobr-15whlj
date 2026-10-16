@@ -1,51 +1,13 @@
 {
- "generatedAt": 1791973297738,
+ "generatedAt": 1792135350832,
  "oldRef": "HEAD",
  "tier1": [
   {
-   "name": "色友小说",
-   "url": "https://seyouxiaoshuo.com",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "正文不足200字（实得0）",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    }
+   "name": "酷书阁小说网",
+   "url": "https://www.kushuge.com",
+   "traits": [
+    "js规则"
    ],
-   "verdict": "FLAPPING"
-  },
-  {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "traits": [],
    "oldNote": "三关全过",
    "newNote": "目录为空",
    "attempts": [
@@ -56,16 +18,16 @@
      "reason": "目录为空"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
@@ -80,7 +42,49 @@
      "reason": "目录为空"
     }
    ],
-   "verdict": "SUSPECT"
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "traits": [
+    "GBK"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    }
+   ],
+   "verdict": "MIXED_DEATH"
   }
  ],
  "tier2": []

@@ -2,26 +2,28 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   67  available->available
+   65  available->available
     2  available->broken
-    2  available->untestable
+    1  available->removed
+    1  available->untestable
     2  broken->available
-   71  broken->broken
-    1  broken->removed
-    6  broken->untestable
-    2  untestable->broken
-    2  untestable->removed
-  221  untestable->untestable
-新增源 2
+   66  broken->broken
+    2  broken->removed
+    5  broken->untestable
+    2  untestable->available
+    6  untestable->broken
+    7  untestable->removed
+  216  untestable->untestable
+新增源 1
 
 ━━ 一级复查：旧可用 → 确认坏 2 ━━
-  FLAPPING 1
-  SUSPECT 1
-  [FLAPPING 4/5] 色友小说 | 阶段: PASS,PASS,PASS,CHAPTER_EMPTY,PASS
-  [SUSPECT 2/5] 豆花文学 | 阶段: CHAPTER_EMPTY,PASS,PASS,CHAPTER_EMPTY,CHAPTER_EMPTY
+  REAL_DEATH_CANDIDATE 1
+  MIXED_DEATH 1
+  [REAL_DEATH_CANDIDATE 0/5] 酷书阁小说网 | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY | 特征: js规则
+  [MIXED_DEATH 0/5] 🎃太子爷小说网🎃 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 2（均属抖动/疑似误判，禁止删除即可）
+BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
