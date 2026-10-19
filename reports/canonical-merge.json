@@ -1,0 +1,176 @@
+{
+ "generatedAt": 1792434848334,
+ "rules": {
+  "rootMultislash": "collapse-root-only",
+  "nonRootDoubleSlash": "keep-and-report",
+  "fragment": "always-preserved",
+  "query": {
+   "dropOnlyWhenAllParamsVerified": true,
+   "verifiedTrackingParams": {
+    "g_f": "腾讯分发渠道标记；搜索走独立searchUrl，全链路norm本就忽略query"
+   }
+  }
+ },
+ "normalized": [
+  {
+   "name": "vip小说[下载用]",
+   "from": "https://m.vipxiaoshuo.org//",
+   "to": "https://m.vipxiaoshuo.org/",
+   "rules": [
+    "root-multislash-collapsed"
+   ]
+  },
+  {
+   "name": "企鹅阅读",
+   "from": "https://ubook.reader.qq.com/?g_f=4000001",
+   "to": "https://ubook.reader.qq.com/",
+   "rules": [
+    "dropped-verified-tracking:g_f"
+   ]
+  }
+ ],
+ "merged": [
+  {
+   "canonicalUrl": "https://m.kepub.net",
+   "basis": "first-occurrence",
+   "kept": {
+    "name": "可阅文学",
+    "origUrl": "https://m.kepub.net",
+    "healthKey": "https://m.kepub.net"
+   },
+   "dropped": {
+    "name": "可阅文学",
+    "origUrl": "https://m.kepub.net",
+    "healthKey": "https://m.kepub.net"
+   },
+   "healthKeyMoved": false
+  },
+  {
+   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
+   "basis": "first-occurrence",
+   "kept": {
+    "name": "纵横中文",
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
+   },
+   "dropped": {
+    "name": "纵横中文",
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
+   },
+   "healthKeyMoved": false
+  },
+  {
+   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
+   "basis": "lastUpdateTime",
+   "kept": {
+    "name": "纵横中文",
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
+   },
+   "dropped": {
+    "name": "纵横中文",
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
+   },
+   "healthKeyMoved": false
+  },
+  {
+   "canonicalUrl": "https://m.vipxiaoshuo.org/",
+   "basis": "health-history-continuity",
+   "kept": {
+    "name": "vip小说",
+    "origUrl": "https://m.vipxiaoshuo.org/",
+    "healthKey": "https://m.vipxiaoshuo.org"
+   },
+   "dropped": {
+    "name": "vip小说[下载用]",
+    "origUrl": "https://m.vipxiaoshuo.org//",
+    "healthKey": "https://m.vipxiaoshuo.org/"
+   },
+   "healthKeyMoved": true
+  }
+ ],
+ "advisories": [
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "m.douxsw.com",
+   "urls": [
+    "http://m.douxsw.com/#xsw8093",
+    "https://m.douxsw.com/#xsw8093"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "m.gulongbbs.com",
+   "urls": [
+    "https://m.gulongbbs.com/wuxia",
+    "http://m.gulongbbs.com/wuxia"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "yqk.net",
+   "urls": [
+    "http://www.yqk.net/",
+    "https://www.yqk.net"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "finalbooks.work",
+   "urls": [
+    "https://finalbooks.work",
+    "https://www.finalbooks.work"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "m.fushutxt.cc",
+   "urls": [
+    "http://m.fushutxt.cc",
+    "https://m.fushutxt.cc#🎃"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "txtduo.com",
+   "urls": [
+    "https://www.txtduo.com",
+    "https://txtduo.com"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "ciweimao.com",
+   "urls": [
+    "https://www.ciweimao.com",
+    "http://www.ciweimao.com#🎃"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "xshbook.com",
+   "urls": [
+    "https://xshbook.com/",
+    "https://www.xshbook.com/"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "chuangshi.qq.com",
+   "urls": [
+    "https://www.chuangshi.qq.com#🎃",
+    "https://chuangshi.qq.com#🎃"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "novel.tingroom.com",
+   "urls": [
+    "http://novel.tingroom.com/wap",
+    "http://novel.tingroom.com"
+   ]
+  }
+ ]
+}

@@ -1,22 +1,16 @@
 {
- "generatedAt": 1791951560181,
+ "generatedAt": 1792435169931,
+ "runAt": "2026-10-19T18:39:29.931Z",
  "oldRef": "HEAD",
+ "baselineSha": "02686810e16d3e6a3119529aeaca7563387f9134",
  "tier1": [
   {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
-   "traits": [
-    "GBK"
-   ],
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
+   "traits": [],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
    "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
-    },
     {
      "pass": false,
      "kind": "fail",
@@ -26,8 +20,14 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     },
     {
      "pass": false,
@@ -36,14 +36,41 @@
      "reason": "目录为空"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     }
    ],
    "verdict": "SUSPECT"
   }
  ],
- "tier2": []
+ "tier2": [],
+ "resolved": [
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 33,
+    "search": true,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "目录为空",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "fail",
+     "fail",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1792435146268
+   }
+  }
+ ]
 }
