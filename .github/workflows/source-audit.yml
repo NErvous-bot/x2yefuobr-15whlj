@@ -1,5 +1,9 @@
 name: 三重验源 (Playwright)
 
+# D2（Round3 补测 2026-10-20）：本工作流为纯审计入口——只跑 Playwright 三重验收并写
+# reports/source-audit.json，严禁修改 legado.json / replaceRule.json / version.txt / 签名等任何成品。
+# 产品成品的唯一发布入口是 update.yml（filter→health→score→fuse→校验→签名），
+# 保证每份成品都与同一轮 health/scores/recheck 证据齐套落库。
 on:
   # 每周日 04:00 UTC ≈ 北京时间 12:00 错峰跑一次
   schedule:
@@ -25,36 +29,29 @@ jobs:
         run: |
           npm install playwright@latest
           npx playwright install chromium
-      - name: 三重验收
+      - name: 三重验收（纯审计：只写 reports/source-audit.json，禁止改任何成品）
         run: node scripts/source-audit.mjs
-      - name: 基线同步（在签名前 rebase，避免签名后文件变化导致签名失效）
+      - name: 基线同步（提交审计报告前 rebase）
         run: |
           git pull --rebase --autostash origin main
 
-      - name: 接现有 pipeline（filter → health → score → fuse → sign）
-        run: |
-          node filter.js
-          node health.js
-          node score.js
-          node fuse.js
-          node sign.js
-        env:
-          ED25519_KEY: ${{ secrets.ED25519_KEY }}
-      - name: 成品校验
-        run: |
-          node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
-          node -e "const a=require('./legado.json');const bad=a.filter(s=>!s.ruleContent).length;if(bad/a.length>0.5)throw new Error('ruleContent缺失率过高:'+bad+'/'+a.length)"
-      - name: commit（脚本不再自行 commit，发布权统一在 workflow）
+      - name: commit（仅允许审计报告入库）
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 只暂存明确允许发布的输出文件——不盲目 git add .
-          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt
-          git add reports/source-audit.json reports/rank-report.md reports/fuse-summary.txt 2>/dev/null || true
-          # 基线已在签名前同步，这里不再 rebase（签名后文件不能再变）
+          # 白名单暂存：只放审计报告；任何成品文件变更一律不得进入本工作流的提交
+          git add reports/source-audit.json
+          # 硬断言：工作树中的成品必须与 HEAD 逐字节一致（脚本越权写成品即红灯）
+          for f in legado.json replaceRule.json version.txt legado.json.sig replaceRule.json.sig; do
+            if ! git diff --quiet HEAD -- "$f"; then
+              echo "::error::纯审计工作流不得修改成品文件: $f"
+              git diff --stat HEAD -- "$f"
+              exit 1
+            fi
+          done
           if git diff --cached --quiet; then
-            echo "没有需要提交的变更"
+            echo "没有需要提交的审计报告变更"
             exit 0
           fi
-          git commit -m "auto audit: $(date +%F)"
+          git commit -m "auto audit: $(date +%F)（纯审计，无成品变更）"
           git push origin HEAD

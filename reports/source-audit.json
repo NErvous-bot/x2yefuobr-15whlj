@@ -1,0 +1,27 @@
+{
+  "runAt": "2026-10-18T08:33:19.169Z",
+  "upstreamCandidates": 45,
+  "filteredCandidates": 13,
+  "phaseAFallback": [
+    "斗罗大陆",
+    "凡人修仙传",
+    "诡秘之主"
+  ],
+  "phaseATests": [
+    "苍陆纪元",
+    "斗罗大陆",
+    "凡人修仙传"
+  ],
+  "phaseA": {
+    "candidates": 13,
+    "survivors": 0
+  },
+  "phaseB": {
+    "survivors": 0,
+    "passed": 0,
+    "failed": 0
+  },
+  "passed": [],
+  "failed": [],
+  "note": "没有新源通过三重验收，已完整写报告后退出（CI workflow 仍按正常闸门继续）"
+}
