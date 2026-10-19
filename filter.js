@@ -44,45 +44,6 @@ function originOf(u) {
     try { return new URL(String(u).split('#')[0]).origin; } catch (e) { return null; }
 }
 
-// ── D3（Round3 补测 2026-10-20）URL 规范化：只做两类静态可确认等价的收敛 ──
-// 收紧原则：宁可保留也不制造新书源故障。
-//  1) 纯根路径重复斜杠（pathname 全为斜杠且 ≥2 个，如 https://x//）→ 收敛为单斜杠；
-//     非根路径中的 //（/a//b）一律原样保留，仅记录到报告
-//  2) query 仅由"已验证可忽略参数白名单"中的参数构成时才去除；含任何未知参数一律保留
-//  #fragment 永远原样保留（同源不同规则的变体源靠它区分，是既有身份语义）
-// 同规则副本另见 verify-product.js（硬断言），改动需两处同步
-const CANON_TRACKING_PARAMS = {
-    // 腾讯系分发渠道标记：取数走独立 searchUrl，baseUrl 上的该参数不参与请求；
-    // 且全链路身份函数 norm（filter/health/score/fuse/recheck）本就忽略 query
-    g_f: '腾讯分发渠道标记；搜索走独立searchUrl，全链路norm本就忽略query'
-};
-function canonicalizeUrl(raw) {
-    const s0 = String(raw || '');
-    const hi = s0.indexOf('#');
-    let head = hi >= 0 ? s0.slice(0, hi) : s0;
-    const frag = hi >= 0 ? s0.slice(hi) : '';
-    const notes = [];
-    let u;
-    try { u = new URL(head); } catch (e) { return { url: s0, changed: false, notes: ['invalid-url-kept'] }; }
-    if (/^\/\/+$/.test(u.pathname)) {
-        head = head.replace(/^([a-z][a-z0-9+.-]*:\/\/[^/?#]+)\/{2,}/i, '$1/');
-        notes.push('root-multislash-collapsed');
-    } else if (/\/\//.test(u.pathname)) {
-        notes.push('non-root-double-slash-kept');
-    }
-    if (u.search) {
-        const keys = [...u.searchParams.keys()];
-        if (keys.length && keys.every(k => Object.prototype.hasOwnProperty.call(CANON_TRACKING_PARAMS, k))) {
-            head = head.replace(/\?[^#]*$/, '');
-            notes.push('dropped-verified-tracking:' + keys.join(','));
-        } else {
-            notes.push('query-has-unverified-param-kept');
-        }
-    }
-    const url = head + frag;
-    return { url, changed: url !== s0, notes };
-}
-
 async function get(u, ms, fixedUA) {
     const c = new AbortController();
     const t = setTimeout(() => c.abort(), ms || 12000);
@@ -320,91 +281,15 @@ function variants(o) {
         console.log('番茄广撒网: 候选 ' + fanqieCand.length + ' / 新增 ' + fanqieAdded);
     }
 
-    // 3.8) URL 规范化 + 安全去重（D3，Round3 补测）
-    //      仅合并"规范化后完整 URL 相同"的条目；规范后仍不同（www 变体/#fragment 变体等）
-    //      一律保留并写报告。确定性保留规则（不可随机、不可静默）：
-    //      ① 健康历史连续：规范化前 norm 已等于规范键的一方优先（避免实测历史断档）
-    //      ② lastUpdateTime 较新者 ③ 规则字段更完整者 ④ 先出现者
-    //      所有规范化/合并/保留冲突逐日落 reports/canonical-merge.json
-    const canonLog = {
-        generatedAt: Date.now(),
-        rules: { rootMultislash: 'collapse-root-only', nonRootDoubleSlash: 'keep-and-report', fragment: 'always-preserved', query: { dropOnlyWhenAllParamsVerified: true, verifiedTrackingParams: CANON_TRACKING_PARAMS } },
-        normalized: [], merged: [], advisories: []
-    };
-    let canonChanged = 0, canonMerged = 0;
-    const ruleSize = s => ['ruleSearch', 'ruleBookInfo', 'ruleToc', 'ruleContent'].reduce((n, f) => n + JSON.stringify(s[f] || {}).length, 0);
-    const canonSeen = new Map();   // 规范完整URL → 在 canonOut 中的下标
-    const canonOrig = [];          // 与 canonOut 平行：规范前原始 URL
-    const canonOut = [];
-    for (const s of out) {
-        const origUrl = s.bookSourceUrl;
-        const c = canonicalizeUrl(origUrl);
-        if (c.changed) {
-            canonChanged++;
-            s.bookSourceUrl = c.url;
-            canonLog.normalized.push({ name: s.bookSourceName, from: origUrl, to: c.url, rules: c.notes });
-        }
-        if (c.notes.some(x => x.endsWith('-kept'))) canonLog.advisories.push({ type: c.notes.join(','), name: s.bookSourceName, url: c.url });
-        if (canonSeen.has(c.url)) {
-            const idx = canonSeen.get(c.url);
-            const keeper = canonOut[idx], newOne = s;
-            const ck = norm(c.url);
-            const contKeeper = norm(canonOrig[idx]) === ck ? 1 : 0;
-            const contNew = norm(origUrl) === ck ? 1 : 0;
-            let takeNew = false, basis;
-            if (contNew !== contKeeper) { takeNew = contNew > contKeeper; basis = 'health-history-continuity'; }
-            else if ((newOne.lastUpdateTime || 0) !== (keeper.lastUpdateTime || 0)) { takeNew = (newOne.lastUpdateTime || 0) > (keeper.lastUpdateTime || 0); basis = 'lastUpdateTime'; }
-            else if (ruleSize(newOne) !== ruleSize(keeper)) { takeNew = ruleSize(newOne) > ruleSize(keeper); basis = 'rule-completeness'; }
-            else { basis = 'first-occurrence'; }
-            const dropped = takeNew ? keeper : newOne;
-            const kept = takeNew ? newOne : keeper;
-            // 必须在 canonOrig[idx] 被覆盖前取双方原始 URL
-            const keptOrig = takeNew ? origUrl : canonOrig[idx];
-            const droppedOrig = takeNew ? canonOrig[idx] : origUrl;
-            if (takeNew) { canonOut[idx] = s; canonOrig[idx] = origUrl; }
-            canonMerged++;
-            canonLog.merged.push({
-                canonicalUrl: c.url, basis,
-                kept: { name: kept.bookSourceName, origUrl: keptOrig, healthKey: norm(keptOrig) },
-                dropped: { name: dropped.bookSourceName, origUrl: droppedOrig, healthKey: norm(droppedOrig) },
-                // 双方历史健康键不同（如根路径 // 与 / 的 norm 边界差异）时，保留方键上历史连续；
-                // 被弃键视为"已不在库里的源"，由 health.js 下一轮自动丢弃，不留悬挂数据
-                healthKeyMoved: norm(keptOrig) !== norm(droppedOrig)
-            });
-        } else {
-            canonSeen.set(c.url, canonOut.length);
-            canonOrig.push(origUrl);
-            canonOut.push(s);
-        }
-    }
-    // 保留型冲突报告：去 www 后同主机的兄弟源（未做存活等价验证，不自动合并）
-    const hostGroups = {};
-    for (const s of canonOut) {
-        try { const h = new URL(String(s.bookSourceUrl).split('#')[0]).hostname.replace(/^www\./, ''); (hostGroups[h] = hostGroups[h] || new Set()).add(s.bookSourceUrl); } catch (e) {}
-    }
-    for (const [h, set] of Object.entries(hostGroups)) {
-        if (set.size > 1) canonLog.advisories.push({ type: 'www-or-host-variant-kept', host: h, urls: [...set] });
-    }
-    out = canonOut;
-    // 仅在确有改写/合并时落报告，避免纯时间戳 churn 把"无变化"轮变成提交轮；
-    // advisory（保留型冲突）在首轮随报告一并落库，新变体通常伴随新一轮改写/合并出现
-    if (canonChanged > 0 || canonMerged > 0) {
-        fs.mkdirSync('reports', { recursive: true });
-        fs.writeFileSync('reports/canonical-merge.json', JSON.stringify(canonLog, null, 1));
-        console.log('URL规范化: 改写 ' + canonChanged + ' 个 / 安全合并 ' + canonMerged + ' 个 / 保留型冲突 ' + canonLog.advisories.length + ' 个（明细见 reports/canonical-merge.json）');
-    } else {
-        console.log('URL规范化: 无改写无合并（保留型冲突 ' + canonLog.advisories.length + ' 个不产生提交）');
-    }
-
     // 4) 阈值保护：单次剔除超 30% 视为 Actions 网络抖动，放弃写入（旧版本保留）
     if (list.length > 0 && removed > list.length * 0.3) {
         console.log('⚠️ 本次剔除超过 30%，疑似运行环境网络抖动，放弃写入，旧版本保留。');
         return;
     }
-    if (merged === 0 && repaired === 0 && removed === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0) {
+    if (merged === 0 && repaired === 0 && removed === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0) {
         console.log('无变化，不提交');
         return;
     }
     fs.writeFileSync(file, JSON.stringify(out));
-    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '（探活+老化）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
+    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '（探活+老化）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + '）');
 })();

@@ -514,28 +514,52 @@ async function main() {
     await browser.close();
     console.log(`\nPhase B: ✅ ${PASS.length}/${survivors.length} 三重全过\n`);
 
-    // 5. 纯审计收尾（D2 / Round3 补测 2026-10-20）：
-    //    本脚本只写 reports/source-audit.json，不再修改 legado.json、不再跑 rank-legado.js。
-    //    活源入库统一走 update.yml 的 filter 扩容闸门（探活+实测+保险丝+签名，证据同轮齐套）。
+    // 5. Merge + rank-legado.js
+    if (PASS.length === 0) {
+        summary.phaseATests = phaseATests;
+        summary.phaseA = { candidates: filtered.length, survivors: survivors.length };
+        summary.phaseB = { survivors: survivors.length, passed: 0, failed: FAIL.length };
+        summary.failed = FAIL;
+        summary.note = '没有新源通过三重验收，已完整写报告后退出（CI workflow 仍按正常闸门继续）';
+        writeReport();
+        console.log('没有新源通过，跳过 merge（已写报告）。');
+        process.exit(0);
+    }
+    console.log('[5/6] Merge + 跨书诊断\n');
+    const toAdd = PASS.map(p => {
+        const s = JSON.parse(JSON.stringify(p.source));
+        delete s._upstream; delete s._diagnosis;
+        s.weight = 900; s.enabled = true; s.lastUpdateTime = Date.now();
+        return s;
+    });
+
+    const merged = [...legado, ...toAdd];
+    fs.writeFileSync(path.join(REPO, 'legado.json'), JSON.stringify(merged, null, 2), 'utf8');
+    console.log(`  legado.json: ${legado.length} → ${merged.length}`);
+
+    try {
+        // rank-legado.js 生成跨书诊断（ranked-legado.json + rank-report.md），
+        // 但不再把它的 weight 写回 legado.json——最终 weight 由后续 score.js（健康评分）统一决策。
+        // 跨书诊断结果保留在 reports/ 里供人工审查。
+        execSync('node rank-legado.js', { cwd: REPO, timeout: 60000, encoding: 'utf8', stdio: 'pipe' });
+        console.log(`  rank-legado.js → 跨书诊断完成（权重由 score.js 最终决定）`);
+    } catch (e) { console.error('  rank-legado.js 失败:', String(e.message || e)); process.exit(1); }
+
+    // 6. 汇总 + 写审计报告（不再自行提交/推送——发布权统一交给 .github/workflows/source-audit.yml）
+    console.log('\n[6/6] 汇总审计报告');
     summary.phaseATests = phaseATests;
     summary.phaseA = { candidates: filtered.length, survivors: survivors.length };
     summary.phaseB = { survivors: survivors.length, passed: PASS.length, failed: FAIL.length };
     summary.passed = PASS.map(p => ({ name: p.source.bookSourceName, url: p.source.bookSourceUrl, chapters: p.chapters, textLen: p.textLen }));
     summary.failed = FAIL;
-    if (PASS.length === 0) {
-        summary.note = '没有新源通过三重验收（纯审计：不修改任何成品，无成品发布动作）';
-        writeReport();
-        console.log('没有新源通过（纯审计，已写报告，不碰成品）。');
-        process.exit(0);
-    }
-    console.log('\n[5/5] 汇总审计报告（纯审计，不写 legado.json）');
-    summary.note = `三重验收通过 ${PASS.length} 个活源，仅记录于本报告；按单一发布入口原则不修改任何成品，入库统一走 update.yml（filter 扩容闸门→health→score→fuse→签名）。`;
+    summary.note = `三重验收完成，引入 ${PASS.length} 个活源。脚本不再自行 commit/push，发布权统一交给 workflow。`;
+
     writeReport();
 
     // 控制台汇总（供 workflow Step 日志显示）
     const report = PASS.map((p, i) => `  ${i + 1}. ${p.source.bookSourceName} | L2=${p.chapters}章 | L3=${p.textLen}字 | ${p.source.bookSourceUrl}`).join('\n');
     console.log('\n========================================');
-    console.log(`✅ 三重验收完成！${PASS.length} 个活源通过（纯审计：仅写报告，不发布任何成品；入库走 update.yml）`);
+    console.log(`✅ 三重验收完成！引入 ${PASS.length} 个活源（脚本不自行提交，由 workflow 统一发布）`);
     console.log('========================================');
     console.log(report);
 }

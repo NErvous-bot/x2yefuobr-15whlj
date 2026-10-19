@@ -1,49 +1,7 @@
 {
- "generatedAt": 1792135350832,
+ "generatedAt": 1791951560181,
  "oldRef": "HEAD",
  "tier1": [
-  {
-   "name": "酷书阁小说网",
-   "url": "https://www.kushuge.com",
-   "traits": [
-    "js规则"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  },
   {
    "name": "🎃太子爷小说网🎃",
    "url": "http://www.tzy2.com#🎃",
@@ -51,7 +9,7 @@
     "GBK"
    ],
    "oldNote": "三关全过",
-   "newNote": "目录为空",
+   "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": false,
@@ -62,6 +20,12 @@
     {
      "pass": false,
      "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
      "stage": "CONTENT_EMPTY",
      "reason": "正文不足200字（实得0）"
     },
@@ -72,19 +36,13 @@
      "reason": "目录为空"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     }
    ],
-   "verdict": "MIXED_DEATH"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": []

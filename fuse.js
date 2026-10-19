@@ -93,21 +93,18 @@ try {
         (availToBad.length ? '（' + availToBad.slice(0, 8).map(x => x.name).join('、') +
             (availToBad.length > 8 ? ' 等' + availToBad.length + '个' : '') + '）' : ''));
 
-    // D1：复查脚本每轮强制运行——即使本轮无异常迁移，也必须重写 recheck 三件套
-    // （时间戳/基线 sha/往轮候选终态），杜绝 main 上 recheck 裁决与 fuse-summary 跨轮矛盾。
-    // 裁决语义完全不变：阻断仍只由本轮 tier1 的 REAL_DEATH_CANDIDATE（无 flap 前科）决定。
-    const r = spawnSync('node', ['recheck-regression.js', 'HEAD'],
-        { stdio: 'inherit', env: { ...process.env, RECHECK_T2: '0' }, timeout: 20 * 60000 });
-    // V3：复查基础设施故障属于「无法可信裁决」→ fail-closed（旧版是悄悄放行）
-    if (r.error) throw new Error('复查脚本启动失败: ' + r.error.message);
-    if (r.status !== 0) throw new Error('复查脚本异常退出 ' + r.status + '，无法可信裁决，本轮拒绝发布');
-    let rep;
-    try { rep = JSON.parse(fs.readFileSync('reports/recheck-report.json', 'utf8')); }
-    catch (e) { throw new Error('复查报告读取失败: ' + e.message); }
-
     let hardDeath = 0, flapDeath = 0;
     const verdictCnt = {};
     if (availToBad.length) {
+        // 复查裁决：复用 recheck-regression.js（保险丝模式跳过二级实测省预算）
+        const r = spawnSync('node', ['recheck-regression.js', 'HEAD'],
+            { stdio: 'inherit', env: { ...process.env, RECHECK_T2: '0' }, timeout: 20 * 60000 });
+        // V3：复查基础设施故障属于「无法可信裁决」→ fail-closed（旧版是悄悄放行）
+        if (r.error) throw new Error('复查脚本启动失败: ' + r.error.message);
+        if (r.status !== 0) throw new Error('复查脚本异常退出 ' + r.status + '，无法可信裁决，本轮拒绝发布');
+        let rep;
+        try { rep = JSON.parse(fs.readFileSync('reports/recheck-report.json', 'utf8')); }
+        catch (e) { throw new Error('复查报告读取失败: ' + e.message); }
         const flapNames = [], hardNames = [];
         for (const j of rep.tier1 || []) {
             const v = j.verdict || 'UNTESTED';
@@ -127,16 +124,6 @@ try {
         if (hardNames.length) L.push('  ├─ 稳定死亡·硬回归（无抖动前科）: ' + hardNames.join('、'));
         if (flapNames.length) W.push('闸门① 降级观察：' + flapDeath + ' 个跨轮抖动源复查 5/5 失败（' +
             flapNames.join('、') + '），旧报告已标 flapping；不冻结发布，源留库降权，下轮继续观察');
-    }
-    // 往轮候选终态：仅信息展示，不参与任何阻断（闭环证据，见 recheck-report.json#resolved）
-    const resolved = rep.resolved || [];
-    if (resolved.length) {
-        const rc = {};
-        for (const x of resolved) rc[x.state] = (rc[x.state] || 0) + 1;
-        L.push('往轮候选终态(不阻断): ' + Object.entries(rc).map(([st, n]) => st + ' ' + n).join(' / '));
-        const rec = resolved.filter(x => x.state === 'RECOVERED');
-        if (rec.length) L.push('  └─ 已恢复: ' + rec.map(x => String(x.name || '').slice(0, 20) +
-            '（' + ((x.evidence || {}).note || '') + '）').join('、'));
     }
 
     // ② 总量熔断（硬阻断；删除原因归因待 filter 层产出删除清单后再细化）
