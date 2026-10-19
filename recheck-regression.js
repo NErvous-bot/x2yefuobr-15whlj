@@ -142,13 +142,53 @@ function traits(s) {
     const s1 = summarize(j1.filter(j => j.v)), s2 = summarize(j2.filter(j => j.v));
     const realDeath1 = j1.filter(j => j.v && j.v.verdict === 'REAL_DEATH_CANDIDATE').length; // 保险丝只看一级：旧可用→稳定死亡
 
+    // 5.5) 往轮裁决终态（D1）：读取基线(HEAD)上的 recheck-report.json，对其中本轮不再复查的
+    //      历史候选逐一对新健康报告给出明确终态，避免"上轮 BLOCKED 候选在 main 上永远无结论"。
+    //      终态只用于报告闭环，不参与本轮保险丝裁决（阻断仍只看本轮 realDeath1）。
+    const resolved = [];
+    let prevRep = null, baselineSha = '';
+    try { baselineSha = execSync('git rev-parse HEAD').toString().trim(); } catch (e) {}
+    try { prevRep = JSON.parse(execSync('git show HEAD:reports/recheck-report.json', { maxBuffer: 64e6 }).toString()); } catch (e) { /* 基线无报告：首次或早期轮次 */ }
+    if (prevRep) {
+        const prevJobs = [
+            ...(prevRep.tier1 || []).map(j => ({ ...j, prevTier: 1 })),
+            ...(prevRep.tier2 || []).map(j => ({ ...j, prevTier: 2 }))
+        ];
+        // 本轮已重新实测的候选不再重复给终态（以本轮 attempts 为准）
+        const retested = new Set(jobs.map(j => norm(j.s.bookSourceUrl)));
+        for (const j of prevJobs) {
+            const k = norm(j.url);
+            if (retested.has(k)) continue;
+            const nv = k ? newH.sources[k] : null;
+            let state;
+            if (!nv) state = 'REMOVED';                       // 已不在新健康报告（出库）
+            else if (nv.content === true) state = 'RECOVERED'; // 新报告三关可用
+            else if (nv.health === null || nv.health === undefined) state = 'UNTESTABLE'; // 不可测不判死
+            else state = 'STILL_BROKEN';
+            resolved.push({
+                name: j.name, url: j.url, tier: j.prevTier,
+                prevVerdict: j.verdict, state,
+                evidence: nv ? {
+                    health: nv.health, search: nv.search, toc: nv.toc, content: nv.content,
+                    chapters: nv.chapters, contentLen: nv.contentLen, note: nv.note,
+                    flapping: nv.flapping, recent: nv.recent, checkedAt: nv.checkedAt
+                } : null
+            });
+        }
+    }
+
     // 6) 产出报告
     if (!fs.existsSync('reports')) fs.mkdirSync('reports');
     fs.writeFileSync('reports/recheck-matrix.json', JSON.stringify({ generatedAt: Date.now(), oldRef: OLD_REF, matrix, addedSources: added }, null, 1));
     fs.writeFileSync('reports/recheck-report.json', JSON.stringify({
-        generatedAt: Date.now(), oldRef: OLD_REF,
+        generatedAt: Date.now(),
+        runAt: new Date().toISOString(),
+        oldRef: OLD_REF,
+        baselineSha,
         tier1: j1.map(j => ({ name: String(j.s.bookSourceName || '').slice(0, 30), url: j.s.bookSourceUrl, traits: j.traits, oldNote: j.oldNote, newNote: j.newNote, attempts: j.attempts || null, verdict: (j.v || {}).verdict || 'UNTESTED' })),
-        tier2: j2.map(j => ({ name: String(j.s.bookSourceName || '').slice(0, 30), url: j.s.bookSourceUrl, traits: j.traits, oldNote: j.oldNote, newNote: j.newNote, attempts: j.attempts || null, verdict: (j.v || {}).verdict || 'UNTESTED' }))
+        tier2: j2.map(j => ({ name: String(j.s.bookSourceName || '').slice(0, 30), url: j.s.bookSourceUrl, traits: j.traits, oldNote: j.oldNote, newNote: j.newNote, attempts: j.attempts || null, verdict: (j.v || {}).verdict || 'UNTESTED' })),
+        // 往轮候选本轮终态（无历史候选时为空数组；每轮强制重写，保证 main 上不留过期裁决）
+        resolved
     }, null, 1));
 
     // 人读摘要
@@ -176,6 +216,13 @@ function traits(s) {
             L.push('  [' + j.v.verdict + ' ' + j.v.pass + '/' + j.v.n + '] ' + String(j.s.bookSourceName || '').slice(0, 20) +
                 ' | 阶段: ' + j.attempts.map(a => a.stage).join(',') + (j.traits.length ? ' | 特征: ' + j.traits.join('+') : ''));
         }
+    }
+    L.push('');
+    L.push('━━ 往轮候选终态 ' + resolved.length + '（基线 ' + baselineSha.slice(0, 7) + '） ━━');
+    if (!prevRep) L.push('  基线无历史 recheck 报告（首次或早期轮次）');
+    for (const r of resolved) {
+        const ev = r.evidence ? (' h=' + r.evidence.health + ' [' + r.evidence.note + '] recent=' + (r.evidence.recent || []).join('/') + ' flap=' + r.evidence.flapping) : '';
+        L.push('  [' + r.state + '] (T' + r.tier + ' 原' + r.prevVerdict + ') ' + String(r.name || '').slice(0, 20) + ev);
     }
     L.push('');
     const blocked = realDeath1 > 0;
