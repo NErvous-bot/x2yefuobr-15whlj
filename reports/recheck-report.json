@@ -1,16 +1,34 @@
 {
- "generatedAt": 1792497392394,
- "runAt": "2026-10-20T11:56:32.394Z",
+ "generatedAt": 1792499034859,
+ "runAt": "2026-10-20T12:23:54.859Z",
  "oldRef": "HEAD",
- "baselineSha": "afd7b4251899794858c6d607caa7ab10efab613b",
+ "baselineSha": "477129bd03f518fe4f963cabd32e9b24d43b3c0a",
  "tier1": [
   {
-   "name": "色友小说",
-   "url": "https://seyouxiaoshuo.com",
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
    "traits": [],
    "oldNote": "三关全过",
-   "newNote": "目录为空",
+   "newNote": "搜索无结果",
    "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
     {
      "pass": false,
      "kind": "fail",
@@ -22,29 +40,37 @@
      "kind": "pass",
      "stage": "PASS",
      "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
     }
    ],
-   "verdict": "FLAPPING"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": [],
- "resolved": []
+ "resolved": [
+  {
+   "name": "色友小说",
+   "url": "https://seyouxiaoshuo.com",
+   "tier": 1,
+   "prevVerdict": "FLAPPING",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 8,
+    "search": false,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "搜索无结果",
+    "flapping": true,
+    "recent": [
+     "fail",
+     "pass",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1792499009875
+   }
+  }
+ ]
 }
