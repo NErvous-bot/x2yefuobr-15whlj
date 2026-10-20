@@ -1,21 +1,23 @@
 {
- "generatedAt": 1792499034859,
- "runAt": "2026-10-20T12:23:54.859Z",
+ "generatedAt": 1792500191525,
+ "runAt": "2026-10-20T12:43:11.525Z",
  "oldRef": "HEAD",
- "baselineSha": "477129bd03f518fe4f963cabd32e9b24d43b3c0a",
+ "baselineSha": "c809a86f056ef37f243c46f0a34c7b817e59cea2",
  "tier1": [
   {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "traits": [],
+   "name": "998读书",
+   "url": "http://www.998ds.net",
+   "traits": [
+    "GBK"
+   ],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
@@ -24,16 +26,16 @@
      "reason": "搜索无结果"
     },
     {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
      "pass": true,
      "kind": "pass",
      "stage": "PASS",
      "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
     },
     {
      "pass": true,
@@ -48,13 +50,13 @@
  "tier2": [],
  "resolved": [
   {
-   "name": "色友小说",
-   "url": "https://seyouxiaoshuo.com",
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
    "tier": 1,
-   "prevVerdict": "FLAPPING",
+   "prevVerdict": "SUSPECT",
    "state": "STILL_BROKEN",
    "evidence": {
-    "health": 8,
+    "health": 3,
     "search": false,
     "toc": false,
     "content": false,
@@ -64,12 +66,12 @@
     "flapping": true,
     "recent": [
      "fail",
-     "pass",
+     "fail",
      "pass",
      "fail",
      "fail"
     ],
-    "checkedAt": 1792499009875
+    "checkedAt": 1792500167722
    }
   }
  ]
