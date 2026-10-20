@@ -88,20 +88,27 @@ async function get(u, ms, fixedUA) {
 }
 
 // 探活：超时/403 自动换 UA 重试 1 次（参考 tickmao 错误分类重试思路）
+// 返回三态：
+//   true  = 明确存活（2xx/3xx/4xx except 404/410/403）
+//   false = 明确死亡（404/410）
+//   null  = 无法判定（网络超时 / 5xx / 403 两次后仍失败 / fetch 异常）——保守处理，不做删除依据
 async function alive(o) {
     let r = await get(o, 12000);
-    // 超时：换 UA 重试（部分站点首次握手慢或 UA 黑名单）
+    // 超时 / fetch 异常 → null（不能证明死了，只是连不上）
     if (!r) { await sleep(2000); r = await get(o, 12000); }
-    if (!r) return false;
-    // 5xx：服务器问题，放弃
-    if (r.status >= 500) return false;
-    // 404/410：死链，放弃
+    if (!r) return null;
+    // 5xx：服务器端故障，不代表源永久失效 → null
+    if (r.status >= 500) return null;
+    // 404/410：明确死链 → false
     if (r.status === 404 || r.status === 410) return false;
     // 403：可能反爬 UA 黑名单，换 UA 重试 1 次
     if (r.status === 403) {
         await sleep(3000);
         r = await get(o, 12000);
-        if (!r || r.status >= 500 || r.status === 404 || r.status === 410) return false;
+        if (!r) return null;          // 重试后连不上 → 还是无法判定
+        if (r.status === 404 || r.status === 410) return false; // 重试后真死 → false
+        if (r.status >= 500) return null;   // 重试后还是 5xx → 无法判定
+        if (r.status === 403) return null;   // 两次都 403 → 无法判定（可能 IP 黑名单）
     }
     return true;
 }

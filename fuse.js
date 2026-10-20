@@ -60,8 +60,9 @@ function blobExists(path) {
     try { execSync(`git cat-file -e HEAD:${path}`, { stdio: 'pipe' }); return true; }
     catch (e) {
         // git cat-file exit code 128 = object not found → 真不存在
-        // 其他异常（git 内部错误等）也视为"不可信"，但这种情况极少
-        return false;
+        // 其他 exit code 或异常（git 内部错误 / 仓库损坏 / 权限问题）→ throw，让上层 fail-closed
+        if (e.status === 128) return false;
+        throw new Error(`git cat-file -e 异常 (exit=${e.status}): ${e.message}`);
     }
 }
 
