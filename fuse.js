@@ -81,7 +81,34 @@ try {
     const flapN = Object.values(newHealth.sources || {}).filter(v => v.flapping).length;
     L.push('FLAPPING 观察期 ' + flapN + ' 个');
 
-    // ① 回归闸门：旧可用 → 新确认坏（removed 不算，由总量熔断兜底）
+    // Phase B-2: ①-b 旧可用源消失检查（独立于回归闸门 broken 和总量熔断）
+    // 设计原则：旧可用源在新 legado.json 里消失 → 必须有 filter.js 删除清单里的合法理由
+    // 合法理由白名单：probe-dead / aging-failed / canon-merged / upstream-removed
+    // 无记录或理由不在白名单 → 直接 BLOCKED（删除盲区硬阻断）
+    const newLegadoKeys = new Set((JSON.parse(fs.readFileSync('legado.json', 'utf8'))).map(s => norm(s.bookSourceUrl)).filter(Boolean));
+    const LEGAL_DELETION_REASONS = new Set(['probe-dead', 'aging-failed', 'canon-merged', 'upstream-removed']);
+    let manifest = {};
+    try { manifest = JSON.parse(fs.readFileSync('reports/deletion-manifest.json', 'utf8')); } catch (_) {}
+    const removedAvail = [], unjustifiedRemoved = [];
+    for (const [k, ov] of Object.entries(oldHealth.sources || {})) {
+        if (stOf(ov) !== 'available') continue;
+        if (newLegadoKeys.has(k)) continue;  // 新 legado.json 里存在 → 没消失
+        removedAvail.push({ k, name: String((ov.name || k)).slice(0, 20) });
+        const m = manifest[k];
+        if (!m || !LEGAL_DELETION_REASONS.has(m.reason)) {
+            unjustifiedRemoved.push({ k, name: String((m && m.name) || k).slice(0, 20), reason: m ? m.reason : '(无记录)' });
+        }
+    }
+    L.push('');
+    L.push('旧可用 → 消失  ' + removedAvail.length + ' 个' +
+        (removedAvail.length ? '（' + removedAvail.slice(0, 8).map(x => x.name).join('、') +
+            (removedAvail.length > 8 ? ' 等' + removedAvail.length + '个' : '') + '）' : ''));
+    if (unjustifiedRemoved.length) {
+        L.push('  ⚠ 无合法删除理由 ' + unjustifiedRemoved.length + ' 个（删除盲区！必须有 filter.js 产出的删除清单记录）:');
+        for (const x of unjustifiedRemoved) L.push('    - ' + x.name + ' [' + x.k + '] reason=' + x.reason);
+    }
+
+    // ① 回归闸门：旧可用 → 新确认坏（removed 由 ①-b 独立裁决，不再靠总量熔断兜底）
     const availToBad = [];
     for (const [k, ov] of Object.entries(oldHealth.sources || {})) {
         const nv = (newHealth.sources || {})[k];
@@ -161,6 +188,7 @@ try {
     }
 
     const reasons = [];
+    if (unjustifiedRemoved.length) reasons.push('存在 ' + unjustifiedRemoved.length + ' 个旧可用源无合法删除理由（删除清单缺失或 reason 不在白名单，须人工确认 filter.js 覆盖所有删除路径）');
     if (hardDeath > 0) reasons.push('存在 ' + hardDeath + ' 个旧可用→稳定死亡的硬回归（无跨轮抖动前科，须人工确认站点真死或定位测试器）');
     if (totalDrop > TOTAL_DROP_MAX) reasons.push('总源数骤降 ' + (Math.round(totalDrop * 1000) / 10) + '%（>' + TOTAL_DROP_MAX * 100 + '%，疑似批量误删/环境异常）');
     if (covOk && availDrop > AVAIL_DROP_MAX) reasons.push('可用数骤降 ' + (Math.round(availDrop * 1000) / 10) + '%（>' + AVAIL_DROP_MAX * 100 + '%，' + dropBasis + '）');

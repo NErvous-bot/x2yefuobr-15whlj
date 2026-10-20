@@ -2,6 +2,7 @@
 // 流程：上游更新合并 → 域名探测 → 域名变体修复 → 阈值保护(失败保留旧版) → 写回提交
 // 无任何依赖，GitHub Actions 的 Node 20 可直接运行
 const fs = require('fs');
+const { execSync } = require('child_process');
 const { checkSource } = require('./aging-test');
 // 多 UA 池：随机选，绕过部分站点的反爬 UA 黑名单（参考 tickmao AUTO_SUPPLEMENT 思路）
 const UAS = [
@@ -188,6 +189,14 @@ function variants(o) {
     const list = JSON.parse(fs.readFileSync(file, 'utf8'));
     let merged = 0, repaired = 0;
 
+    // Phase B-1 基线：读 HEAD legado.json 做 diff，供删除清单和 fuse.js 裁决使用
+    let oldLegado = [], oldKeys = new Set();
+    try {
+        oldLegado = JSON.parse(execSync('git show HEAD:legado.json', { maxBuffer: 64e6 }).toString());
+        oldKeys = new Set(oldLegado.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+    } catch (_) { /* 首次运行无基线，保持空 */ }
+    const deletionManifest = {};  // key=norm(url), value={name, reason, evidence}
+
     // 1) 上游合并：同名源取 lastUpdateTime 更新的版本（作者修复的规则自动进来）
     //    自研源（如番茄镜像）跳过合并，防止自定义 weight/规则被上游覆盖
     const isOwn = s => /taijiwang/.test(s.bookSourceUrl || '');
@@ -226,6 +235,13 @@ function variants(o) {
         }
     }
 
+    // Phase B-1: 记录域名探活剔除（probe-dead）
+    for (const s of list) {
+        if (dead.has(originOf(s.bookSourceUrl))) {
+            const k = norm(s.bookSourceUrl);
+            if (k) deletionManifest[k] = { name: s.bookSourceName || '', reason: 'probe-dead', evidence: 'domain dead: ' + originOf(s.bookSourceUrl) };
+        }
+    }
     let out = list.filter(s => !dead.has(originOf(s.bookSourceUrl)));
     const removed = list.length - out.length;
     console.log('存活 ' + out.length + ' / ' + list.length + '，剔除 ' + removed + ' 个');
@@ -260,7 +276,9 @@ function variants(o) {
                 agedExempt++; skipCnt++;
                 console.log('  - 不可测豁免[' + r.reason + '] ' + nm);
             } else {
-                kill.add(norm(s.bookSourceUrl)); agedRemoved++;
+                const k = norm(s.bookSourceUrl);
+                kill.add(k); agedRemoved++;
+                deletionManifest[k] = { name: s.bookSourceName || '', reason: 'aging-failed', evidence: r.reason || '三关实测失败' };
                 console.log('  ✗ 实测剔除[' + r.reason + '] ' + nm);
             }
         }
@@ -367,10 +385,11 @@ function variants(o) {
                 canonicalUrl: c.url, basis,
                 kept: { name: kept.bookSourceName, origUrl: keptOrig, healthKey: norm(keptOrig) },
                 dropped: { name: dropped.bookSourceName, origUrl: droppedOrig, healthKey: norm(droppedOrig) },
-                // 双方历史健康键不同（如根路径 // 与 / 的 norm 边界差异）时，保留方键上历史连续；
-                // 被弃键视为"已不在库里的源"，由 health.js 下一轮自动丢弃，不留悬挂数据
                 healthKeyMoved: norm(keptOrig) !== norm(droppedOrig)
             });
+            // Phase B-1: URL规范化合并丢弃
+            const dk = norm(droppedOrig);
+            if (dk) deletionManifest[dk] = { name: dropped.bookSourceName || '', reason: 'canon-merged', evidence: 'merged into ' + c.url + ' basis=' + basis };
         } else {
             canonSeen.set(c.url, canonOut.length);
             canonOrig.push(origUrl);
@@ -407,4 +426,21 @@ function variants(o) {
     }
     fs.writeFileSync(file, JSON.stringify(out));
     console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '（探活+老化）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
+
+    // Phase B-1: 对比 HEAD legado.json 补 upstream-removed + 落盘删除清单
+    const newKeys = new Set(out.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+    const missing = [...oldKeys].filter(k => !newKeys.has(k) && !deletionManifest[k]);
+    // missing 里的源在上一轮存在但本轮消失，且 filter 层无主动记录 → 上游不再提供
+    for (const k of missing) deletionManifest[k] = { name: '', reason: 'upstream-removed', evidence: 'upstream no longer provides this source' };
+    // 为所有 deletionManifest 条目补 name（如果之前没记录）
+    for (const [k, v] of Object.entries(deletionManifest)) {
+        if (!v.name) {
+            const inOld = oldLegado.find(s => norm(s.bookSourceUrl) === k);
+            if (inOld) v.name = inOld.bookSourceName || '';
+        }
+    }
+    fs.mkdirSync('reports', { recursive: true });
+    fs.writeFileSync('reports/deletion-manifest.json', JSON.stringify(deletionManifest, null, 1));
+    const nTotal = Object.keys(deletionManifest).length;
+    if (nTotal) console.log('删除清单: ' + nTotal + ' 个（probe-dead/aging-failed/canon-merged/upstream-removed 明细见 reports/deletion-manifest.json）');
 })();
