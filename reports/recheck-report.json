@@ -1,60 +1,50 @@
 {
- "generatedAt": 1792496145494,
- "runAt": "2026-10-20T11:35:45.494Z",
+ "generatedAt": 1792497392394,
+ "runAt": "2026-10-20T11:56:32.394Z",
  "oldRef": "HEAD",
- "baselineSha": "0c6beb1e5e3b9b88bc08b955786c141674383cef",
- "tier1": [],
- "tier2": [],
- "resolved": [
+ "baselineSha": "afd7b4251899794858c6d607caa7ab10efab613b",
+ "tier1": [
   {
-   "name": "笔尚小说",
-   "url": "https://www.bsxiaoshuo.com",
-   "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 68,
-    "search": true,
-    "toc": true,
-    "content": false,
-    "chapters": 593,
-    "contentLen": 0,
-    "note": "正文不足200字（实得33）",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1792496145149
-   }
-  },
-  {
-   "name": "轻次元姬",
-   "url": "https://www.ciyuanji.com/",
-   "tier": 1,
-   "prevVerdict": "MIXED_DEATH",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 63,
-    "search": true,
-    "toc": true,
-    "content": false,
-    "chapters": 22,
-    "contentLen": 0,
-    "note": "正文不足200字（实得92）",
-    "flapping": true,
-    "recent": [
-     "fail",
-     "fail",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1792496145149
-   }
+   "name": "色友小说",
+   "url": "https://seyouxiaoshuo.com",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    }
+   ],
+   "verdict": "FLAPPING"
   }
- ]
+ ],
+ "tier2": [],
+ "resolved": []
 }
