@@ -1,156 +1,50 @@
 {
- "generatedAt": 1792491524345,
- "runAt": "2026-10-20T10:18:44.345Z",
+ "generatedAt": 1792496145494,
+ "runAt": "2026-10-20T11:35:45.494Z",
  "oldRef": "HEAD",
- "baselineSha": "d7894b16ae9dfc0d066538c92288b029e6ab808e",
- "tier1": [
-  {
-   "name": "笔尚小说",
-   "url": "https://www.bsxiaoshuo.com",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "正文不足200字（实得33）",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得33）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得33）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得33）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得33）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得33）"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  },
-  {
-   "name": "轻次元姬",
-   "url": "https://www.ciyuanji.com/",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得92）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "MIXED_DEATH"
-  }
- ],
+ "baselineSha": "0c6beb1e5e3b9b88bc08b955786c141674383cef",
+ "tier1": [],
  "tier2": [],
  "resolved": [
   {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 93,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 319,
-    "contentLen": 3562,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1792491409094
-   }
-  },
-  {
-   "name": "色友小说",
-   "url": "https://seyouxiaoshuo.com",
-   "tier": 1,
-   "prevVerdict": "RECOVERED",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 97,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 39,
-    "contentLen": 3341,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1792491409094
-   }
-  },
-  {
-   "name": "⭕️PO文学",
-   "url": "https://www.po18to.com",
+   "name": "笔尚小说",
+   "url": "https://www.bsxiaoshuo.com",
    "tier": 1,
    "prevVerdict": "REAL_DEATH_CANDIDATE",
    "state": "STILL_BROKEN",
    "evidence": {
-    "health": 3,
-    "search": false,
-    "toc": false,
+    "health": 68,
+    "search": true,
+    "toc": true,
     "content": false,
-    "chapters": 0,
+    "chapters": 593,
     "contentLen": 0,
-    "note": "搜索无结果",
+    "note": "正文不足200字（实得33）",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1792496145149
+   }
+  },
+  {
+   "name": "轻次元姬",
+   "url": "https://www.ciyuanji.com/",
+   "tier": 1,
+   "prevVerdict": "MIXED_DEATH",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 63,
+    "search": true,
+    "toc": true,
+    "content": false,
+    "chapters": 22,
+    "contentLen": 0,
+    "note": "正文不足200字（实得92）",
     "flapping": true,
     "recent": [
      "fail",
@@ -159,7 +53,7 @@
      "fail",
      "fail"
     ],
-    "checkedAt": 1792491409094
+    "checkedAt": 1792496145149
    }
   }
  ]

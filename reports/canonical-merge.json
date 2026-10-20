@@ -1,5 +1,5 @@
 {
- "generatedAt": 1792491191979,
+ "generatedAt": 1792495972258,
  "rules": {
   "rootMultislash": "collapse-root-only",
   "nonRootDoubleSlash": "keep-and-report",
@@ -14,17 +14,17 @@
  "normalized": [],
  "merged": [
   {
-   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
+   "canonicalUrl": "https://m.gulongbbs.com/wuxia",
    "basis": "lastUpdateTime",
    "kept": {
-    "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
+    "name": "古龙武侠",
+    "origUrl": "https://m.gulongbbs.com/wuxia",
+    "healthKey": "https://m.gulongbbs.com/wuxia"
    },
    "dropped": {
-    "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
+    "name": "古龙武侠",
+    "origUrl": "https://m.gulongbbs.com/wuxia",
+    "healthKey": "https://m.gulongbbs.com/wuxia"
    },
    "healthKeyMoved": false
   }
@@ -36,22 +36,6 @@
    "urls": [
     "http://m.douxsw.com/#xsw8093",
     "https://m.douxsw.com/#xsw8093"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "sfwx.com",
-   "urls": [
-    "https://sfwx.com/",
-    "http://www.sfwx.com/"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "kushuge.com",
-   "urls": [
-    "https://kushuge.com",
-    "https://www.kushuge.com"
    ]
   },
   {
@@ -80,6 +64,14 @@
   },
   {
    "type": "www-or-host-variant-kept",
+   "host": "zongheng.com",
+   "urls": [
+    "https://zongheng.com/##zhbyjm7783",
+    "https://www.zongheng.com/##zhbyjm7783"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
    "host": "m.fushutxt.cc",
    "urls": [
     "http://m.fushutxt.cc",
@@ -100,14 +92,6 @@
    "urls": [
     "http://www.ciweimao.com#🎃",
     "https://www.ciweimao.com"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "ybsws.com",
-   "urls": [
-    "https://ybsws.com",
-    "https://www.ybsws.com"
    ]
   },
   {

@@ -2,31 +2,26 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   57  available->available
-    2  available->broken
-    4  available->untestable
-    2  broken->available
-   70  broken->broken
-    2  broken->removed
+   61  available->available
+    2  available->removed
+    1  available->untestable
+   67  broken->broken
+    3  broken->removed
     4  broken->untestable
-    3  untestable->available
-    1  untestable->removed
-  224  untestable->untestable
-新增源 4
+    2  untestable->available
+    4  untestable->broken
+   23  untestable->removed
+  203  untestable->untestable
+新增源 7
 
-━━ 一级复查：旧可用 → 确认坏 2 ━━
-  REAL_DEATH_CANDIDATE 1
-  MIXED_DEATH 1
-  [REAL_DEATH_CANDIDATE 0/5] 笔尚小说 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY
-  [MIXED_DEATH 0/5] 轻次元姬 | 阶段: CONTENT_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY,SEARCH_EMPTY
+━━ 一级复查：旧可用 → 确认坏 0 ━━
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 d7894b1） ━━
-  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [RECOVERED] (T1 原RECOVERED) 色友小说 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) ⭕️PO文学 h=3 [搜索无结果] recent=fail/fail/pass/fail/fail flap=true
+━━ 往轮候选终态 2（基线 0c6beb1） ━━
+  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) 笔尚小说 h=68 [正文不足200字（实得33）] recent=pass/pass/pass/fail/fail flap=true
+  [STILL_BROKEN] (T1 原MIXED_DEATH) 轻次元姬 h=63 [正文不足200字（实得92）] recent=fail/fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
