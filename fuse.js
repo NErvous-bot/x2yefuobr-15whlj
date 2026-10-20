@@ -54,16 +54,20 @@ const VERDICT_CN = {
 const head = execSync('git rev-parse --short HEAD').toString().trim();
 let oldHealth, oldTotal;
 
-// P1-2 修复：区分"基线不存在"（真首次运行 → fail-open）和"基线损坏/读取异常"（fail-closed）
-// 显式用 git cat-file -e 检查 HEAD 里两个基线 blob 是否存在
+// P1-2 最终修复：用 git ls-tree 明确区分"文件不存在"和"Git 查询异常"
+// git ls-tree HEAD -- path 行为：
+//   文件存在  → exit 0 + 非空输出（含 blob SHA）  → return true
+//   文件不存在 → exit 0 + 空输出                  → return false（真不存在）
+//   Git/HEAD/仓库异常 → exit 非零                  → throw，让上层 fail-closed
 function blobExists(path) {
-    try { execSync(`git cat-file -e HEAD:${path}`, { stdio: 'pipe' }); return true; }
+    let out;
+    try { out = execSync(`git ls-tree HEAD -- ${path}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
     catch (e) {
-        // git cat-file exit code 128 = object not found → 真不存在
-        // 其他 exit code 或异常（git 内部错误 / 仓库损坏 / 权限问题）→ throw，让上层 fail-closed
-        if (e.status === 128) return false;
-        throw new Error(`git cat-file -e 异常 (exit=${e.status}): ${e.message}`);
+        // git 命令本身失败（exit 128 等）→ 不是"文件不存在"，是仓库状态异常
+        throw new Error(`git ls-tree 失败 (exit=${e.status}): ${e.stderr?.trim() || e.message}`);
     }
+    // exit 0 + 空输出 = 真不存在
+    return out.trim().length > 0;
 }
 
 const healthExists = blobExists('health/source_health.json');
@@ -245,7 +249,7 @@ try {
         // 回滚成品到 HEAD：手机端书源/规则/签名保持上一版，仅提交诊断报告
         // V3：任何一步失败都硬失败——旧版空 catch 会在 checkout 失败时把候选新内容当正式版发布
         for (const f of ROLLBACK_FILES) {
-            execSync(`git cat-file -e HEAD:${f}`, { stdio: 'pipe' });   // HEAD 中必须存在
+            if (!blobExists(f)) throw new Error('HEAD 中找不到回滚必需文件: ' + f);
             execSync(`git checkout HEAD -- ${f}`);
             const ws = sha256(fs.readFileSync(f)), hs = sha256(gitShow(f));
             if (ws !== hs) throw new Error('回滚后哈希与基线不一致: ' + f + '（工作区 ' + ws.slice(0, 8) + ' / HEAD ' + hs.slice(0, 8) + '）');
