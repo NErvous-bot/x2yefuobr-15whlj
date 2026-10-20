@@ -54,6 +54,12 @@ try { list = JSON.parse(fs.readFileSync('legado.json', 'utf8')); }
 catch (e) { fail('legado.json 无法解析: ' + e.message); }
 try { scores = JSON.parse(fs.readFileSync('reports/source_scores.json', 'utf8')); }
 catch (e) { fail('reports/source_scores.json 缺失或无法解析: ' + e.message); }
+
+// ── 额外: 评分报告不能是上一轮残留（score.js catch exit 0 时会留下旧文件）──
+if (!scores.generatedAt) fail('reports/source_scores.json 缺少 generatedAt，可能是陈旧残留');
+const stalenessMs = Date.now() - scores.generatedAt;
+if (stalenessMs > 60 * 60 * 1000)  // 1 小时窗口（score.js 和 verify-product.js 同一步骤，正常几秒内完成）
+    fail('reports/source_scores.json 过于陈旧: ' + Math.round(stalenessMs / 60000) + ' 分钟前生成，疑似 score.js 异常后残留的上一轮报告');
 if (!Array.isArray(list) || list.length < 100)
     fail('legado.json 结构/数量异常: ' + (Array.isArray(list) ? list.length : typeof list));
 

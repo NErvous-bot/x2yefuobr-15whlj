@@ -73,6 +73,6 @@ try {
     console.log(L.join('\n'));
     process.exit(0);
 } catch (e) {
-    console.log('源评分异常(不影响主流程，保持原顺序): ' + e.message);
-    process.exit(0);
+    console.error('× 源评分异常，拒绝发布（防止旧报告残留）: ' + e.message);
+    process.exit(1);
 }
