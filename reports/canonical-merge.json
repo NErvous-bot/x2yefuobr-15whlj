@@ -1,5 +1,5 @@
 {
- "generatedAt": 1792434848334,
+ "generatedAt": 1792471165170,
  "rules": {
   "rootMultislash": "collapse-root-only",
   "nonRootDoubleSlash": "keep-and-report",
@@ -46,32 +46,17 @@
    "healthKeyMoved": false
   },
   {
-   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
+   "canonicalUrl": "https://zongheng.com/##zhbyjm7783",
    "basis": "first-occurrence",
    "kept": {
     "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
+    "origUrl": "https://zongheng.com/##zhbyjm7783",
+    "healthKey": "https://zongheng.com"
    },
    "dropped": {
     "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
-   },
-   "healthKeyMoved": false
-  },
-  {
-   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
-   "basis": "lastUpdateTime",
-   "kept": {
-    "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
-   },
-   "dropped": {
-    "name": "纵横中文",
-    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
-    "healthKey": "https://www.zongheng.com"
+    "origUrl": "https://zongheng.com/##zhbyjm7783",
+    "healthKey": "https://zongheng.com"
    },
    "healthKeyMoved": false
   },
@@ -122,6 +107,14 @@
    "urls": [
     "https://finalbooks.work",
     "https://www.finalbooks.work"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "zongheng.com",
+   "urls": [
+    "https://zongheng.com/##zhbyjm7783",
+    "https://www.zongheng.com/##zhbyjm7783"
    ]
   },
   {

@@ -1,16 +1,24 @@
 {
- "generatedAt": 1792435169931,
- "runAt": "2026-10-19T18:39:29.931Z",
+ "generatedAt": 1792471313981,
+ "runAt": "2026-10-20T04:41:53.981Z",
  "oldRef": "HEAD",
- "baselineSha": "02686810e16d3e6a3119529aeaca7563387f9134",
+ "baselineSha": "323e72111dd48d5946dced52f369c7490aba2306",
  "tier1": [
   {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "traits": [],
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
+   "traits": [
+    "POST"
+   ],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
    "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
     {
      "pass": false,
      "kind": "fail",
@@ -32,8 +40,84 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "SUSPECT"
+  },
+  {
+   "name": "色友小说",
+   "url": "https://seyouxiaoshuo.com",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    }
+   ],
+   "verdict": "RECOVERED"
+  },
+  {
+   "name": "⭕️PO文学",
+   "url": "https://www.po18to.com",
+   "traits": [
+    "POST"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
@@ -42,14 +126,14 @@
      "reason": "搜索无结果"
     }
    ],
-   "verdict": "SUSPECT"
+   "verdict": "REAL_DEATH_CANDIDATE"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
    "tier": 1,
    "prevVerdict": "SUSPECT",
    "state": "STILL_BROKEN",
@@ -63,13 +147,13 @@
     "note": "目录为空",
     "flapping": true,
     "recent": [
+     "fail",
+     "fail",
      "pass",
-     "fail",
-     "fail",
      "fail",
      "fail"
     ],
-    "checkedAt": 1792435146268
+    "checkedAt": 1792471295171
    }
   }
  ]

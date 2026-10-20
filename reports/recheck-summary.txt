@@ -2,28 +2,31 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   61  available->available
-    1  available->broken
-    1  available->removed
-    8  available->untestable
-    1  broken->available
-   71  broken->broken
-    3  broken->removed
-    5  broken->untestable
-    1  untestable->broken
-    9  untestable->removed
-  215  untestable->untestable
-新增源 1
+   57  available->available
+    3  available->broken
+    2  available->untestable
+    2  broken->available
+   70  broken->broken
+    1  broken->removed
+    4  untestable->available
+    2  untestable->broken
+    3  untestable->removed
+  220  untestable->untestable
+新增源 9
 
-━━ 一级复查：旧可用 → 确认坏 1 ━━
+━━ 一级复查：旧可用 → 确认坏 3 ━━
   SUSPECT 1
-  [SUSPECT 1/5] 豆花文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,PASS,CHAPTER_EMPTY,SEARCH_EMPTY
+  RECOVERED 1
+  REAL_DEATH_CANDIDATE 1
+  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS,SEARCH_EMPTY | 特征: POST
+  [RECOVERED 5/5] 色友小说 | 阶段: PASS,PASS,PASS,PASS,PASS
+  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 1（基线 0268681） ━━
-  [STILL_BROKEN] (T1 原SUSPECT) 🎃太子爷小说网🎃 h=33 [目录为空] recent=pass/fail/fail/fail/fail flap=true
+━━ 往轮候选终态 1（基线 323e721） ━━
+  [STILL_BROKEN] (T1 原SUSPECT) 豆花文学 h=33 [目录为空] recent=fail/fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
+BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
