@@ -3,29 +3,29 @@
 
 ━━ 迁移矩阵 ━━
    57  available->available
-    3  available->broken
-    2  available->untestable
+    2  available->broken
+    4  available->untestable
     2  broken->available
    70  broken->broken
-    1  broken->removed
-    4  untestable->available
-    2  untestable->broken
-    3  untestable->removed
-  220  untestable->untestable
-新增源 9
+    2  broken->removed
+    4  broken->untestable
+    3  untestable->available
+    1  untestable->removed
+  224  untestable->untestable
+新增源 4
 
-━━ 一级复查：旧可用 → 确认坏 3 ━━
-  SUSPECT 1
-  RECOVERED 1
+━━ 一级复查：旧可用 → 确认坏 2 ━━
   REAL_DEATH_CANDIDATE 1
-  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS,SEARCH_EMPTY | 特征: POST
-  [RECOVERED 5/5] 色友小说 | 阶段: PASS,PASS,PASS,PASS,PASS
-  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  MIXED_DEATH 1
+  [REAL_DEATH_CANDIDATE 0/5] 笔尚小说 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY
+  [MIXED_DEATH 0/5] 轻次元姬 | 阶段: CONTENT_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY,SEARCH_EMPTY
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 1（基线 323e721） ━━
-  [STILL_BROKEN] (T1 原SUSPECT) 豆花文学 h=33 [目录为空] recent=fail/fail/pass/fail/fail flap=true
+━━ 往轮候选终态 3（基线 d7894b1） ━━
+  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [RECOVERED] (T1 原RECOVERED) 色友小说 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) ⭕️PO文学 h=3 [搜索无结果] recent=fail/fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
 BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死

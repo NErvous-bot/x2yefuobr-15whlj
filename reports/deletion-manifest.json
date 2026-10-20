@@ -1,33 +1,8 @@
 {
- "https://wap.po18cx.com": {
-  "name": "po18文学-夜明空-可下载",
+ "https://dushu.com/lianzai": {
+  "name": "读书网",
   "reason": "probe-dead",
-  "evidence": "domain dead: https://wap.po18cx.com"
- },
- "http://23.224.242.55": {
-  "name": "森林文学",
-  "reason": "probe-dead",
-  "evidence": "domain dead: http://23.224.242.55"
- },
- "https://www.xiguashuwu.com": {
-  "name": "西瓜书屋",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://www.xiguashuwu.com"
- },
- "https://www.sosadfun.org": {
-  "name": "废文网",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://www.sosadfun.org"
- },
- "http://book.tiexue.net": {
-  "name": "铁血读书",
-  "reason": "probe-dead",
-  "evidence": "domain dead: http://book.tiexue.net"
- },
- "https://book.tiexue.net": {
-  "name": "铁血读书",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://book.tiexue.net"
+  "evidence": "domain dead: https://dushu.com"
  },
  "https://m.fqxs123.com": {
   "name": "番茄小说123",
@@ -64,34 +39,9 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://m.kepub.net": {
-  "name": "可阅文学",
-  "reason": "canon-merged",
-  "evidence": "merged into https://m.kepub.net basis=first-occurrence"
- },
- "https://zongheng.com": {
+ "https://www.zongheng.com": {
   "name": "纵横中文",
   "reason": "canon-merged",
-  "evidence": "merged into https://zongheng.com/##zhbyjm7783 basis=first-occurrence"
- },
- "https://m.vipxiaoshuo.org/": {
-  "name": "vip小说[下载用]",
-  "reason": "canon-merged",
-  "evidence": "merged into https://m.vipxiaoshuo.org/ basis=health-history-continuity"
- },
- "http://m.yuzhaiwuone.com": {
-  "name": "🎃笔趣阁🎃#84",
-  "reason": "upstream-removed",
-  "evidence": "upstream no longer provides this source"
- },
- "https://www.ybsws.com": {
-  "name": "夜伴书屋",
-  "reason": "upstream-removed",
-  "evidence": "upstream no longer provides this source"
- },
- "https://www.dushu.com/lianzai": {
-  "name": "读书网",
-  "reason": "upstream-removed",
-  "evidence": "upstream no longer provides this source"
+  "evidence": "merged into https://www.zongheng.com/##zhbyjm7783 basis=lastUpdateTime"
  }
 }

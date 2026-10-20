@@ -1,5 +1,5 @@
 {
- "generatedAt": 1792471165170,
+ "generatedAt": 1792491191979,
  "rules": {
   "rootMultislash": "collapse-root-only",
   "nonRootDoubleSlash": "keep-and-report",
@@ -11,69 +11,22 @@
    }
   }
  },
- "normalized": [
-  {
-   "name": "vip小说[下载用]",
-   "from": "https://m.vipxiaoshuo.org//",
-   "to": "https://m.vipxiaoshuo.org/",
-   "rules": [
-    "root-multislash-collapsed"
-   ]
-  },
-  {
-   "name": "企鹅阅读",
-   "from": "https://ubook.reader.qq.com/?g_f=4000001",
-   "to": "https://ubook.reader.qq.com/",
-   "rules": [
-    "dropped-verified-tracking:g_f"
-   ]
-  }
- ],
+ "normalized": [],
  "merged": [
   {
-   "canonicalUrl": "https://m.kepub.net",
-   "basis": "first-occurrence",
-   "kept": {
-    "name": "可阅文学",
-    "origUrl": "https://m.kepub.net",
-    "healthKey": "https://m.kepub.net"
-   },
-   "dropped": {
-    "name": "可阅文学",
-    "origUrl": "https://m.kepub.net",
-    "healthKey": "https://m.kepub.net"
-   },
-   "healthKeyMoved": false
-  },
-  {
-   "canonicalUrl": "https://zongheng.com/##zhbyjm7783",
-   "basis": "first-occurrence",
+   "canonicalUrl": "https://www.zongheng.com/##zhbyjm7783",
+   "basis": "lastUpdateTime",
    "kept": {
     "name": "纵横中文",
-    "origUrl": "https://zongheng.com/##zhbyjm7783",
-    "healthKey": "https://zongheng.com"
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
    },
    "dropped": {
     "name": "纵横中文",
-    "origUrl": "https://zongheng.com/##zhbyjm7783",
-    "healthKey": "https://zongheng.com"
+    "origUrl": "https://www.zongheng.com/##zhbyjm7783",
+    "healthKey": "https://www.zongheng.com"
    },
    "healthKeyMoved": false
-  },
-  {
-   "canonicalUrl": "https://m.vipxiaoshuo.org/",
-   "basis": "health-history-continuity",
-   "kept": {
-    "name": "vip小说",
-    "origUrl": "https://m.vipxiaoshuo.org/",
-    "healthKey": "https://m.vipxiaoshuo.org"
-   },
-   "dropped": {
-    "name": "vip小说[下载用]",
-    "origUrl": "https://m.vipxiaoshuo.org//",
-    "healthKey": "https://m.vipxiaoshuo.org/"
-   },
-   "healthKeyMoved": true
   }
  ],
  "advisories": [
@@ -83,6 +36,22 @@
    "urls": [
     "http://m.douxsw.com/#xsw8093",
     "https://m.douxsw.com/#xsw8093"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "sfwx.com",
+   "urls": [
+    "https://sfwx.com/",
+    "http://www.sfwx.com/"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "kushuge.com",
+   "urls": [
+    "https://kushuge.com",
+    "https://www.kushuge.com"
    ]
   },
   {
@@ -111,14 +80,6 @@
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "zongheng.com",
-   "urls": [
-    "https://zongheng.com/##zhbyjm7783",
-    "https://www.zongheng.com/##zhbyjm7783"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
    "host": "m.fushutxt.cc",
    "urls": [
     "http://m.fushutxt.cc",
@@ -137,8 +98,16 @@
    "type": "www-or-host-variant-kept",
    "host": "ciweimao.com",
    "urls": [
-    "https://www.ciweimao.com",
-    "http://www.ciweimao.com#🎃"
+    "http://www.ciweimao.com#🎃",
+    "https://www.ciweimao.com"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "ybsws.com",
+   "urls": [
+    "https://ybsws.com",
+    "https://www.ybsws.com"
    ]
   },
   {
@@ -147,14 +116,6 @@
    "urls": [
     "https://xshbook.com/",
     "https://www.xshbook.com/"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "chuangshi.qq.com",
-   "urls": [
-    "https://www.chuangshi.qq.com#🎃",
-    "https://chuangshi.qq.com#🎃"
    ]
   },
   {
