@@ -15,7 +15,7 @@ const BUDGET_MIN = 15, CONC = 5;
 const T1_TRIES = 5, T2_TRIES = 3;
 const T2_ON = process.env.RECHECK_T2 !== '0';  // 发布保险丝模式置0：跳过二级实测省预算
 
-const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
+const { norm } = require('./src/source-id');
 
 // 死因阶段化：把 reason 映射到失败阶段，用于判断"死在哪"
 function stageOf(reason) {

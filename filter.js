@@ -37,13 +37,7 @@ const UPSTREAMS = [
     'https://raw.githubusercontent.com/aoaostar/legado/master/sources/b778fe6b.json'
 ];
 
-function norm(u) {
-    try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); }
-    catch (e) { return null; }
-}
-function originOf(u) {
-    try { return new URL(String(u).split('#')[0]).origin; } catch (e) { return null; }
-}
+const { norm, originOf } = require('./src/source-id');
 
 // ── D3（Round3 补测 2026-10-20）URL 规范化：只做两类静态可确认等价的收敛 ──
 // 收紧原则：宁可保留也不制造新书源故障。
@@ -427,11 +421,53 @@ function variants(o) {
     fs.writeFileSync(file, JSON.stringify(out));
     console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '（探活+老化）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
 
-    // Phase B-1: 对比 HEAD legado.json 补 upstream-removed + 落盘删除清单
-    const newKeys = new Set(out.map(s => norm(s.bookSourceUrl)).filter(Boolean));
-    const missing = [...oldKeys].filter(k => !newKeys.has(k) && !deletionManifest[k]);
-    // missing 里的源在上一轮存在但本轮消失，且 filter 层无主动记录 → 上游不再提供
-    for (const k of missing) deletionManifest[k] = { name: '', reason: 'upstream-removed', evidence: 'upstream no longer provides this source' };
+    // Phase B-1 → Phase D-1: 对比 HEAD legado.json 补删除清单 + 存活保留
+    // P1-1 修复：上游不再提供 ≠ 源已失效。对每个 missing 源先 alive() 探测 origin：
+    //   域名还活着 → 保留旧源（加回 out，不出现在 deletionManifest）
+    //   域名死了 → 写 deletionManifest reason=probe-dead（替代之前的 upstream-removed）
+    //   alive() 异常 → 保守保留旧源（fail-open for source retention）
+    const outKeys = new Set(out.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+    const missing = [...oldKeys].filter(k => !outKeys.has(k) && !deletionManifest[k]);
+    let revived = 0, reclassed = 0, aliveProbeFail = 0;
+    if (missing.length) {
+        // 从 oldLegado 提取完整对象，建立 k→{old,url,name} 映射
+        const lookup = {};
+        for (const s of oldLegado) { const k = norm(s.bookSourceUrl); if (k) lookup[k] = s; }
+        // 并发 alive 探测
+        const probeResults = await pool(missing, 8, async k => {
+            const oldS = lookup[k];
+            if (!oldS) return { k, alive: null };  // 没找到原始对象（罕见）→ 保守保留
+            const o = originOf(oldS.bookSourceUrl);
+            if (!o) return { k, alive: null };
+            let a; try { a = await alive(o); } catch (_) { a = null; }
+            return { k, alive: a, origin: o, oldS };
+        });
+        for (const { k, alive: a, origin, oldS } of probeResults) {
+            if (a === true) {
+                // 域名活着 → 保留旧源（规范化后加回 out，避免与现有源重复）
+                const canonOrig = canonicalizeUrl(oldS.bookSourceUrl || '');
+                const keep = { ...oldS, bookSourceUrl: canonOrig.url };
+                if (!out.some(x => norm(x.bookSourceUrl) === k)) { out.push(keep); revived++; }
+            } else if (a === false) {
+                // 域名死了 → 改写为 probe-dead（不再用 upstream-removed）
+                deletionManifest[k] = {
+                    name: oldS ? (oldS.bookSourceName || '') : '',
+                    reason: 'probe-dead',
+                    evidence: 'upstream-removed + domain dead: ' + (origin || '(unknown)')
+                };
+                reclassed++;
+            } else {
+                // alive() 异常或 oldS 找不到 → 保守保留旧源，不写入删除清单
+                if (oldS) {
+                    const canonOrig = canonicalizeUrl(oldS.bookSourceUrl || '');
+                    const keep = { ...oldS, bookSourceUrl: canonOrig.url };
+                    if (!out.some(x => norm(x.bookSourceUrl) === k)) { out.push(keep); revived++; }
+                }
+                aliveProbeFail++;
+            }
+        }
+        console.log('upstream-removed 处置: ' + missing.length + ' 个消失源 → 保留存活 ' + revived + ' / 域名真死改 probe-dead ' + reclassed + ' / 探测异常保留 ' + aliveProbeFail);
+    }
     // 为所有 deletionManifest 条目补 name（如果之前没记录）
     for (const [k, v] of Object.entries(deletionManifest)) {
         if (!v.name) {
@@ -442,5 +478,11 @@ function variants(o) {
     fs.mkdirSync('reports', { recursive: true });
     fs.writeFileSync('reports/deletion-manifest.json', JSON.stringify(deletionManifest, null, 1));
     const nTotal = Object.keys(deletionManifest).length;
-    if (nTotal) console.log('删除清单: ' + nTotal + ' 个（probe-dead/aging-failed/canon-merged/upstream-removed 明细见 reports/deletion-manifest.json）');
+    if (nTotal) console.log('删除清单: ' + nTotal + ' 个（probe-dead/aging-failed/canon-merged 明细见 reports/deletion-manifest.json）');
+
+    // 如果有 revived 的源 → out 长度变了，更新写回文件
+    if (revived > 0 || missing.length > 0) {
+        fs.writeFileSync(file, JSON.stringify(out));
+        console.log('legado.json 已更新（保留存活上游消失源 ' + revived + ' 个，最终 ' + out.length + ' 个源）');
+    }
 })();

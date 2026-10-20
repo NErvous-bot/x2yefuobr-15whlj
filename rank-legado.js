@@ -39,13 +39,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// ====== URL 规范化（与 health.js 一致：去首尾空格、片段、末尾斜杠）======
-function normUrl(u) {
-    try {
-        const x = new URL(String(u).trim().split('#')[0]);
-        return x.origin + x.pathname.replace(/\/$/, '');
-    } catch (e) { return null; }
-}
+// ====== URL 规范化（与全链路共享 norm 一致：去首尾空格、片段、末尾斜杠）======
+const { norm: normUrl } = require('./src/source-id');
 
 // ====== 输入路径 ======
 const REPO = __dirname;

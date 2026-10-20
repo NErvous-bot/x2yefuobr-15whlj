@@ -98,11 +98,7 @@ async function fetchPage(url, opt) {
     return null;
 }
 
-function originOf(u) { try { return new URL(String(u).split('#')[0]).origin; } catch (e) { return null; } }
-function norm(u) {
-    try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); }
-    catch (e) { return null; }
-}
+const { norm, originOf } = require('./src/source-id');
 const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // 反爬验证页识别（百度安全验证/Cloudflare/通用验证码）：CI 环境 IP 触发 ≠ 源坏了 → 不可测豁免

@@ -2,11 +2,10 @@
 // 验收标准：①旧不可测源显著转为可判定 ②旧可用源零误杀 ③旧确认坏不得因测试器缺陷虚增
 const fs = require('fs');
 const { checkSource } = require('./aging-test');
+const { norm } = require('./src/source-id');
 
 const BUDGET_MIN = 13, CONC = 10;
 const CAP = { gbk: 30, bl: 30, opt: 15, cl: 10, ct: 5, nores: 20, usable: 99, dead: 15 };
-
-const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
 
 (async () => {
 const list = JSON.parse(fs.readFileSync('legado.json', 'utf8'));

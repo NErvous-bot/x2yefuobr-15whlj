@@ -7,8 +7,7 @@
 //       连续失败≥3→观察(30) / 不可测保护池(曾经实测通过440,从未验证380 — "测不了"不判死但也不绝对置顶) / 确认坏(5,待老化剔除)
 // 历史记录复用 health.json 的 recent 数组（最近5次有结论实测），不另建文件避免状态漂移
 const fs = require('fs');
-
-const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
+const { norm } = require('./src/source-id');
 
 // 最近 N 次结果 → 末尾连续 pass / fail 计数
 const consOf = (recent, tag) => { let n = 0; for (let i = recent.length - 1; i >= 0 && recent[i] === tag; i--) n++; return n; };

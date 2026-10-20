@@ -12,11 +12,7 @@
 //       norm 与 health.js/score.js 同规则，任何一处改动必须多处同步。
 'use strict';
 const fs = require('fs');
-
-const norm = u => {
-    try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); }
-    catch (e) { return null; }
-};
+const { norm } = require('./src/source-id');
 
 // ── 与 filter.js 完全一致的规范化规则（副本，改动两处同步）──
 const CANON_TRACKING_PARAMS = {

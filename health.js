@@ -3,14 +3,10 @@
 // 带时间预算：超时未测的源沿用上一轮健康数据（每轮优先测最久没测的，最终全库都会轮到）
 const fs = require('fs');
 const { checkSource } = require('./aging-test');
+const { norm } = require('./src/source-id');
 
 const BUDGET_MIN = 20;  // 单轮实测时间预算（分钟）
 const CONC = 10;        // 并发数
-
-function norm(u) {
-    try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); }
-    catch (e) { return null; }
-}
 
 // 由实测结果推导各关通过情况（reason 含失败关卡信息）
 function gatesOf(r) {

@@ -26,7 +26,7 @@ const ROLLBACK_FILES = ['legado.json', 'legado.json.sig', 'replaceRule.json', 'r
 
 const gitShow = f => execSync(`git show HEAD:${f}`, { maxBuffer: 64e6 });
 const pct = (a, b) => !a ? '—' : '(' + (b >= a ? '+' : '') + (Math.round((b - a) / a * 1000) / 10) + '%)';
-const norm = u => { try { const x = new URL(String(u).split('#')[0]); return x.origin + x.pathname.replace(/\/$/, ''); } catch (e) { return null; } };
+const { norm } = require('./src/source-id');
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
 
 // 源状态口径与 recheck-regression.js 一致：health=null → untestable，content=true → available
@@ -53,13 +53,45 @@ const VERDICT_CN = {
 
 const head = execSync('git rev-parse --short HEAD').toString().trim();
 let oldHealth, oldTotal;
-try {
-    oldHealth = JSON.parse(gitShow('health/source_health.json').toString());
-    oldTotal = JSON.parse(gitShow('legado.json').toString()).length;
-} catch (e) {
-    // 唯一保留的 fail-open：首次运行没有可比基线
+
+// P1-2 修复：区分"基线不存在"（真首次运行 → fail-open）和"基线损坏/读取异常"（fail-closed）
+// 显式用 git cat-file -e 检查 HEAD 里两个基线 blob 是否存在
+function blobExists(path) {
+    try { execSync(`git cat-file -e HEAD:${path}`, { stdio: 'pipe' }); return true; }
+    catch (e) {
+        // git cat-file exit code 128 = object not found → 真不存在
+        // 其他异常（git 内部错误等）也视为"不可信"，但这种情况极少
+        return false;
+    }
+}
+
+const healthExists = blobExists('health/source_health.json');
+const legadoExists = blobExists('legado.json');
+
+if (!healthExists && !legadoExists) {
+    // 两个都不存在 → 真首次运行，没有可比基线 → fail-open
     console.log('发布保险丝: HEAD 无基线报告（首次运行），跳过判定直接放行');
     process.exit(0);
+}
+// 任一存在（正常情况是两个都存在），但读取/解析失败 → fail-closed
+// 避免把 JSON 损坏、git 异常、字段缺失等情况误判为"首次运行"
+try {
+    if (healthExists) oldHealth = JSON.parse(gitShow('health/source_health.json').toString());
+    if (legadoExists) oldTotal = JSON.parse(gitShow('legado.json').toString()).length;
+} catch (e) {
+    console.error('× 发布保险丝故障: 基线文件存在但解析失败（不是首次运行），拒绝发布: ' + e.message);
+    process.exit(1);
+}
+
+// legado.json 应该永远存在（它是主成品），如果 health 存在但 legado 不存在 → 异常
+if (healthExists && !legadoExists) {
+    console.error('× 发布保险丝故障: HEAD 有 health 但无 legado.json（基线状态不一致），拒绝发布');
+    process.exit(1);
+}
+// 如果只有 legado 没有 health → 也异常（health.js 和 fuse.js 同属一个 workflow step 链）
+if (!healthExists && legadoExists) {
+    console.error('× 发布保险丝故障: HEAD 有 legado.json 但无 health/source_health.json（基线状态不一致），拒绝发布');
+    process.exit(1);
 }
 
 try {
@@ -83,10 +115,13 @@ try {
 
     // Phase B-2: ①-b 旧可用源消失检查（独立于回归闸门 broken 和总量熔断）
     // 设计原则：旧可用源在新 legado.json 里消失 → 必须有 filter.js 删除清单里的合法理由
-    // 合法理由白名单：probe-dead / aging-failed / canon-merged / upstream-removed
+    // 合法理由白名单：probe-dead（域名真死）/ aging-failed（三关实测失败）/ canon-merged（被同 canonicalUrl 替代）
+    // upstream-removed 已移除——仅"上游不再提供"不足以证明源失效，filter.js 现在会先 alive() 探测：
+    //   域名还活着 → 保留旧源（不出现在删除清单）
+    //   域名死了 → 自动改写为 probe-dead
     // 无记录或理由不在白名单 → 直接 BLOCKED（删除盲区硬阻断）
     const newLegadoKeys = new Set((JSON.parse(fs.readFileSync('legado.json', 'utf8'))).map(s => norm(s.bookSourceUrl)).filter(Boolean));
-    const LEGAL_DELETION_REASONS = new Set(['probe-dead', 'aging-failed', 'canon-merged', 'upstream-removed']);
+    const LEGAL_DELETION_REASONS = new Set(['probe-dead', 'aging-failed', 'canon-merged']);
     let manifest = {};
     try { manifest = JSON.parse(fs.readFileSync('reports/deletion-manifest.json', 'utf8')); } catch (_) {}
     const removedAvail = [], unjustifiedRemoved = [];
