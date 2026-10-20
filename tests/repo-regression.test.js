@@ -251,9 +251,50 @@ test('检查 latch.await 返回值 + 超时保留历史状态', () => {
 });
 
 // ============================================================
-// 7. smoke-p0.js 必须通过真实断言
+// 7. P1 边界保护：故障注入静态审计
 // ============================================================
-console.log('\n=== 7. smoke-p0.js 真实运行 ===');
+console.log('\n=== 7. P1 边界保护代码存在性 ===');
+
+test('fuse.js 区分"基线不存在"和"基线损坏"（P1-2 fail-closed）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8');
+    // 1. blobExists 函数存在，用 git cat-file -e 预检查
+    assert.ok(code.includes('git cat-file -e'), '应有 blobExists() 用 git cat-file -e');
+    assert.ok(code.includes('blobExists'), '应定义 blobExists 函数');
+    // 2. 三层判定：双缺→fail-open；单缺→fail-closed；双存在但解析失败→fail-closed
+    assert.ok(code.includes('无基线报告（首次运行）'), '双缺时应明确打印首次运行');
+    assert.ok(code.includes('process.exit(1)') && code.includes('解析失败') || code.includes('基线状态不一致'), 
+              '应有基线损坏或不一致时的 exit(1) 分支');
+    assert.ok(code.includes('基线状态不一致'), '应显式检查 health/legado 存在性不对称');
+});
+
+test('filter.js alive() 探测替代 upstream-removed（P1-1 生效）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'filter.js'), 'utf8');
+    // 1. 应有 alive() / originOf() 调用
+    assert.ok(code.includes('alive(') || code.includes('originOf('), '应有 alive() 或 originOf() 调用');
+    // 2. 应有"保留旧源"分支（alive === true）
+    assert.ok(code.includes('canonicalizeUrl'), '应有 canonicalizeUrl 用于回填旧源');
+    // 3. upstream-removed 不再出现在自动写入的删除理由里（只在 legacy 读取里）
+    // 简单验证：filter.js 没有"upstream-removed"作为 reason 赋值
+    const noUpstreamAssign = !/reason\s*[:=]\s*['"]upstream-removed['"]/.test(code);
+    assert.ok(noUpstreamAssign, 'filter.js 不应再写入 upstream-removed 作为 reason');
+});
+
+test('fuse.js 白名单不再包含 upstream-removed（P1-1）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8');
+    // 匹配 new Set([...]) 或 [...] 两种可能
+    const match = code.match(/LEGAL_DELETION_REASONS\s*=\s*(?:new\s+Set\()?\[([^\]]+)\]/);
+    assert.ok(match, '应定义 LEGAL_DELETION_REASONS');
+    assert.ok(!match[1].includes('upstream-removed'), '白名单不应包含 upstream-removed');
+    // 应保留另外三个合法理由
+    assert.ok(match[1].includes('probe-dead'), '白名单应包含 probe-dead');
+    assert.ok(match[1].includes('aging-failed'), '白名单应包含 aging-failed');
+    assert.ok(match[1].includes('canon-merged'), '白名单应包含 canon-merged');
+});
+
+// ============================================================
+// 8. smoke-p0.js 必须通过真实断言
+// ============================================================
+console.log('\n=== 8. smoke-p0.js 真实运行 ===');
 test('smoke-p0.js exit 0（所有断言通过）', () => {
     const r = spawnSync(process.execPath, ['smoke-p0.js'], { cwd: REPO, encoding: 'utf8', timeout: 60000 });
     assert.strictEqual(r.status, 0, `smoke-p0.js 退出码 ${r.status}，stderr: ${r.stderr?.slice(0, 500)}`);
