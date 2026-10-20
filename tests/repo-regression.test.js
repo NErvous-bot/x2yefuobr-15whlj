@@ -268,30 +268,87 @@ test('fuse.js 用 git ls-tree 区分文件不存在 vs Git 异常（P1-2 最终�
     assert.ok(code.includes('git ls-tree 失败'), 'git 异常应 throw 报错而非伪装成不存在');
 });
 
-// 动态故障注入：临时 git repo + 损坏 health JSON → fuse.js 应 exit 1
-test('动态: 损坏基线 JSON → fuse.js fail-closed exit 1', () => {
-    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'fuse-baseline-corrupt-'));
+// 动态故障注入工具：创建带 src/source-id.js 依赖的临时 git repo
+function makeTestFuseRepo({ healthContent = null, legadoContent = null } = {}) {
+    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'fuse-test-'));
+    // 准备模块依赖（fuse.js 有 require('./src/source-id')）
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+    fs.writeFileSync(path.join(tmp, 'fuse.js'), fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8'));
+    // 其他 fuse.js 需要的常量（ROLLBACK_FILES 等通过代码引用，不需要提前创建）
+    // 初始化 git
+    execSync('git init', { cwd: tmp, stdio: 'pipe' });
+    execSync('git config user.email test@test.com', { cwd: tmp, stdio: 'pipe' });
+    execSync('git config user.name Test', { cwd: tmp, stdio: 'pipe' });
+    // 健康报告 JSON（必须有，fuse.js L99 会读）
+    fs.mkdirSync(path.join(tmp, 'health'));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), healthContent || JSON.stringify({ checkedAt: 0, total: 0, available: 0 }));
+    // legado.json 也必须有
+    fs.writeFileSync(path.join(tmp, 'legado.json'), legadoContent || '[]');
+    execSync('git add -A && git commit -m "add baseline"', { cwd: tmp, stdio: 'pipe' });
+    return tmp;
+}
+
+test('动态: 真首次运行（双基线不存在）→ exit 0', () => {
+    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'fuse-test-firstrun-'));
     try {
-        // 初始化空 git repo
+        // 依赖 + fuse.js
+        fs.mkdirSync(path.join(tmp, 'src'));
+        fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+        fs.writeFileSync(path.join(tmp, 'fuse.js'), fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8'));
         execSync('git init', { cwd: tmp, stdio: 'pipe' });
         execSync('git config user.email test@test.com', { cwd: tmp, stdio: 'pipe' });
         execSync('git config user.name Test', { cwd: tmp, stdio: 'pipe' });
         execSync('git commit --allow-empty -m "init"', { cwd: tmp, stdio: 'pipe' });
-        // 写损坏的 health JSON
+        // 故意不创建 health/source_health.json 和 legado.json
+        const r = spawnSync(process.execPath, ['fuse.js'], { cwd: tmp, encoding: 'utf8' });
+        assert.strictEqual(r.status, 0, `真首次运行应 exit 0，实际 exit=${r.status}`);
+        assert.ok((r.stdout || '').includes('无基线报告'), '应打印首次运行提示');
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('动态: 损坏的 health JSON → fail-closed exit 1（不是 MODULE_NOT_FOUND）', () => {
+    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'fuse-test-corrupt-'));
+    try {
+        fs.mkdirSync(path.join(tmp, 'src'));
+        fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+        fs.writeFileSync(path.join(tmp, 'fuse.js'), fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8'));
+        execSync('git init', { cwd: tmp, stdio: 'pipe' });
+        execSync('git config user.email test@test.com', { cwd: tmp, stdio: 'pipe' });
+        execSync('git config user.name Test', { cwd: tmp, stdio: 'pipe' });
         fs.mkdirSync(path.join(tmp, 'health'));
         fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), '{ INVALID JSON');
-        // legado.json 正常存在
         fs.writeFileSync(path.join(tmp, 'legado.json'), '[{"bookSourceUrl":"https://example.com","bookSourceName":"test"}]');
-        // 提交
         execSync('git add -A && git commit -m "add baseline"', { cwd: tmp, stdio: 'pipe' });
-        // 运行 fuse.js
-        const fuseSrc = fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8');
-        // fuse.js 会用 gitShow() 读取 HEAD 里的 health/source_health.json → JSON.parse 失败
-        const r = spawnSync(process.execPath, ['-e', fuseSrc], { cwd: tmp, encoding: 'utf8' });
-        assert.strictEqual(r.status, 1, `损坏基线应 exit 1，实际 exit=${r.status}; stderr=${r.stderr?.slice(0, 300)}`);
-    } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
-    }
+        const r = spawnSync(process.execPath, ['fuse.js'], { cwd: tmp, encoding: 'utf8' });
+        assert.ok(r.status === 1, `损坏基线应 exit 1，实际 exit=${r.status}; stderr=${r.stderr?.slice(0, 200)}`);
+        // 关键断言：排除 MODULE_NOT_FOUND，确认是目标保护逻辑触发
+        const combined = (r.stdout || '') + '\n' + (r.stderr || '');
+        assert.ok(!combined.includes('MODULE_NOT_FOUND'), '不应是模块缺失导致的失败');
+        assert.ok(combined.includes('解析失败') || combined.includes('拒绝发布'), 
+                  `应包含目标错误信息，实际输出: ${combined.slice(0, 300)}`);
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('动态: 单基线缺失（health 有 legado 无）→ fail-closed exit 1', () => {
+    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'fuse-test-missing-'));
+    try {
+        fs.mkdirSync(path.join(tmp, 'src'));
+        fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+        fs.writeFileSync(path.join(tmp, 'fuse.js'), fs.readFileSync(path.join(REPO, 'fuse.js'), 'utf8'));
+        execSync('git init', { cwd: tmp, stdio: 'pipe' });
+        execSync('git config user.email test@test.com', { cwd: tmp, stdio: 'pipe' });
+        execSync('git config user.name Test', { cwd: tmp, stdio: 'pipe' });
+        // 只有 health/source_health.json，故意不创建 legado.json
+        fs.mkdirSync(path.join(tmp, 'health'));
+        fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), JSON.stringify({ checkedAt: 0, total: 0, available: 0 }));
+        execSync('git add -A && git commit -m "partial baseline"', { cwd: tmp, stdio: 'pipe' });
+        // fuse.js 会在运行时读取工作区 legado.json（不存在）也没关系，blobExists 返回 false
+        const r = spawnSync(process.execPath, ['fuse.js'], { cwd: tmp, encoding: 'utf8' });
+        assert.ok(r.status === 1, `单基线缺失应 exit 1，实际 exit=${r.status}`);
+        assert.ok((r.stdout || '').includes('基线状态不一致') || (r.stderr || '').includes('基线状态不一致'), 
+                  `应检测到状态不一致，stdout=${r.stdout?.slice(0,200)} stderr=${r.stderr?.slice(0,200)}`);
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
 test('filter.js alive() 探测替代 upstream-removed（P1-1 生效）', () => {

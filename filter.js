@@ -191,11 +191,26 @@ function variants(o) {
     let merged = 0, repaired = 0;
 
     // Phase B-1 基线：读 HEAD legado.json 做 diff，供删除清单和 fuse.js 裁决使用
+    // 与 fuse.js 保持同样的三态语义（git ls-tree 模式）：
+    //   HEAD:legado.json exit 0 + 空输出 → 真不存在（首次运行，空 oldLegado）
+    //   HEAD:legado.json exit 0 + 非空输出 → 存在，正常读取
+    //   任何非零 exit 或 JSON.parse 失败 → fail-closed exit 1
     let oldLegado = [], oldKeys = new Set();
     try {
-        oldLegado = JSON.parse(execSync('git show HEAD:legado.json', { maxBuffer: 64e6 }).toString());
-        oldKeys = new Set(oldLegado.map(s => norm(s.bookSourceUrl)).filter(Boolean));
-    } catch (_) { /* 首次运行无基线，保持空 */ }
+        let treeOut;
+        try { treeOut = execSync('git ls-tree HEAD -- legado.json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
+        catch (e) { throw new Error('git ls-tree legado.json 失败 (exit=' + e.status + '): ' + e.message); }
+        if (treeOut.trim().length === 0) {
+            // 真首次运行 → 空 oldLegado（不阻断）
+            console.log('Phase B-1: HEAD 无 legado.json 基线，首次运行');
+        } else {
+            oldLegado = JSON.parse(execSync('git show HEAD:legado.json', { maxBuffer: 64e6 }).toString());
+            oldKeys = new Set(oldLegado.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+        }
+    } catch (e) {
+        console.error('× filter.js 故障: 读取 HEAD legado.json 失败（不是首次运行），拒绝发布: ' + e.message);
+        process.exit(1);
+    }
     const deletionManifest = {};  // key=norm(url), value={name, reason, evidence}
 
     // 1) 上游合并：同名源取 lastUpdateTime 更新的版本（作者修复的规则自动进来）
