@@ -214,8 +214,10 @@ function variants(o) {
     // 2) 域名探测
     const origins = [...new Set(list.map(s => originOf(s.bookSourceUrl)).filter(Boolean))];
     console.log('探测 ' + origins.length + ' 个域名...');
+    // 只把 alive() === false（明确死亡 404/410）的进 dead 列表
+    // alive() === null（无法判定：超时/5xx/403）保守保留，不进 dead，不误删
     const dead = new Set(
-        (await pool(origins, 12, o => alive(o).then(a => [o, a]))).filter(x => !x[1]).map(x => x[0])
+        (await pool(origins, 12, o => alive(o).then(a => [o, a]))).filter(x => x[1] === false).map(x => x[0])
     );
 
     // 3) 修复尝试：死域名逐个试变体，任何一个活着就整体迁移过去
