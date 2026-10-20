@@ -829,7 +829,7 @@ public class SyncWorker extends Worker {
         // Step 4: 合并结果 → 更新每个源的 enabled + 刷新健康缓存
         // 合并优先级：
         //   1. 本轮有明确探测结果（probeResults.containsKey） → 用本轮结果
-        //   2. 本轮队列里但超时未完成（pro Queue 有但 probeResults 无） → 保留历史状态 oldH.localAvailable
+        //   2. 本轮队列里但超时未完成（probeQueue 有但 probeResults 无） → 保留历史状态 oldH.localAvailable
         //   3. 队列外（队列超过 60 被截掉的，即既不在 probeQueue 也不在 probeResults）：
         //      a. 有 cachedResult（24h 内缓存）→ 用缓存
         //      b. 没缓存 → 保持 CI 默认 enabled=true（新源首次进入）
