@@ -83,6 +83,8 @@ test('同名不同 URL 各自独立的诊断数据', () => {
 
     // 复制 rank-legado.js 并在临时目录运行
     fs.copyFileSync(path.join(REPO, 'rank-legado.js'), path.join(tmp, 'rank-legado.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
     const r = spawnSync(process.execPath, ['rank-legado.js'], { cwd: tmp, encoding: 'utf8' });
     assert.strictEqual(r.status, 0, `rank-legado.js 失败: ${r.stderr}`);
 
@@ -120,10 +122,11 @@ test('原权重 800 + HIGH_PERFORMER → 1000 而非 1800', () => {
     fs.mkdirSync(path.join(tmp, 'reports'));
     fs.writeFileSync(path.join(tmp, 'reports', 'freshness-summary.json'), JSON.stringify(summary, null, 2));
     fs.copyFileSync(path.join(REPO, 'rank-legado.js'), path.join(tmp, 'rank-legado.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
 
     const r = spawnSync(process.execPath, ['rank-legado.js'], { cwd: tmp, encoding: 'utf8' });
     assert.strictEqual(r.status, 0, `失败: ${r.stderr}`);
-
     const ranked = JSON.parse(fs.readFileSync(path.join(tmp, 'ranked-legado.json'), 'utf8'));
     const w = ranked[0].weight;
     assert.strictEqual(w, 1000, `800*1.0+1000=1800 应该被 clamp 到 1000，实际: ${w}`);
@@ -141,6 +144,8 @@ test('原权重 1500 → clamp 到 1000（乘倍率后）', () => {
     fs.mkdirSync(path.join(tmp, 'reports'));
     fs.writeFileSync(path.join(tmp, 'reports', 'freshness-summary.json'), JSON.stringify(summary, null, 2));
     fs.copyFileSync(path.join(REPO, 'rank-legado.js'), path.join(tmp, 'rank-legado.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
     const r = spawnSync(process.execPath, ['rank-legado.js'], { cwd: tmp, encoding: 'utf8' });
     assert.strictEqual(r.status, 0, `失败: ${r.stderr}`);
     const ranked = JSON.parse(fs.readFileSync(path.join(tmp, 'ranked-legado.json'), 'utf8'));
@@ -159,6 +164,8 @@ test('原权重 -5 → clamp 到 0', () => {
     fs.mkdirSync(path.join(tmp, 'reports'));
     fs.writeFileSync(path.join(tmp, 'reports', 'freshness-summary.json'), JSON.stringify(summary, null, 2));
     fs.copyFileSync(path.join(REPO, 'rank-legado.js'), path.join(tmp, 'rank-legado.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
     const r = spawnSync(process.execPath, ['rank-legado.js'], { cwd: tmp, encoding: 'utf8' });
     assert.strictEqual(r.status, 0, `失败: ${r.stderr}`);
     const ranked = JSON.parse(fs.readFileSync(path.join(tmp, 'ranked-legado.json'), 'utf8'));
@@ -182,6 +189,8 @@ test('源数量和 URL 不变', () => {
     fs.mkdirSync(path.join(tmp, 'reports'));
     fs.writeFileSync(path.join(tmp, 'reports', 'freshness-summary.json'), JSON.stringify(summary, null, 2));
     fs.copyFileSync(path.join(REPO, 'rank-legado.js'), path.join(tmp, 'rank-legado.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
     const r = spawnSync(process.execPath, ['rank-legado.js'], { cwd: tmp, encoding: 'utf8' });
     assert.strictEqual(r.status, 0, `失败: ${r.stderr}`);
     const ranked = JSON.parse(fs.readFileSync(path.join(tmp, 'ranked-legado.json'), 'utf8'));
