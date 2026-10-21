@@ -2,25 +2,25 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   63  available->available
+   57  available->available
     1  available->broken
-    1  available->untestable
-    2  broken->available
+    8  available->untestable
+    1  broken->available
    66  broken->broken
-    5  broken->untestable
-    1  untestable->available
-    7  untestable->broken
-  224  untestable->untestable
+    1  broken->removed
+    6  broken->untestable
+    3  untestable->broken
+  228  untestable->untestable
 新增源 1
 
 ━━ 一级复查：旧可用 → 确认坏 1 ━━
   SUSPECT 1
-  [SUSPECT 2/5] 998读书 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,CONTENT_EMPTY,PASS,PASS | 特征: GBK
+  [SUSPECT 2/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,SEARCH_EMPTY,PASS,SEARCH_EMPTY,SEARCH_EMPTY
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 1（基线 c809a86） ━━
-  [STILL_BROKEN] (T1 原SUSPECT) 豆花文学 h=3 [搜索无结果] recent=fail/fail/pass/fail/fail flap=true
+━━ 往轮候选终态 1（基线 95959c7） ━━
+  [STILL_BROKEN] (T1 原SUSPECT) 998读书 h=33 [目录为空] recent=fail/fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
 PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）

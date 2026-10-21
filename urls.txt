@@ -4,8 +4,6 @@
 https://ghproxy.net/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
 https://ghfast.top/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
 https://gh-proxy.com/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
-https://cdn.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
 https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
-https://fastly.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
-https://testingcf.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
 https://gcore.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
+https://fastly.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
