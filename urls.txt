@@ -7,3 +7,4 @@ https://gh-proxy.com/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15w
 https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
 https://gcore.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
 https://fastly.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
+https://testingcf.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
