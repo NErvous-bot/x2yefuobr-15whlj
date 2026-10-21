@@ -44,8 +44,10 @@ const { norm, originOf } = require('./src/source-id');
 //  1) 纯根路径重复斜杠（pathname 全为斜杠且 ≥2 个，如 https://x//）→ 收敛为单斜杠；
 //     非根路径中的 //（/a//b）一律原样保留，仅记录到报告
 //  2) query 仅由"已验证可忽略参数白名单"中的参数构成时才去除；含任何未知参数一律保留
-//  #fragment 永远原样保留（同源不同规则的变体源靠它区分，是既有身份语义）
-// 同规则副本另见 verify-product.js（硬断言），改动需两处同步
+//  #fragment 永远原样保留在成品 URL 里；但身份追踪（norm()）会去掉 fragment
+//  同一 origin+pathname 不允许两个源共存（verify-product.js A2 硬断言）
+//  如需同 pathname 多源：先改 norm() 加白名单，再同步硬断言
+//  同规则副本另见 verify-product.js（硬断言）和 src/source-id.js（身份键定义），改动需三处同步
 const CANON_TRACKING_PARAMS = {
     // 腾讯系分发渠道标记：取数走独立 searchUrl，baseUrl 上的该参数不参与请求；
     // 且全链路身份函数 norm（filter/health/score/fuse/recheck）本就忽略 query
@@ -357,8 +359,9 @@ function variants(o) {
     }
 
     // 3.8) URL 规范化 + 安全去重（D3，Round3 补测）
-    //      仅合并"规范化后完整 URL 相同"的条目；规范后仍不同（www 变体/#fragment 变体等）
-    //      一律保留并写报告。确定性保留规则（不可随机、不可静默）：
+    //      两级去重：① canonicalizeUrl() 后完整 URL 相同 → 合并；
+    //                ② norm() 身份键相同 → verify-product A2 硬断言拦截（不允许静默合并）
+    //      确定性保留规则（不可随机、不可静默）：
     //      ① 健康历史连续：规范化前 norm 已等于规范键的一方优先（避免实测历史断档）
     //      ② lastUpdateTime 较新者 ③ 规则字段更完整者 ④ 先出现者
     //      所有规范化/合并/保留冲突逐日落 reports/canonical-merge.json
