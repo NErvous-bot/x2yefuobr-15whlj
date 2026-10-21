@@ -3,7 +3,7 @@
 // → 覆写每源 weight 并按权重降序重排 legado.json，手机端搜索结果优质源自动排前
 // 评分（100分）：搜索20 + 目录25 + 正文25 + 稳定性20 + 最近连续成功10
 //   稳定性：recent≥2个样本时按窗口成功率×20，否则中性12；连续失败1次-5、2次-15、≥3次强制观察层
-// 分层：≥90核心(weight500~900) / 75~89稳定(300~490) / 60~74备用(150~290) / <60观察(50)
+// 分层：≥90核心(weight500~700) / 75~89稳定(300~468) / 60~74备用(150~276) / <60观察(50)
 //       连续失败≥3→观察(30) / 不可测保护池(曾经实测通过440,从未验证380 — "测不了"不判死但也不绝对置顶) / 确认坏(5,待老化剔除)
 // 历史记录复用 health.json 的 recent 数组（最近5次有结论实测），不另建文件避免状态漂移
 const fs = require('fs');
@@ -63,8 +63,8 @@ try {
     for (const x of layers.core.slice(0, 10).sort((a, b) => b.weight - a.weight))
         L.push('  ' + String(x.weight).padStart(5) + '  ' + x.name + (x.score !== null && x.score !== undefined ? '  ' + x.score + '分' : ''));
     if (layers.core.length > 10) L.push('  ...等 ' + layers.core.length + ' 个');
-    L.push('稳定源  ' + layers.stable.length + ' 个（75~89分，weight 300~490）');
-    L.push('备用源  ' + layers.backup.length + ' 个（60~74分，weight 150~290）');
+    L.push('稳定源  ' + layers.stable.length + ' 个（75~89分，weight 300~468）');
+    L.push('备用源  ' + layers.backup.length + ' 个（60~74分，weight 150~276）');
     L.push('观察    ' + layers.watch.length + ' 个（<60分或连续失败，weight 30~50）');
     const uv = layers.untestable.filter(x => x.weight === 440).length;
     L.push('不可测保护池  ' + layers.untestable.length + ' 个（曾实测通过 ' + uv + ' 个weight440 / 从未验证 ' + (layers.untestable.length - uv) + ' 个weight380，不判死不置顶）');

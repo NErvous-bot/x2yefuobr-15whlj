@@ -78,6 +78,19 @@ for (let i = 0; i < list.length; i++) {
     seen.set(c.url, name);
 }
 
+// ── A2. norm() 身份键无碰撞：同主 URL 但 query/fragment 不同，不能映射到同一健康追踪键 ──
+const idSeen = new Map();
+for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    const k = norm(s.bookSourceUrl);
+    if (!k) fail('第 ' + i + ' 条 norm() 返回 null，URL 非法: ' + s.bookSourceUrl);
+    const name = String(s.bookSourceName || '?');
+    const full = String(s.bookSourceUrl);
+    if (idSeen.has(k))
+        fail('身份键碰撞: ' + k + ' 对应两个不同 URL: ' + idSeen.get(k).url + '（' + idSeen.get(k).name + '）/ ' + full + '（' + name + '）—— 需显式白名单或合并策略');
+    idSeen.set(k, { name, url: full });
+}
+
 // ── B. weight 逐源 100% 一致：norm 键多重集比对，双向无悬挂 ──
 const flat = Object.values(scores.layers || {}).reduce((a, arr) => a.concat(arr || []), []);
 if (!Array.isArray(flat) || flat.length !== list.length)
