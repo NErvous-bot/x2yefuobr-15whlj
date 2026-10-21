@@ -1,4 +1,4 @@
-name: 更新书源
+﻿name: 更新书源
 on:
   schedule:
     # UTC 02:23 ≈ 北京时间 10:23，错峰整点减少调度延迟；*/3 按日号取模，
@@ -32,7 +32,7 @@ jobs:
         run: node probe.js
       - name: 源健康检查（三关实测→source_health.json，带20分钟预算防超时）
         run: node health.js
-      - name: 源评分分层（健康分→核心/稳定/备用/观察→weight自动排序，番茄保底9999不动）
+      - name: 源评分分层（健康分→核心/稳定/备用/观察/不可测/确认坏→weight 自动排序）
         run: node score.js
       # D3 硬断言必须在 fuse 之前：此时校验的是同轮候选成品；fuse BLOCKED 会有意把成品
       # 回滚到基线（新 scores 仅作诊断件），回滚后再比对会把保护动作误判成失败
