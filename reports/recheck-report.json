@@ -1,14 +1,97 @@
 {
- "generatedAt": 1792604698316,
- "runAt": "2026-10-21T17:44:58.316Z",
+ "generatedAt": 1792643744357,
+ "runAt": "2026-10-22T04:35:44.357Z",
  "oldRef": "HEAD",
- "baselineSha": "775dc214f2ba9383403cc38f53fcbd25b1aeb783",
+ "baselineSha": "9718563af2d477aec111d52137535b29588806e9",
  "tier1": [
   {
-   "name": "⭕️PO文学",
-   "url": "https://www.po18to.com",
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "FLAPPING"
+  },
+  {
+   "name": "🎃一起看看🎃",
+   "url": "http://m.17kankan.org#🎃",
    "traits": [
-    "POST"
+    "POST",
+    "GBK"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "🤶🏻脸红心跳",
+   "url": "https://www.po18.in",
+   "traits": [
+    "GBK"
    ],
    "oldNote": "三关全过",
    "newNote": "搜索无结果",
@@ -50,28 +133,28 @@
  "tier2": [],
  "resolved": [
   {
-   "name": "ncode_syosetu(成为小说家吧)",
-   "url": "https://ncode.syosetu.com/",
+   "name": "⭕️PO文学",
+   "url": "https://www.po18to.com",
    "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "RECOVERED",
+   "prevVerdict": "REAL_DEATH_CANDIDATE",
+   "state": "STILL_BROKEN",
    "evidence": {
-    "health": 93,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 15,
-    "contentLen": 5927,
-    "note": "三关全过",
+    "health": 3,
+    "search": false,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "搜索无结果",
     "flapping": true,
     "recent": [
-     "pass",
+     "fail",
      "pass",
      "pass",
      "fail",
-     "pass"
+     "fail"
     ],
-    "checkedAt": 1792604678553
+    "checkedAt": 1792643635649
    }
   }
  ]
