@@ -20,9 +20,12 @@ function grade(v) {
         return { score: null, layer: 'untestable', weight: verified ? 440 : 380 };
     }
     const recent = Array.isArray(v.recent) ? v.recent : [];
-    if (v.content === false) return { score: v.health, layer: 'dead', weight: 5 }; // 确认坏：等探活/老化层处理
-    const base = (v.search ? 20 : 0) + (v.toc ? 25 : 0) + (v.content ? 25 : 0);
     const consFail = consOf(recent, 'fail');
+    // 稳定死亡：连续失败≥3 或最近全 fail 且本轮 content=false；才打入 dead 层
+    // 单次 content=false（如网站临时抖动）→ 不提前返回，让正常评分流程处理（base 少 25 分 + consFail 惩罚）
+    if (v.content === false && (consFail >= 3 || (consFail > 0 && consFail === recent.length && recent.length >= 2)))
+        return { score: v.health, layer: 'dead', weight: 5 };
+    const base = (v.search ? 20 : 0) + (v.toc ? 25 : 0) + (v.content ? 25 : 0);
     let stab = recent.length < 2 ? 12 : Math.round(recent.filter(x => x === 'pass').length / recent.length * 20);
     if (consFail === 1) stab -= 5; else if (consFail === 2) stab -= 15;
     const consPass = consOf(recent, 'pass');

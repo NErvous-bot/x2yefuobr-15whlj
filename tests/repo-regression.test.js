@@ -378,6 +378,73 @@ test('fuse.js 白名单不再包含 upstream-removed（P1-1）', () => {
 // ============================================================
 // 8. smoke-p0.js 必须通过真实断言
 // ============================================================
+// 9. score.js 单次失败 vs 稳定死亡
+// ============================================================
+console.log('\n=== 9. score.js 单次失败不直接打 weight 5 ===');
+test('单次 content=false（recent 含 pass）→ 不走 dead/weight 5，走正常评分流程', () => {
+    // score.js 顶层会直接改写 legado.json，这里用静态检查验证
+    const code = require('fs').readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    // 验证：dead return 有 consFail 条件守卫（不是裸 content===false）
+    assert.ok(code.includes('consFail >= 3'), 'score.js dead return 必须检查 consFail>=3');
+    assert.ok(code.includes('content === false &&'), 'score.js dead return 有 content===false 守卫');
+    // 旧的裸提前 return 已被替换（不能匹配 if (v.content === false) return dead）
+    assert.ok(!code.match(/if\s*\(\s*v\.content\s*===\s*false\s*\)\s*return\s*\{[^}]*layer\s*:\s*['"]dead['"]/),
+        '不能有裸 content===false 直接 return dead 的提前返回');
+});
+
+test('score.js 稳定死亡仍正确：consFail>=3 + content=false → dead/weight 5', () => {
+    const code = require('fs').readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    assert.ok(code.includes("layer: 'dead', weight: 5"), '稳定死亡仍要返回 dead/weight 5');
+});
+
+// ============================================================
+// 10. rules.js 误伤校验无正则 lastIndex 漏计
+// ============================================================
+console.log('\n=== 10. rules.js 正则误伤校验 ===');
+test('rules.js 误伤校验不用全局正则 /g flag（防 lastIndex 状态漏计）', () => {
+    const code = require('fs').readFileSync(path.join(REPO, 'rules.js'), 'utf8');
+    // 找到候选规则误伤校验的 for 循环段落
+    const m = code.match(/let fp = 0[\s\S]{0,400}?for\s*\(\s*const\s+p\s+of\s+cleanParas\s*\)/);
+    assert.ok(m, '找到误伤校验循环');
+    // 确认循环前没有 const re = new RegExp(c.pat, 'g')
+    assert.ok(!/const\s+re\s*=\s*new\s+RegExp\(\s*c\.pat\s*,\s*['"]g['"]\s*\)/.test(m[0]),
+        '误伤校验循环前不应有带 g flag 的全局正则');
+});
+
+test('动态: 多段重复匹配不漏计（全局正则 lastIndex 漏计验证）', () => {
+    // 模拟原始有 bug 的写法 vs 修复后的写法
+    const pats = ['<script>', '<iframe>'];
+    const paras = [
+        '这里有个<script>标签',
+        '另一段也有<script>在里面',
+        '第三段是<iframe>嵌入',
+        '纯文本段落没有标记',
+        '又一个<script>出现在这里'
+    ];
+
+    // 旧写法（bug）：循环外 new RegExp(c.pat, 'g')
+    let fpBuggy = 0;
+    for (const pat of pats) {
+        const re = new RegExp(pat, 'g'); // 全局正则 → lastIndex 状态泄漏
+        for (const p of paras) if (re.test(p)) fpBuggy++;
+    }
+
+    // 新写法（修复）：每段 new RegExp(c.pat)
+    let fpFixed = 0;
+    for (const pat of pats) {
+        for (const p of paras) {
+            const re = new RegExp(pat); // 无 g flag → 每次从头匹配
+            if (re.test(p)) fpFixed++;
+        }
+    }
+
+    // 期望值：<script> 匹配段 1/2/5（3段），<iframe> 匹配段 3（1段），总计 4 段
+    assert.strictEqual(fpFixed, 4, '修复后应计 4 段误伤（3段<script> + 1段<iframe>）');
+    assert.ok(fpBuggy <= fpFixed, '修复后计数应≥旧写法计数（旧写法漏计）');
+    assert.ok(fpBuggy < 4, '旧写法的 lastIndex 状态确实导致漏计（验证 bug 存在）');
+});
+
+// ============================================================
 console.log('\n=== 8. smoke-p0.js 真实运行 ===');
 test('smoke-p0.js exit 0（所有断言通过）', () => {
     const r = spawnSync(process.execPath, ['smoke-p0.js'], { cwd: REPO, encoding: 'utf8', timeout: 60000 });

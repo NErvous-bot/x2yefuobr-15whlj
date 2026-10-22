@@ -239,8 +239,12 @@ async function main() {
   for (const c of cands2) {
     let fp = 0;
     try {
-      const re = new RegExp(c.pat, 'g');
-      for (const p of cleanParas) if (re.test(p)) fp++;
+      // 注意：不用 'g' flag，避免全局正则的 lastIndex 状态在跨段落 test() 时漏计误伤
+      // （全局正则在循环外创建后每次 test() 会从上次 lastIndex 继续，导致部分匹配被跳过）
+      for (const p of cleanParas) {
+        const re = new RegExp(c.pat);
+        if (re.test(p)) fp++;
+      }
     } catch (e) { console.log('  [REJECT·正则异常] ' + c.name); continue; }
     if (fp === 0) passCands.push(c);
     console.log('  [' + (fp === 0 ? 'PASS' : 'REJECT·误伤' + fp + '段') + '] ' + c.name + '  (' + c.why + ')  → ' + c.pat.slice(0, 70));
