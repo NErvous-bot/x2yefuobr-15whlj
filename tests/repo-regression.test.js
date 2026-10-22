@@ -380,21 +380,32 @@ test('fuse.js 白名单不再包含 upstream-removed（P1-1）', () => {
 // ============================================================
 // 9. score.js 单次失败 vs 稳定死亡
 // ============================================================
-console.log('\n=== 9. score.js 单次失败不直接打 weight 5 ===');
-test('单次 content=false（recent 含 pass）→ 不走 dead/weight 5，走正常评分流程', () => {
-    // score.js 顶层会直接改写 legado.json，这里用静态检查验证
-    const code = require('fs').readFileSync(path.join(REPO, 'score.js'), 'utf8');
-    // 验证：dead return 有 consFail 条件守卫（不是裸 content===false）
-    assert.ok(code.includes('consFail >= 3'), 'score.js dead return 必须检查 consFail>=3');
-    assert.ok(code.includes('content === false &&'), 'score.js dead return 有 content===false 守卫');
-    // 旧的裸提前 return 已被替换（不能匹配 if (v.content === false) return dead）
-    assert.ok(!code.match(/if\s*\(\s*v\.content\s*===\s*false\s*\)\s*return\s*\{[^}]*layer\s*:\s*['"]dead['"]/),
-        '不能有裸 content===false 直接 return dead 的提前返回');
+console.log('\n=== 9. score.js 单次失败不直接打 weight 5（行为级） ===');
+const { grade, consOf } = require('../score.js');
+
+test('单次 content=false + 历史全 pass → 不进 dead/weight5，按正常评分稳定层', () => {
+    const v = { health: 75, search: true, toc: true, content: false, recent: ['pass', 'pass', 'pass'] };
+    const g = grade(v);
+    assert.notStrictEqual(g.layer, 'dead', '单次失败+历史全pass 不应进 dead');
+    assert.notStrictEqual(g.weight, 5, 'weight 不应是 5');
+    // base=20+25+0=45, stab=20 (3/3), streak=10 → score=75 → stable 层 weight=300
+    assert.strictEqual(g.layer, 'stable', '应为 stable 层（score 75）');
+    assert.strictEqual(g.weight, 300, 'weight 应为 300（stable 层起点）');
 });
 
-test('score.js 稳定死亡仍正确：consFail>=3 + content=false → dead/weight 5', () => {
-    const code = require('fs').readFileSync(path.join(REPO, 'score.js'), 'utf8');
-    assert.ok(code.includes("layer: 'dead', weight: 5"), '稳定死亡仍要返回 dead/weight 5');
+test('连续失败 >= 3 + content=false → 进 dead/weight5', () => {
+    const v = { health: 30, search: false, toc: false, content: false, recent: ['pass', 'fail', 'fail', 'fail'] };
+    const g = grade(v);
+    assert.strictEqual(g.layer, 'dead', '连续失败 3 次应进 dead');
+    assert.strictEqual(g.weight, 5, 'weight 应为 5');
+});
+
+test('不可测池区分：曾有 pass→440，从未验证→380', () => {
+    const v1 = { health: null, recent: ['pass'] };
+    const v2 = { health: null, recent: [] };
+    assert.strictEqual(grade(v1).weight, 440, '曾实测通过 weight=440');
+    assert.strictEqual(grade(v2).weight, 380, '从未验证 weight=380');
+    assert.strictEqual(grade(null).weight, 380, 'null weight=380');
 });
 
 // ============================================================

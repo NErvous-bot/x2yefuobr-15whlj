@@ -38,6 +38,8 @@ function grade(v) {
     return { score, layer: 'watch', weight: 50 };
 }
 
+// 主流程：只有直接 node score.js 才执行评分+改写 legado.json
+if (require.main === module) {
 try {
     const list = JSON.parse(fs.readFileSync('legado.json', 'utf8'));
     const H = JSON.parse(fs.readFileSync('health/source_health.json', 'utf8')).sources || {};
@@ -79,3 +81,7 @@ try {
     console.error('× 源评分异常，拒绝发布（防止旧报告残留）: ' + e.message);
     process.exit(1);
 }
+} // end require.main === module
+
+// 测试用导出（grade/consOf 不依赖文件 IO，require 时只加载函数不执行主流程）
+module.exports = { grade, consOf };
