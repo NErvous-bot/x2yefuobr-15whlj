@@ -1,145 +1,69 @@
 {
- "generatedAt": 1792643744357,
- "runAt": "2026-10-22T04:35:44.357Z",
+ "generatedAt": 1792655129795,
+ "runAt": "2026-10-22T07:45:29.795Z",
  "oldRef": "HEAD",
- "baselineSha": "9718563af2d477aec111d52137535b29588806e9",
- "tier1": [
+ "baselineSha": "a8f6d2e8a336527d6f8ebbb50747cd040a785e71",
+ "tier1": [],
+ "tier2": [],
+ "resolved": [
   {
    "name": "ncode_syosetu(成为小说家吧)",
    "url": "https://ncode.syosetu.com/",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "FLAPPING"
+   "tier": 1,
+   "prevVerdict": "FLAPPING",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 3,
+    "search": false,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "搜索无结果",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "fail",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1792655129362
+   }
   },
   {
    "name": "🎃一起看看🎃",
    "url": "http://m.17kankan.org#🎃",
-   "traits": [
-    "POST",
-    "GBK"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  },
-  {
-   "name": "🤶🏻脸红心跳",
-   "url": "https://www.po18.in",
-   "traits": [
-    "GBK"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  }
- ],
- "tier2": [],
- "resolved": [
-  {
-   "name": "⭕️PO文学",
-   "url": "https://www.po18to.com",
    "tier": 1,
    "prevVerdict": "REAL_DEATH_CANDIDATE",
    "state": "STILL_BROKEN",
    "evidence": {
     "health": 3,
+    "search": false,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "搜索无结果",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1792655129362
+   }
+  },
+  {
+   "name": "🤶🏻脸红心跳",
+   "url": "https://www.po18.in",
+   "tier": 1,
+   "prevVerdict": "REAL_DEATH_CANDIDATE",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 8,
     "search": false,
     "toc": false,
     "content": false,
@@ -154,7 +78,7 @@
      "fail",
      "fail"
     ],
-    "checkedAt": 1792643635649
+    "checkedAt": 1792655129362
    }
   }
  ]
