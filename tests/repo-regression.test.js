@@ -383,21 +383,38 @@ test('fuse.js 白名单不再包含 upstream-removed（P1-1）', () => {
 console.log('\n=== 9. score.js 单次失败不直接打 weight 5（行为级） ===');
 const { grade, consOf } = require('../score.js');
 
-test('单次 content=false + 历史全 pass → 不进 dead/weight5，按正常评分稳定层', () => {
-    const v = { health: 75, search: true, toc: true, content: false, recent: ['pass', 'pass', 'pass'] };
+test('单次 content=false + 本轮 fail 追加到 recent → watch/50（不进 dead）', () => {
+    // 真实 health.js 行为：本轮 content=false 会 push 'fail' 到 recent 再写回
+    // 所以单次失败的真实状态是 recent 末尾多一个 fail，不是只有历史 pass
+    const v = { health: 75, search: true, toc: true, content: false, recent: ['pass', 'pass', 'pass', 'fail'] };
     const g = grade(v);
-    assert.notStrictEqual(g.layer, 'dead', '单次失败+历史全pass 不应进 dead');
+    assert.notStrictEqual(g.layer, 'dead', '单次失败（即使已追加 fail）不应进 dead');
     assert.notStrictEqual(g.weight, 5, 'weight 不应是 5');
-    // base=20+25+0=45, stab=20 (3/3), streak=10 → score=75 → stable 层 weight=300
-    assert.strictEqual(g.layer, 'stable', '应为 stable 层（score 75）');
-    assert.strictEqual(g.weight, 300, 'weight 应为 300（stable 层起点）');
+    // base=20+25+0=45, stab=round(3/4*20)=15-5(consFail=1)=10, streak=0, score=55 → watch/50
+    assert.strictEqual(g.layer, 'watch', '应为 watch 层');
+    assert.strictEqual(g.weight, 50, 'weight 应为 50');
 });
 
-test('连续失败 >= 3 + content=false → 进 dead/weight5', () => {
-    const v = { health: 30, search: false, toc: false, content: false, recent: ['pass', 'fail', 'fail', 'fail'] };
+test('连续 2 次失败（最近两轮都是 fail）→ watch/50（不进 dead）', () => {
+    const v = { health: 40, search: false, toc: false, content: true, recent: ['pass', 'pass', 'fail', 'fail'] };
     const g = grade(v);
-    assert.strictEqual(g.layer, 'dead', '连续失败 3 次应进 dead');
+    assert.notStrictEqual(g.layer, 'dead', '2 次 fail 不应进 dead（需要 content=false 才触发）');
+    assert.strictEqual(g.weight, 50, '连续 2 次 fail → watch/50');
+});
+
+test('连续 3 次 fail + content=false → dead/weight5（稳定死亡）', () => {
+    const v = { health: 20, search: false, toc: false, content: false, recent: ['pass', 'fail', 'fail', 'fail'] };
+    const g = grade(v);
+    assert.strictEqual(g.layer, 'dead', '3 次连续 fail + content=false → dead');
     assert.strictEqual(g.weight, 5, 'weight 应为 5');
+});
+
+test('连续 3 次 fail 但 content=true → watch/30（强制观察，不进 dead）', () => {
+    const v = { health: 50, search: true, toc: true, content: true, recent: ['pass', 'fail', 'fail', 'fail'] };
+    const g = grade(v);
+    assert.notStrictEqual(g.layer, 'dead', 'content=true 不进 dead 即使 consFail>=3');
+    assert.strictEqual(g.layer, 'watch', '应为 watch 层');
+    assert.strictEqual(g.weight, 30, 'consFail>=3 → weight 30');
 });
 
 test('不可测池区分：曾有 pass→440，从未验证→380', () => {
