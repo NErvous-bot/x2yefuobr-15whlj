@@ -395,11 +395,15 @@ test('单次 content=false + 本轮 fail 追加到 recent → watch/50（不进 
     assert.strictEqual(g.weight, 50, 'weight 应为 50');
 });
 
-test('连续 2 次失败（最近两轮都是 fail）→ watch/50（不进 dead）', () => {
-    const v = { health: 40, search: false, toc: false, content: true, recent: ['pass', 'pass', 'fail', 'fail'] };
+test('连续 2 次失败（本轮也 content=false，consFail=2 < 3）→ 不进 dead', () => {
+    // 真实状态：content=false + recent 末尾两个 fail（health.js 会把本轮 fail push 到 recent）
+    // consFail=2 < 3 → 不触发 dead guard，走正常评分
+    const v = { health: 30, search: false, toc: false, content: false, recent: ['pass', 'pass', 'fail', 'fail'] };
     const g = grade(v);
-    assert.notStrictEqual(g.layer, 'dead', '2 次 fail 不应进 dead（需要 content=false 才触发）');
-    assert.strictEqual(g.weight, 50, '连续 2 次 fail → watch/50');
+    assert.notStrictEqual(g.layer, 'dead', 'consFail=2 < 3 不应进 dead');
+    // base=0, stab=round(2/4*20)=10-15(consFail=2)=-5→0, streak=0(末尾fail), score=0 → watch/50
+    assert.strictEqual(g.layer, 'watch', '应为 watch 层（consFail=2 惩罚但不强制观察）');
+    assert.strictEqual(g.weight, 50, 'weight 应为 50');
 });
 
 test('连续 3 次 fail + content=false → dead/weight5（稳定死亡）', () => {
