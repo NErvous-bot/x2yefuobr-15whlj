@@ -6,8 +6,11 @@
 // 支持的规则类型（P0 扩展后）：
 //   - GET/POST 搜索（含 {"method/body/headers/charset"} 选项，含单引号伪 JSON 宽松解析）
 //   - GBK/GB2312 请求编码（TextDecoder 反向编码表）与响应解码
-//   - HTML 静态选择器子集：class./id./tag./.x/#x/@text/@textNodes/@html/@href/@all、
-//     数字索引(.N/:N)、||备选、##清理
+//   - 搜索URL槽位：{{key}}/{{page}}/{{java.encodeURI(key[,"gbk"])}}、
+//     {{cookie.removeCookie(...)}}（求值为空）、{{page-1}}/{{(page-1)*N}}（固定第1页）；
+//     其余未知 {{...}} 脚本 → 判不可测（不拼假地址）
+//   - HTML 静态选择器子集：class./id./tag./.x/#x/裸 tag.class、/@text/@textNodes/@html/@href/@all、
+//     数字索引(.N/:N)、排除后缀 !N/!-N、||备选、##清理、表内隐式 tbody
 //   - JSON 响应 + JSONPath 常用子集：$.a.b、$.a[0]、$.a[*]、$[*]、$.a['b']、$.*
 // 不支持（→不可测豁免，绝不判死）：<js>/@js: 动态规则、JSONPath 高级语法（$../?()过滤）等
 // 零依赖，Node 20 直接运行
@@ -178,6 +181,14 @@ function innerAll(html, type, name) {
     if (type === 'tag') {
         const re = new RegExp('<' + name + '\\b[^>]*>', 'gi');
         let m; while ((m = re.exec(html))) hits.push([m.index, m[0]]);
+    } else if (type === 'tagclass') {
+        // CSS 的 tag.class（如 div.bk）：先按标签取元素，再用开标签里的 class 过滤
+        const nameRe = new RegExp('(?<![\\w-])' + esc(name[1]) + '(?![\\w-])');
+        return innerAll(html, 'tag', name[0]).filter(el => {
+            const gt = el.indexOf('>');
+            const cm = /class\s*=\s*(["'])([^"']*)\1/i.exec(gt > 0 ? el.slice(0, gt + 1) : el);
+            return !!(cm && nameRe.test(cm[2]));
+        });
     } else {
         const nameRe = new RegExp('(?<![\\w-])' + esc(name) + '(?![\\w-])');
         const attrRe = new RegExp('(?<![-\\w])' + (type === 'class' ? 'class' : 'id') + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
@@ -271,12 +282,16 @@ function selectAll(html, rule) {
         const toks = sel.split('@').flatMap(p => p.trim().split(/\s+/)).filter(Boolean);
         if (!toks.length) continue;
         let frags = [html], ok = true;
-        for (const tk of toks) {
+        for (let tk of toks) {
             if (/^(text|textnodes|html|href|all)$/i.test(tk)) {
                 const kind = tk.toLowerCase();
                 const items = applyClean(frags.map(f => kind === 'href' ? firstHref(f) : (kind === 'html' || kind === 'all') ? f : toText(f)), clean);
                 return { items, isText: true };
             }
+            // 排除后缀 !N / !-N（legado「去掉第 N 项」，负数为从末尾数）
+            let excl = null;
+            const em = /^(.+?)!(-?\d+)$/.exec(tk);
+            if (em) { tk = em[1]; excl = parseInt(em[2], 10); }
             let type, name, idx = null, m;
             if ((m = /^(class|id|tag)\.([\w\u4e00-\u9fff\-$]+)(?:[.:](\d+))?$/.exec(tk))) {
                 type = m[1]; name = m[2]; if (m[3]) idx = parseInt(m[3], 10);
@@ -288,10 +303,17 @@ function selectAll(html, rule) {
                 type = 'tag'; name = m[1]; if (m[2]) idx = parseInt(m[2], 10);
             } else if ((m = /^([a-z][a-z0-9]*)(?:[.:](\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
                 type = 'tag'; name = m[1].toLowerCase(); if (m[2]) idx = parseInt(m[2], 10);
+            } else if ((m = /^([a-z][a-z0-9]*)\.([\w\u4e00-\u9fff\-$]+)(?::(\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
+                // 裸 tag.class（如 div.bk）；纯数字后缀已在上一支按索引处理，不会落到这里
+                type = 'tagclass'; name = [m[1].toLowerCase(), m[2]]; if (m[3]) idx = parseInt(m[3], 10);
             } else { ok = false; break; }
             let next = [];
             for (const f of frags) next = next.concat(innerAll(f, type, type === 'tag' ? name.toLowerCase() : name));
             if (idx != null) next = next[idx] ? [next[idx]] : [];
+            if (excl != null) {
+                const real = excl < 0 ? next.length + excl : excl;
+                next = next.filter((_, i) => i !== real);
+            }
             frags = next;
             if (!frags.length) break;
         }
@@ -392,6 +414,37 @@ function parseSearch(su, base, kw) {
     const SUPPORTED_KEY = /\{\{key\}\}|\{key\}|\{\{page\}\}|\{page\}|\{\{java\.encodeURI(?:Component)?\(\s*key\s*(?:,\s*['"][^'"]*['"]\s*)?\)\}\}/g;
     const strictRaw = (cut === -1 ? su : su.slice(0, cut)) + (body ? '\n' + body : '');
     if (/<js>|@js:|\$\.|java\./i.test(strictRaw.replace(SUPPORTED_KEY, ''))) return { skip: '搜索URL/body含动态语法' };
+
+    // 其余 {{...}} 槽位：只求值语义明确、无副作用的两类，剩下的一律判不可测。
+    // 关键动机：把未支持的脚本原样拼进 URL 会得到一个必然 404 的假地址 → 假死（比不可测危险）。
+    //   ① cookie.removeCookie(...)（含 url=source.getKey(); 前缀写法）→ 空串
+    //   ② page 简单算术 {{page-1}} / {{(page-1)*10}}（本轮固定请求第 1 页）
+    const PAGE_NO = 1;
+    const NOOP_SLOT = /^(?:[A-Za-z_$][\w$]*\s*=\s*[\w$.()\[\]'"\s]+;\s*)*cookie\.removeCookie\([^;{}]*\)$/;
+    const evalMustache = s => {
+        let bad = '';
+        const out = String(s).replace(/\{\{([^{}]*)\}\}/g, (m, inner) => {
+            const t = String(inner).trim();
+            if (/^(?:key|page)$/i.test(t)) return m;
+            if (/^java\.encodeURI(?:Component)?\(\s*key(?:\s*,\s*['"][^'"]*['"]\s*)?\)$/i.test(t)) return m;
+            if (NOOP_SLOT.test(t)) return '';
+            let am = /^\(\s*page\s*([-+])\s*(\d+)\s*\)\s*\*\s*(\d+)$/i.exec(t);
+            if (am) return String((PAGE_NO + (am[1] === '-' ? -1 : 1) * parseInt(am[2], 10)) * parseInt(am[3], 10));
+            am = /^page\s*([-+])\s*(\d+)$/i.exec(t);
+            if (am) return String(PAGE_NO + (am[1] === '-' ? -1 : 1) * parseInt(am[2], 10));
+            bad = t.slice(0, 30);
+            return m;
+        });
+        return { out, bad };
+    };
+    const pe = evalMustache(path);
+    if (pe.bad) return { skip: '搜索URL/body含未支持动态语法' };
+    path = pe.out;
+    if (body != null) {
+        const be = evalMustache(body);
+        if (be.bad) return { skip: '搜索URL/body含未支持动态语法' };
+        body = be.out;
+    }
 
     // java.encodeURI(key[, "gbk"])：把关键词预先编码进 URL/body 的常见写法。
     // 旧实现只认裸 {{key}}，这类源会被判成"搜索无{{key}}槽位"而永久不可测。

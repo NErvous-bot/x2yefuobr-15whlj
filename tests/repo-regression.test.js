@@ -526,10 +526,73 @@ test('动态脚本 token（java.connect）不得被拼进 URL，应判不可测'
     assert.strictEqual(r.skip, '搜索URL/body含动态语法', '动态脚本必须判不可测，实际: ' + JSON.stringify(r));
 });
 
+test('cookie.removeCookie 前缀槽位求值为空串 → 仍可实测', () => {
+    const r = parseSearch('{{cookie.removeCookie(source.getKey())}}/s.php?action=search,{"method":"POST","body":"wd={{key}}&page={{page}}"}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    assert.strictEqual(r.opt.url, BASE + '/s.php?action=search', 'URL 不应残留 mustache，实际: ' + r.opt.url);
+    assert.strictEqual(r.opt.method, 'POST');
+});
+
+test('url=source.getKey();cookie.removeCookie(url) 槽位求值为空串 → 仍可实测', () => {
+    const r = parseSearch('{{url=source.getKey();cookie.removeCookie(url)}}/search?q={{key}}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    assert.ok(!r.opt.url.includes('{{'), 'URL 不应残留 mustache，实际: ' + r.opt.url);
+});
+
+test('page 算术槽位 {{(page-1)*10}} 求值为 0（第 1 页）', () => {
+    const r = parseSearch('{{(page-1)*10}}/list?q={{key}}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    assert.ok(r.opt.url.includes('/0/list'), '应替换为 0，实际: ' + r.opt.url);
+});
+
+test('负向对照：未知 {{...}} 脚本槽位判不可测（防拼出假地址→假死）', () => {
+    const r = parseSearch('{{someUnknownFn(key)}}/search?q={{key}}', BASE, '都市');
+    assert.strictEqual(r.skip, '搜索URL/body含未支持动态语法', '未知脚本必须判不可测，实际: ' + JSON.stringify(r));
+});
+
 test('table 无 tbody 时按 HTML5 补隐式 tbody（防"搜索无结果"误判）', () => {
     const html = '<table class="grid"><tr><th>文章名称</th></tr><tr><td><a href="/read/1/">书A</a></td></tr><tr><td><a href="/read/2/">书B</a></td></tr></table>';
     const r = selectAll(html, 'tbody@tr');
     assert.ok(r && r.items.length === 3, '应命中表头+2行，实际: ' + (r && r.items.length));
+});
+
+// ============================================================
+// 12. 测试器能力：bookList 静态规则 !N 排除 与 tag.class（阶段三 P2）
+// ============================================================
+console.log('\n=== 12. 测试器 !N 排除 / tag.class ===');
+const ROWS_HTML = '<table><tbody><tr><th>表头</th></tr><tr><td><a href="/r/1">书1</a></td></tr><tr><td><a href="/r/2">书2</a></td></tr></tbody></table>';
+
+test('!0 排除首项：tbody@tr!0 跳过表头，剩 2 行', () => {
+    const r = selectAll(ROWS_HTML, 'tbody@tr!0');
+    assert.ok(r && r.items.length === 2, '应剩 2 行，实际: ' + (r && r.items.length));
+    assert.ok(!r.items[0].includes('表头'), '首项不应是表头，实际: ' + r.items[0]);
+});
+
+test('!-1 从末尾排除：tbody@tr!-1 只剩表头+第1行', () => {
+    const r = selectAll(ROWS_HTML, 'tbody@tr!-1');
+    assert.ok(r && r.items.length === 2, '应剩 2 行，实际: ' + (r && r.items.length));
+    assert.ok(r.items[0].includes('表头'), '首项应是表头');
+});
+
+test('tag.class 命中：div.bk 只取 class 含 bk 的 div', () => {
+    const html = '<div class="wrap"><div class="bk hot"><a href="/b/1">书A</a></div><div class="other"><a href="/b/2">书B</a></div><div class="notbk"><a href="/b/3">书C</a></div></div>';
+    const r = selectAll(html, 'div.bk');
+    assert.ok(r && r.items.length === 1, '应只命中 1 个，实际: ' + (r && r.items.length));
+    assert.ok(r.items[0].includes('/b/1'), '应命中 class="bk hot" 那个，实际: ' + r.items[0].slice(0, 80));
+});
+
+test('负向对照：div.bk 无匹配时返回空列表而非"不可测"', () => {
+    const html = '<div class="wrap"><p>x</p></div>';
+    const r = selectAll(html, 'div.bk');
+    assert.ok(r, 'tag.class 应被识别（不可测会返回 null）');
+    assert.strictEqual(r.items.length, 0, '无匹配应为空列表，实际: ' + r.items.length);
+});
+
+test('兼容性：div.0 仍按"第 0 个 div"解析，不被误认成 class="0"', () => {
+    const html = '<div id="d0">甲</div><div id="d1">乙</div>';
+    const r = selectAll(html, 'div.0');
+    assert.ok(r && r.items.length === 1, '应只取 0 号 div，实际: ' + (r && r.items.length));
+    assert.ok(r.items[0].includes('甲'), '应命中第 0 个 div');
 });
 
 // ============================================================
