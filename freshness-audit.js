@@ -21,7 +21,7 @@ const crypto = require('crypto');
 const { doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep } = require('./aging-test');
 
 const CONC = 2;              // 并发数（防止 OOM）
-const BUDGET_PER_BOOK = 480; // 每本书最多 8 分钟（390 源全量）
+const BUDGET_PER_BOOK = Number(process.env.AUDIT_BUDGET_SEC || 480); // 每本书最多 8 分钟（390 源全量）；冒烟试跑可用 AUDIT_BUDGET_SEC 临时调低
 const CHAPTER_HINT = /第.{1,8}章|^\d{2,5}$/;
 
 /* ================================================================
@@ -1083,14 +1083,21 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     
     // 加载测试书目
     let books;
-    if (fs.existsSync('books.json')) {
-        books = JSON.parse(fs.readFileSync('books.json', 'utf8'));
-        console.log('已加载 books.json：' + books.length + ' 本书');
+    const booksPath = process.env.BOOKS_PATH || 'books.json';
+    if (fs.existsSync(booksPath)) {
+        books = JSON.parse(fs.readFileSync(booksPath, 'utf8'));
+        console.log('已加载 ' + booksPath + '：' + books.length + ' 本书');
+        // BOOK_LIMIT：冒烟/CI 试跑时只取前 N 本（默认 0=不限制，不改变正式口径）
+        const limit = Number(process.env.BOOK_LIMIT || 0);
+        if (limit > 0 && books.length > limit) {
+            books = books.slice(0, limit);
+            console.log('BOOK_LIMIT=' + limit + '，本轮只测前 ' + books.length + ' 本');
+        }
     } else {
         books = [
             { key: 'wei_jia_nie_zhong', title: '魏家孽种成首辅', reference: 640, source: '番茄小说' },
         ];
-        console.log('未找到 books.json，使用默认测试书');
+        console.log('未找到 ' + booksPath + '，使用默认测试书');
     }
     
     // 加载源清单
