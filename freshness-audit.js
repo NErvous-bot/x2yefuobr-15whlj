@@ -1169,6 +1169,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                 let result = 'unknown';
                 let pagination_status = 'unknown';
                 let confidence = 'low';
+                let countMismatch = false;   // 源章节数显著高于官方参考 → 口径不可比
                 if (toc.status === 'ok' && toc.chapters > 0) {
                     // 有效源才算 checked
                     bookResult.sourcesChecked++;
@@ -1204,20 +1205,30 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     
                     const diff = toc.chapters - book.reference;
                     const ratio = toc.chapters / book.reference;
-                    if (diff >= 0) result = 'leading_or_match';
-                    else if (diff >= -5) result = 'slightly_behind';
-                    else if (diff >= -20) result = 'behind';
-                    else result = 'far_behind';
-                    
-                    bookResult.bySource.push({
-                        url: su, hash, name: String(s.bookSourceName || '').slice(0, 25),
-                        observed_chapters: toc.chapters, result, diff, ratio,
-                        pagination_status, confidence,
-                        // v1.5 #1: 疑似截断标记——单页 + 章节数是 100 的整数倍
-                        // （很多站点每页刚好 100 章，没翻页就抓到 100/200/300 ...）
-                        suspicious_truncation: (toc.pages <= 1) && (toc.chapters > 0) && (toc.chapters % 100 === 0),
-                        pagination_rule_dormant: !!toc.pagination_rule_dormant,  // 规则存在但单页目录
-                    });
+                    // 上界口径校验：源不可能比官方参考多出 20% 以上章节——多半命中了同名书，
+                    // 或站点把分卷/重复项算进目录。这类样本既不能算"领先"（会污染中位数），
+                    // 也不能算"滞后"，统一降为 unknown，不进 bySource。
+                    countMismatch = diff > 20 && toc.chapters > book.reference * 1.2;
+                    if (countMismatch) {
+                        result = 'unknown';
+                        bookResult.sourcesChecked--;
+                        bookResult.sourcesUnknown++;
+                    } else {
+                        if (diff >= 0) result = 'leading_or_match';
+                        else if (diff >= -5) result = 'slightly_behind';
+                        else if (diff >= -20) result = 'behind';
+                        else result = 'far_behind';
+
+                        bookResult.bySource.push({
+                            url: su, hash, name: String(s.bookSourceName || '').slice(0, 25),
+                            observed_chapters: toc.chapters, result, diff, ratio,
+                            pagination_status, confidence,
+                            // v1.5 #1: 疑似截断标记——单页 + 章节数是 100 的整数倍
+                            // （很多站点每页刚好 100 章，没翻页就抓到 100/200/300 ...）
+                            suspicious_truncation: (toc.pages <= 1) && (toc.chapters > 0) && (toc.chapters % 100 === 0),
+                            pagination_rule_dormant: !!toc.pagination_rule_dormant,  // 规则存在但单页目录
+                        });
+                    }
                 } else {
                     bookResult.sourcesUnknown++;
                 }
@@ -1227,7 +1238,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     reference_chapter: book.reference, source_chapter: toc.chapters,
                     catalog_checked: toc.status === 'ok', body_verified: false,
                     checked_at: Date.now(), result,
-                    reason: toc.status === 'ok' ? '' : toc.reason,
+                    reason: countMismatch ? '章节数超出官方参考 20%（疑似同名书/计数口径不同）' : (toc.status === 'ok' ? '' : toc.reason),
                     pagination_rule_dormant: !!toc.pagination_rule_dormant,
                 });
                 
