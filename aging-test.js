@@ -165,6 +165,16 @@ const VOID = new Set(['br', 'img', 'hr', 'input', 'meta', 'link', 'area', 'sourc
 // 按 class/id/tag 名提取完整元素（含开标签，便于取自身 <a href>），标签平衡
 function innerAll(html, type, name) {
     const hits = [];
+    // 浏览器/Jsoup 会为 <table><tr> 自动补 <tbody>；朴素标签提取不会补，
+    // 于是 "tbody@tr!0" 这类规则在真实阅读器里能命中、在这里却 0 条，
+    // 被误判成"搜索无结果"→ 进而误判源已死。这里按 HTML5 口径补出隐式 tbody。
+    if (type === 'tag' && name === 'tbody' && !/<tbody\b/i.test(html)) {
+        const rows = [];
+        const trRe = /<tr\b[^>]*>[\s\S]*?<\/tr>/gi;
+        let tm;
+        while ((tm = trRe.exec(html))) rows.push(tm[0]);
+        if (rows.length) return ['<tbody>' + rows.join('') + '</tbody>'];
+    }
     if (type === 'tag') {
         const re = new RegExp('<' + name + '\\b[^>]*>', 'gi');
         let m; while ((m = re.exec(html))) hits.push([m.index, m[0]]);
@@ -345,9 +355,24 @@ function parseSearch(su, base, kw) {
     kw = kw || '都市';
     su = String(su || '').trim();
     if (!su || /<js>|@js:/i.test(su)) return { skip: '无搜索URL或含js' };
-    const cut = su.indexOf(',');
+    // 逗号切分：选项体以 ",{" 开头。逗号可能落在 {{...}} 里（如 java.encodeURI(key,"gbk")），
+    // 也可能只是 URL 参数里的普通逗号，不能直接取第一个逗号——否则会把槽位切断，
+    // 误判成"搜索无{{key}}槽位"。先找 ",{"，找不到再退回旧的"第一个逗号"口径。
+    const commaIdx = (s, jsonTailOnly) => {
+        let depth = 0;
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === '{' && s[i + 1] === '{') { depth++; i++; continue; }
+            if (s[i] === '}' && s[i + 1] === '}' && depth > 0) { depth--; i++; continue; }
+            if (s[i] === ',' && depth === 0 && (!jsonTailOnly || /^\s*\{/.test(s.slice(i + 1)))) return i;
+        }
+        return -1;
+    };
+    let cut = commaIdx(su, true);
+    if (cut === -1) cut = commaIdx(su, false);
     let path = (cut === -1 ? su : su.slice(0, cut)).trim();
     const tail = cut === -1 ? '' : su.slice(cut + 1).trim();
+    // 无逗号却带 JSON 选项残片（如 url{"method":...}）：不猜，按选项无法解析处理
+    if (cut === -1 && /\{"/.test(path)) return { skip: 'searchUrl选项无法解析' };
     let method = 'GET', body = null, charset = '', headers = {};
     if (tail.startsWith('{')) {
         const o = lenientJson(tail);
@@ -360,19 +385,49 @@ function parseSearch(su, base, kw) {
         const cm = /charset=([\w-]+)/i.exec(tail);
         if (cm) charset = cm[1];
     }
+    // 严格白名单：先去掉测试器真正支持的槽位，若 URL/body 里仍残留动态语法 → 不可测。
+    // 旧口径只看切出来的 path，包在 {{...}} 里的脚本（如 {{String(java.connect(...))}}）
+    // 会被当成静态串拼进 URL，得到一个必然失败的假地址（假死比不可测更危险）。
+    // 只查 URL 段与 body：选项体里的 "js" 钩子属既有行为（旧测试器同样忽略它），不因此降级。
+    const SUPPORTED_KEY = /\{\{key\}\}|\{key\}|\{\{page\}\}|\{page\}|\{\{java\.encodeURI(?:Component)?\(\s*key\s*(?:,\s*['"][^'"]*['"]\s*)?\)\}\}/g;
+    const strictRaw = (cut === -1 ? su : su.slice(0, cut)) + (body ? '\n' + body : '');
+    if (/<js>|@js:|\$\.|java\./i.test(strictRaw.replace(SUPPORTED_KEY, ''))) return { skip: '搜索URL/body含动态语法' };
+
+    // java.encodeURI(key[, "gbk"])：把关键词预先编码进 URL/body 的常见写法。
+    // 旧实现只认裸 {{key}}，这类源会被判成"搜索无{{key}}槽位"而永久不可测。
+    const JAVA_URI = /\{\{java\.encodeURI(?:Component)?\(\s*key\s*(?:,\s*['"]([^'"]*)['"]\s*)?\)\}\}/g;
+    let javaKey = false, javaGbk = false, javaFail = '';
+    const injectJavaKey = s => s.replace(JAVA_URI, (m, cs) => {
+        javaKey = true;
+        if (cs && /gb2312|gbk/i.test(cs)) {
+            javaGbk = true;
+            if (!GBK.has) { javaFail = 'GBK编码表初始化失败'; return ''; }
+            const e = GBK.pct(kw);
+            if (!e) { javaFail = 'GBK表缺字'; return ''; }
+            return e;
+        }
+        return encodeURIComponent(kw);
+    });
+    path = injectJavaKey(path);
+    if (body != null) body = injectJavaKey(body);
+    if (javaFail) return { skip: javaFail };
+    if (javaGbk && !charset) charset = 'gbk';   // 关键词已按 GBK 编码，响应也按 GBK 解
+
     const isGbk = /gb2312|gbk/i.test(charset);
     if (isGbk && !GBK.has) return { skip: 'GBK编码表初始化失败' };
     const hasKey = u => /\{\{key\}\}|\{key\}/.test(u);
-    if (!hasKey(path) && !(body && hasKey(body))) return { skip: '搜索无{{key}}槽位' };
+    if (!javaKey && !hasKey(path) && !(body && hasKey(body))) return { skip: '搜索无{{key}}槽位' };
     // 关键词编码：GBK 站按站点编码做百分号转义，UTF-8 站用标准 encodeURIComponent
     const K = isGbk ? GBK.pct(kw) : encodeURIComponent(kw);
     if (!K) return { skip: 'GBK表缺字' };
     path = path.replace(/\{\{page\}\}|\{page\}/g, '1');
     if (body != null) body = body.replace(/\{\{page\}\}|\{page\}/g, '1');
-    const dynFree = x => !/<js>|@js:|\$\./i.test(String(x).replace(/\{\{[^}]*\}\}|\{[^}]*\}/g, ''));
+    // java.* 脚本调用（除已替换的 java.encodeURI）同样是动态规则：不能当静态 URL 去请求，
+    // 否则会把脚本源码拼进 URL，得到一个必然失败的假地址（假死比不可测更危险）
+    const dynFree = x => !/<js>|@js:|\$\.|java\./i.test(String(x).replace(/\{\{[^}]*\}\}|\{[^}]*\}/g, ''));
     if (!dynFree(path) || (body != null && !dynFree(body))) return { skip: '搜索URL/body含动态语法' };
     let url;
-    try { url = new URL(hasKey(path) ? path.replace(/\{\{key\}\}|\{key\}/g, K) : path, base).href; }
+    try { url = new URL(hasKey(path) || javaKey ? path.replace(/\{\{key\}\}|\{key\}/g, K) : path, base).href; }
     catch (e) { return { skip: '搜索URL无效' }; }
     const opt = { url, method, headers, charset: isGbk ? 'gbk' : '' };
     if (method === 'POST' && body != null) {

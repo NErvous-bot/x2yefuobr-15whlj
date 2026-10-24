@@ -484,6 +484,55 @@ test('smoke-p0.js exit 0（所有断言通过）', () => {
 });
 
 // ============================================================
+// 11. 测试器能力：java.encodeURI(key) 槽位（阶段三 P1）
+// ============================================================
+console.log('\n=== 11. 测试器 java.encodeURI(key) 槽位 ===');
+const { parseSearch, selectAll } = require('../aging-test.js');
+const BASE = 'https://fixture.example.com';
+
+test('搜索URL含 {{java.encodeURI(key,"gbk")}} → 不再误判"搜索无{{key}}槽位"', () => {
+    const r = parseSearch('/s.php?action=search&wd={{java.encodeURI(key,"gbk")}}&page={{page}}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    // 都市 的 GBK 字节：都=B6BC、市=CAD0；URLSearchParams 会按 UTF-8 反解成乱码，故直接查原始 URL
+    assert.ok(r.opt.url.includes('wd=%B6%BC%CA%D0'), 'wd 应为 GBK 百分号编码，实际: ' + r.opt.url);
+    assert.ok(r.opt.url.includes('page=1'), 'page 槽位应替换为 1，实际: ' + r.opt.url);
+});
+
+test('搜索URL含 {{java.encodeURI(key)}} → 默认 UTF-8 编码', () => {
+    const r = parseSearch('/api/search?q={{java.encodeURI(key)}}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    assert.strictEqual(new URL(r.opt.url).searchParams.get('q'), '都市', '应为 UTF-8 编码后可被 searchParams 还原');
+});
+
+test('POST body 含 {{java.encodeURI(key)}} → 可实测且方法为 POST', () => {
+    const r = parseSearch('/api/search/list,{"method":"post","body":"name={{java.encodeURI(key)}}&type=3"}', BASE, '都市');
+    assert.ok(!r.skip, '不应 skip，实际: ' + r.skip);
+    assert.strictEqual(r.opt.method, 'POST');
+    assert.strictEqual(r.opt.body.toString('utf8'), 'name=' + encodeURIComponent('都市') + '&type=3');
+});
+
+test('负向对照：真正无关键词槽位的静态页仍判不可测', () => {
+    const r = parseSearch('/search/{{page}}_2.html', BASE, '都市');
+    assert.strictEqual(r.skip, '搜索无{{key}}槽位', '无 key 槽位必须仍判不可测，实际: ' + JSON.stringify(r));
+});
+
+test('负向对照：<js> 动态搜索URL仍判不可测', () => {
+    const r = parseSearch('/<js>java.ajax(baseUrl)</js>', BASE, '都市');
+    assert.strictEqual(r.skip, '无搜索URL或含js', '动态搜索URL必须仍判不可测，实际: ' + JSON.stringify(r));
+});
+
+test('动态脚本 token（java.connect）不得被拼进 URL，应判不可测', () => {
+    const r = parseSearch('{{String(java.connect("https://x.example.com").raw().request().url())}}search.html', BASE, '都市');
+    assert.strictEqual(r.skip, '搜索URL/body含动态语法', '动态脚本必须判不可测，实际: ' + JSON.stringify(r));
+});
+
+test('table 无 tbody 时按 HTML5 补隐式 tbody（防"搜索无结果"误判）', () => {
+    const html = '<table class="grid"><tr><th>文章名称</th></tr><tr><td><a href="/read/1/">书A</a></td></tr><tr><td><a href="/read/2/">书B</a></td></tr></table>';
+    const r = selectAll(html, 'tbody@tr');
+    assert.ok(r && r.items.length === 3, '应命中表头+2行，实际: ' + (r && r.items.length));
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
