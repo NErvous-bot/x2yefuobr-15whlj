@@ -1109,7 +1109,13 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     const summary = { generatedAt: Date.now(), books: {} };
     const t0 = Date.now();
     
-    for (const book of books) {
+    // 覆盖偏移：每本书从源清单的不同位置开始消费。若每本书都从 #0 开始，
+    // 预算截断后所有书只会测到同一批高权重源，低权重源永远无样本——
+    // 20 本书看上去像 20 倍样本，实际覆盖没扩大。
+    // stride = ceil(源数/书数)，使各书窗口首尾相接铺满整个清单。
+    const stride = Math.max(1, Math.ceil(list.length / Math.max(1, books.length)));
+
+    for (const [bi, book] of books.entries()) {
         console.log('\n📖 《' + book.title + '》（参考 ' + book.reference + ' 章）');
         const bookResult = {
             key: book.key, title: book.title, reference: book.reference,
@@ -1119,7 +1125,10 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         };
         
         const startTime = Date.now();
-        const queue = list.slice();
+        const offset = (bi * stride) % Math.max(1, list.length);
+        const queue = offset === 0 ? list.slice() : list.slice(offset).concat(list.slice(0, offset));
+        bookResult.coverage_start = offset;
+        if (offset !== 0) console.log('  覆盖窗口起始 #' + offset + '（共 ' + list.length + ' 源，stride ' + stride + '）');
         let idx = 0;
         
         async function worker() {
@@ -1324,12 +1333,40 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         }
     }
     
+    // 顶层汇总：每轮报告都要能直接读出「生成时间/样本数/有效样本数/失败原因」，
+    // 不必回头去数 CSV。measuredSamples = 真正取到目录的样本（catalog_checked）。
+    const reasonBuckets = {};
+    for (const d of details) {
+        if (d.result !== 'unknown' || !d.reason) continue;
+        const k = d.reason.startsWith('时间预算截断') ? '时间预算截断（剩余源未测）' : d.reason;
+        reasonBuckets[k] = (reasonBuckets[k] || 0) + 1;
+    }
+    summary.totals = {
+        books: books.length,
+        sourcesInList: list.length,
+        samples: details.length,
+        measuredSamples: details.filter(d => d.catalog_checked).length,
+        uniqueSourcesSampled: new Set(details.map(d => d.source_url_hash)).size,
+        uniqueSourcesMeasured: new Set(details.filter(d => d.catalog_checked).map(d => d.source_url_hash)).size,
+        failureReasons: reasonBuckets,
+        budgetSecPerBook: BUDGET_PER_BOOK,
+        elapsedSec: Math.round((Date.now() - t0) / 1000),
+    };
+
     // 输出
     const outDir = 'reports';
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
     
     fs.writeFileSync(outDir + '/freshness-summary.json', JSON.stringify(summary, null, 1));
     console.log('\n✅ reports/freshness-summary.json');
+    {
+        const T = summary.totals;
+        console.log('📊 本轮汇总：' + T.books + ' 本书 × ' + T.sourcesInList + ' 源，样本 ' + T.samples +
+            '，有效样本 ' + T.measuredSamples + '，覆盖源 ' + T.uniqueSourcesSampled +
+            '，其中有实测 ' + T.uniqueSourcesMeasured + '，耗时 ' + T.elapsedSec + 's');
+        const top = Object.entries(T.failureReasons).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        if (top.length) console.log('   主要失败原因：' + top.map(([k, v]) => k + '×' + v).join('；'));
+    }
     
     const headers = ['book_key', 'source_url_hash', 'reference_chapter', 'source_chapter', 'catalog_checked', 'body_verified', 'checked_at', 'result', 'reason'];
     const escapeCsv = (v) => {

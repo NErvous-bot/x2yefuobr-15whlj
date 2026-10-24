@@ -55,3 +55,47 @@ jobs:
           fi
           git commit -m "auto audit: $(date +%F)（纯审计，无成品变更）"
           git push origin HEAD
+
+  # 追更诊断：与三重验收分开跑，独立输出 reports/freshness-*.json/csv；
+  # 只刷新题库（books.json）与诊断报告，同样严禁触碰任何成品/评分文件。
+  # needs: audit —— 两个 job 都会写 main，串行化避免 rebase/push 竞争。
+  freshness:
+    needs: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # 取书失败不阻断：沿用仓库里现有的题库继续诊断（快照日期见 books.json 的 sampledAt）
+      - name: 刷新追更题库（番茄实时热榜）
+        continue-on-error: true
+        run: node scripts/pick-books.js --count=20 --polls=4
+      - name: 跨源追更诊断（只读 legado.json，只写 reports/freshness-*）
+        env:
+          # 每本书的时间预算；20 本 × 240s ≈ 80min，预算越大单本覆盖源越多
+          AUDIT_BUDGET_SEC: '240'
+        run: node freshness-audit.js
+      - name: 基线同步（提交诊断报告前 rebase）
+        run: |
+          git pull --rebase --autostash origin main
+      - name: commit（仅题库与追更报告入库）
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add books.json reports/freshness-summary.json reports/freshness-details.csv
+          # 硬断言：诊断不得改动成品/评分/健康证据
+          for f in legado.json replaceRule.json version.txt legado.json.sig replaceRule.json.sig health/source_health.json reports/source_scores.json; do
+            if ! git diff --quiet HEAD -- "$f"; then
+              echo "::error::追更诊断不得修改成品/评分文件: $f"
+              git diff --stat HEAD -- "$f"
+              exit 1
+            fi
+          done
+          if git diff --cached --quiet; then
+            echo "没有需要提交的追更报告变更"
+            exit 0
+          fi
+          git commit -m "auto freshness: $(date +%F)（纯诊断，无成品变更）"
+          git push origin HEAD
