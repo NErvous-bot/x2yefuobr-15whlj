@@ -1,0 +1,27 @@
+{
+  "runAt": "2026-10-25T08:57:33.286Z",
+  "upstreamCandidates": 45,
+  "filteredCandidates": 13,
+  "phaseAFallback": [
+    "斗罗大陆",
+    "凡人修仙传",
+    "诡秘之主"
+  ],
+  "phaseATests": [
+    "斗罗大陆",
+    "凡人修仙传",
+    "诡秘之主"
+  ],
+  "phaseA": {
+    "candidates": 13,
+    "survivors": 0
+  },
+  "phaseB": {
+    "survivors": 0,
+    "passed": 0,
+    "failed": 0
+  },
+  "passed": [],
+  "failed": [],
+  "note": "没有新源通过三重验收（纯审计：不修改任何成品，无成品发布动作）"
+}
