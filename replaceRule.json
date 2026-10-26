@@ -299,4 +299,15 @@
         "pattern":  "https?://[^\\s【】()（）【】]{4,80}",
         "order":  36
     }
+,
+    {
+        "name":  "对话随机彩色（保留首行缩进）",
+        "group":  "排版-彩色对话",
+        "replacement":  "@js:var QY=[\"#E0664E\",\"#E08A3C\",\"#C75D7A\",\"#3E9E4F\",\"#2FA8A0\",\"#4A7EBB\",\"#9A5FB5\"];\nvar ps=String(result).split(\"\\n\");\nvar ci=0,out=[];\nfor(var i=0;i<ps.length;i++){\nvar raw=ps[i];\nif(!raw){out.push(\"\");continue}\nif(raw.indexOf(\"<usehtml\")>=0||raw.indexOf(\"<img\")>=0||raw.indexOf(\"<font\")>=0){out.push(raw);continue}\nvar body=raw.replace(/^[\\s　]+/,\"\").replace(/[\\s　]+$/,\"\");\nif(!body){out.push(\"\");continue}\nvar col=body\n.replace(/[“][^”]*[”]/g,function(m){var c=QY[ci%QY.length];ci++;return '<font color=\"'+c+'\">'+m+'</font>'})\n.replace(/[（][^）]*[）]/g,function(m){return '<font color=\"#3E9E4F\">'+m+'</font>'});\nif(col.indexOf(\"<font\")<0){out.push(body);continue}\nout.push(\"<usehtml>　　\"+col+\"</usehtml>\")\n}\nout.join(\"\\n\")",
+        "scope":  "",
+        "isEnabled":  true,
+        "isRegex":  true,
+        "pattern":  "(?s).+",
+        "order":  37
+    }
 ]
