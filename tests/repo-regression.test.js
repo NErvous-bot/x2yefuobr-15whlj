@@ -27,6 +27,30 @@ function makeTempDir() {
     return fs.mkdtempSync(path.join(os.tmpdir(), 'legado-test-'));
 }
 
+// Windows 下 git 对象文件带只读属性，直接 rmSync 会 EPERM；先清只读再删。
+// 清理失败只警告，不影响断言结果。
+function cleanupDir(dir) {
+    const clearReadonly = d => {
+        let ents = [];
+        try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+        for (const e of ents) {
+            const p = path.join(d, e.name);
+            if (e.isDirectory()) clearReadonly(p);
+            else try { fs.chmodSync(p, 0o666); } catch {}
+        }
+    };
+    try {
+        fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+        clearReadonly(dir);
+        try {
+            fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+        } catch {
+            console.warn('  （临时目录清理失败，不影响测试结果）: ' + dir);
+        }
+    }
+}
+
 // ============================================================
 // 0. 准备：所有脚本都能 node --check 过
 // ============================================================
@@ -301,7 +325,7 @@ test('动态: 真首次运行（双基线不存在）→ exit 0', () => {
         const r = spawnSync(process.execPath, ['fuse.js'], { cwd: tmp, encoding: 'utf8' });
         assert.strictEqual(r.status, 0, `真首次运行应 exit 0，实际 exit=${r.status}`);
         assert.ok((r.stdout || '').includes('无基线报告'), '应打印首次运行提示');
-    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+    } finally { cleanupDir(tmp); }
 });
 
 test('动态: 损坏的 health JSON → fail-closed exit 1（不是 MODULE_NOT_FOUND）', () => {
@@ -324,7 +348,7 @@ test('动态: 损坏的 health JSON → fail-closed exit 1（不是 MODULE_NOT_F
         assert.ok(!combined.includes('MODULE_NOT_FOUND'), '不应是模块缺失导致的失败');
         assert.ok(combined.includes('解析失败') || combined.includes('拒绝发布'), 
                   `应包含目标错误信息，实际输出: ${combined.slice(0, 300)}`);
-    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+    } finally { cleanupDir(tmp); }
 });
 
 test('动态: 单基线缺失（health 有 legado 无）→ fail-closed exit 1', () => {
@@ -345,7 +369,7 @@ test('动态: 单基线缺失（health 有 legado 无）→ fail-closed exit 1',
         assert.ok(r.status === 1, `单基线缺失应 exit 1，实际 exit=${r.status}`);
         assert.ok((r.stdout || '').includes('基线状态不一致') || (r.stderr || '').includes('基线状态不一致'), 
                   `应检测到状态不一致，stdout=${r.stdout?.slice(0,200)} stderr=${r.stderr?.slice(0,200)}`);
-    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+    } finally { cleanupDir(tmp); }
 });
 
 test('filter.js alive() 探测替代 upstream-removed（P1-1 生效）', () => {
