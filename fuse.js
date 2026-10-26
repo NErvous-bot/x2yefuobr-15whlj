@@ -121,12 +121,14 @@ try {
     // Phase B-2: ①-b 旧可用源消失检查（独立于回归闸门 broken 和总量熔断）
     // 设计原则：旧可用源在新 legado.json 里消失 → 必须有 filter.js 删除清单里的合法理由
     // 合法理由白名单：probe-dead（域名真死）/ aging-failed（三关实测失败）/ canon-merged（被同 canonicalUrl 替代）
+    //   manual-confirmed（人工确认不可用，见仓库根 dead-sources.json）——站点改版导致正文规则失效时，
+    //   测试器永远判"坏"，而源既不会自己恢复也删不掉，旧版会因此每轮都 BLOCKED、成品永远发不出去
     // upstream-removed 已移除——仅"上游不再提供"不足以证明源失效，filter.js 现在会先 alive() 探测：
     //   域名还活着 → 保留旧源（不出现在删除清单）
     //   域名死了 → 自动改写为 probe-dead
     // 无记录或理由不在白名单 → 直接 BLOCKED（删除盲区硬阻断）
     const newLegadoKeys = new Set((JSON.parse(fs.readFileSync('legado.json', 'utf8'))).map(s => norm(s.bookSourceUrl)).filter(Boolean));
-    const LEGAL_DELETION_REASONS = new Set(['probe-dead', 'aging-failed', 'canon-merged']);
+    const LEGAL_DELETION_REASONS = new Set(['probe-dead', 'aging-failed', 'canon-merged', 'manual-confirmed']);
     let manifest = {};
     try { manifest = JSON.parse(fs.readFileSync('reports/deletion-manifest.json', 'utf8')); } catch (_) {}
     const removedAvail = [], unjustifiedRemoved = [];

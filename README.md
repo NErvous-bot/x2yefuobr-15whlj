@@ -19,6 +19,7 @@
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
 - `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每天 5:00 自动检查：先拉 `version.txt` 指纹（内容没变当天不下载）→ 多镜像轮询下载 + 逐字节 ECDSA 验签 → 通过阅读App的 ContentProvider 批量写入（写前按手机可达性禁用断网源），接口不可用或写入失败时自动改走官方在线导入深链（`legado://import`）；同步结束通过系统通知栏告知结果（成功/失败/无变化）
 - `sync-app.apk`：上述源码的 CI 自动构建产物（release 固定签名，可覆盖安装升级；源码变更会自动触发重新构建）
+- `dead-sources.json`：人工确认死亡名单（`url` + 原因 + 确认日期）。列进去的源会被 filter.js 无条件剔除并写入删除清单 `manual-confirmed`；用于站点改版导致正文永久失效、测试器每轮都判坏又无法自动删除的情况，否则 fuse 会一直 BLOCKED
 - `rssSources.json`：RSS 订阅源，从仓库 raw 链接手动导入（`legado://import/rssSource?src=<raw链接>`）
 
 ## 升级流程（开发者）

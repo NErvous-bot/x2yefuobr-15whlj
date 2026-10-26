@@ -542,50 +542,60 @@ function activityOf(hay) {
 }
 
 /* ---------- 三关实测主流程 ---------- */
-async function checkSource(s) {
+async function checkSource(s, opts = {}) {
     const res = { usable: false, reason: '', chapters: 0, contentLen: 0, activity: '未知' };
     try {
         const base = originOf(s.bookSourceUrl);
         if (!base) { res.usable = 'skip'; res.reason = '无效URL'; return res; }
         const rs = s.ruleSearch || {}, rb = s.ruleBookInfo || {}, rt = s.ruleToc || {}, rc = s.ruleContent || {};
 
-        // 第①关：搜索出书（双关键词 + 隔1.5s二次复核，防"站点无此关键词"和瞬时抖动误判死）
-        let r1 = await doSearch(s, base, rs, '都市');
-        if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
-        if (r1.dead) { res.reason = r1.dead; return res; }
-        if (!r1.bl.items.length) {
-            r1 = await doSearch(s, base, rs, '重生');
+        // 书名候选：正常流程走搜索；若上层指定了 bookUrl（换书重试），直接用它，省掉一次搜索
+        const bookCandidates = [];
+        if (opts.bookUrl) {
+            bookCandidates.push(opts.bookUrl);
+        } else {
+            // 第①关：搜索出书（双关键词 + 隔1.5s二次复核，防"站点无此关键词"和瞬时抖动误判死）
+            let r1 = await doSearch(s, base, rs, '都市');
             if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
             if (r1.dead) { res.reason = r1.dead; return res; }
             if (!r1.bl.items.length) {
-                await sleep(1500);
-                r1 = await doSearch(s, base, rs, '都市');
+                r1 = await doSearch(s, base, rs, '重生');
                 if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
                 if (r1.dead) { res.reason = r1.dead; return res; }
                 if (!r1.bl.items.length) {
-                    if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
-                    else res.reason = '搜索无结果';
-                    return res;
+                    await sleep(1500);
+                    r1 = await doSearch(s, base, rs, '都市');
+                    if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+                    if (r1.dead) { res.reason = r1.dead; return res; }
+                    if (!r1.bl.items.length) {
+                        if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
+                        else res.reason = '搜索无结果';
+                        return res;
+                    }
                 }
             }
-        }
-        let bookUrl = '';
-        const buRule = String(rs.bookUrl || '');
-        const pat = String(s.bookUrlPattern || '').trim();
-        for (const f of r1.bl.items) {
-            let u = pickOne(f, buRule);
-            if (!u && typeof f !== 'object') u = firstHref(f);
-            if (!u) continue;
-            // 纯短 ID（无 / 和 .）且源声明了 bookUrlPattern 模板拼接 → 测试器无法构造真实 URL → 豁免
-            if (pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u)) {
-                res.usable = 'skip'; res.reason = 'bookUrl需模板拼接'; return res;
+            const buRule = String(rs.bookUrl || '');
+            const pat = String(s.bookUrlPattern || '').trim();
+            for (const f of r1.bl.items) {
+                let u = pickOne(f, buRule);
+                if (!u && typeof f !== 'object') u = firstHref(f);
+                if (!u) continue;
+                // 纯短 ID（无 / 和 .）且源声明了 bookUrlPattern 模板拼接 → 测试器无法构造真实 URL → 豁免
+                if (pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u)) {
+                    res.usable = 'skip'; res.reason = 'bookUrl需模板拼接'; return res;
+                }
+                try {
+                    const abs = new URL(u, base).href;
+                    if (!bookCandidates.includes(abs)) bookCandidates.push(abs);
+                } catch (e) {}
+                if (bookCandidates.length >= 3) break;
             }
-            try { bookUrl = new URL(u, base).href; break; } catch (e) {}
+            if (!bookCandidates.length) {
+                // bookList 有结果但提取不出书籍链接：可能是 bookUrl 规则动态/字段超纲（测试器不会提取 ≠ 源坏）→ 豁免
+                res.usable = 'skip'; res.reason = 'bookUrl无法提取'; return res;
+            }
         }
-        if (!bookUrl) {
-            // bookList 有结果但提取不出书籍链接：可能是 bookUrl 规则动态/字段超纲（测试器不会提取 ≠ 源坏）→ 豁免
-            res.usable = 'skip'; res.reason = 'bookUrl无法提取'; return res;
-        }
+        const bookUrl = bookCandidates[0];
 
         // 第②关：目录 ≥1 章
         const bp = await fetchPage(bookUrl, { ref: base });
@@ -690,8 +700,20 @@ async function checkSource(s) {
             }
         }
         if (txt.length < 200) {
-            if (isChallenge(cp.text)) { res.usable = 'skip'; res.reason = '正文触发反爬验证'; }
-            else res.reason = '正文不足200字（实得' + txt.length + '）';
+            if (isChallenge(cp.text)) { res.usable = 'skip'; res.reason = '正文触发反爬验证'; return res; }
+            // 换书重试：单本书被站点删书/门禁/正文失效，不代表整个源坏了。
+            // 搜索阶段已收集最多 3 个候选，这里依次换书实测，任一可用即判源可用；
+            // 递归调用时 bookCandidates 只含被指定的那一本，天然不会再次发散。
+            const tried = [];
+            for (const alt of bookCandidates.slice(1)) {
+                const r2 = await checkSource(s, { bookUrl: alt });
+                if (r2.usable === true) {
+                    r2.reason = '三关全过（第1本正文为空，换书后通过）';
+                    return r2;
+                }
+                tried.push(r2.reason);
+            }
+            res.reason = '正文不足200字（实得' + txt.length + '）' + (tried.length ? '；另换 ' + tried.length + ' 本仍失败' : '');
             return res;
         }
         res.contentLen = txt.length;

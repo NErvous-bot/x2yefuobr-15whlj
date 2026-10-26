@@ -267,6 +267,43 @@ function variants(o) {
     console.log('存活 ' + out.length + ' / ' + list.length + '，剔除 ' + removed + ' 个');
     if (dead.size) console.log('最终死域名:\n' + [...dead].join('\n'));
 
+    // 2.9) 人工确认死亡名单：dead-sources.json 中列出的源无条件剔除。
+    //      用途：站点改版导致正文规则永久失效（域名活着、搜索/目录正常，但章节页不再返回正文），
+    //      测试器每轮都判"坏"，源既不会恢复、也没有任何自动路径能删掉它，
+    //      fuse 会永远 BLOCKED 导致成品发不出去。此时由人工确认后登记到该文件。
+    //      同时写入 deletionManifest（reason=manual-confirmed），fuse 白名单认这个理由；
+    //      下面 upstream-removed 的 alive() 复活逻辑会因为已有 manifest 记录而跳过它。
+    let manualRemoved = 0;
+    try {
+        const deadFile = 'dead-sources.json';
+        if (fs.existsSync(deadFile)) {
+            const deadList = JSON.parse(fs.readFileSync(deadFile, 'utf8'));
+            if (Array.isArray(deadList) && deadList.length) {
+                const manual = new Map();
+                for (const d of deadList) {
+                    const k = norm(d && d.url);
+                    if (k) manual.set(k, d);
+                }
+                const before = out.length;
+                out = out.filter(s => {
+                    const k = norm(s.bookSourceUrl);
+                    const d = k ? manual.get(k) : null;
+                    if (!d) return true;
+                    deletionManifest[k] = {
+                        name: s.bookSourceName || d.name || '',
+                        reason: 'manual-confirmed',
+                        evidence: (d.reason || '人工确认不可用') + ' @ ' + (d.confirmedAt || '')
+                    };
+                    return false;
+                });
+                manualRemoved = before - out.length;
+                if (manualRemoved) console.log('人工确认死亡剔除 ' + manualRemoved + ' 个（dead-sources.json）');
+            }
+        }
+    } catch (e) {
+        console.log('⚠️ dead-sources.json 读取失败，跳过人工剔除: ' + e.message);
+    }
+
     // 3.1) 老化剔除·先实测再删：>365天未更新 ≈ 作者弃坑（盗版站规则寿命普遍不到半年）。
     //      名单内最老 8% 且 90 天未实测的源，先做三关真实实测：
     //      ①搜索"都市"出书 ②目录≥1章 ③第一章正文≥200字。
@@ -441,12 +478,12 @@ function variants(o) {
         console.log('⚠️ 本次剔除超过 30%，疑似运行环境网络抖动，放弃写入，旧版本保留。');
         return;
     }
-    if (merged === 0 && repaired === 0 && removed === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0) {
+    if (merged === 0 && repaired === 0 && removed === 0 && manualRemoved === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0) {
         console.log('无变化，不提交');
         return;
     }
     fs.writeFileSync(file, JSON.stringify(out));
-    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '（探活+老化）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
+    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
 
     // Phase B-1 → Phase D-1: 对比 HEAD legado.json 补删除清单 + 存活保留
     // P1-1 修复：上游不再提供 ≠ 源已失效。对每个 missing 源先 alive() 探测 origin：
