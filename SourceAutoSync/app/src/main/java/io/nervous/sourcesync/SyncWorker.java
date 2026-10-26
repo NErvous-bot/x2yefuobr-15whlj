@@ -829,7 +829,7 @@ public class SyncWorker extends Worker {
                             | android.app.PendingIntent.FLAG_UPDATE_CURRENT);
             android.app.Notification n = new android.app.Notification.Builder(ctx, "sync")
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
-                    .setContentTitle(ok ? "书源同步完成" : "书源同步失败")
+                    .setContentTitle(ok ? "同步器：同步完成" : "同步器：同步失败")
                     .setContentText(msg)
                     .setStyle(new android.app.Notification.BigTextStyle().bigText(msg))
                     .setContentIntent(pi)

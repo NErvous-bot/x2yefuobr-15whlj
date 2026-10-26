@@ -128,7 +128,7 @@ public class MainActivity extends Activity {
         }
         String progLine = (progress == null) ? "" : "\n▶ " + progress + "\n";
         status.setText(
-                "书源自动同步 v" + BuildConfig.VERSION_NAME + progLine +
+                "同步器 v" + BuildConfig.VERSION_NAME + progLine +
                 "\n上次：" + last + "\n" +
                 (hist.length() == 0 ? "" : "\n最近记录：" + hist + "\n") +
                 "\n每天自动检查更新（有更新才下载写入）· 镜像自动切换 · 全程验签");
