@@ -103,9 +103,9 @@ function chapterLinks(base, html) {
 let allRules = [];
 try { allRules = JSON.parse(fs.readFileSync(R + 'replaceRule.json', 'utf8')); } catch (e) { allRules = []; }
 if (!Array.isArray(allRules)) allRules = [];
-const rules = allRules.filter(r => r.isEnabled !== false && r.isRegex !== false && r.replacePattern);
+const rules = allRules.filter(r => r.isEnabled !== false && r.isRegex !== false && r.pattern);
 function purify(t) {
-  for (const r of rules) { try { t = t.replace(new RegExp(r.replacePattern, 'gm'), r.replacement || ''); } catch (e) {} }
+  for (const r of rules) { try { t = t.replace(new RegExp(r.pattern, 'gm'), r.replacement || ''); } catch (e) {} }
   return t;
 }
 
@@ -254,8 +254,9 @@ async function main() {
 
   // ---- 去重 + 单轮上限10条 ----
   const haveName = new Set(allRules.map(r => String(r.name || '').trim()));
-  const havePat = new Set(allRules.map(r => String(r.replacePattern || '')));
+  const havePat = new Set(allRules.map(r => String(r.pattern || '')));
   const maxSort = allRules.reduce((a, r) => Math.max(a, r.sortNo | 0), 0);
+  const maxOrder = allRules.reduce((a, r) => Math.max(a, r.order | 0), 0);
   const toAdd = [];
   for (const c of passCands) {
     if (toAdd.length >= 10) break;
@@ -274,9 +275,9 @@ async function main() {
   if (after >= before) { console.log('守门：净化率未提升（残留 ' + before + '→' + after + '），放弃写入'); return; }
 
   // ---- 写入 replaceRule.json（保持既有格式：每行一条紧凑 JSON） ----
-  let sortNo = maxSort;
+  let sortNo = maxSort, order = maxOrder;
   for (const c of toAdd) {
-    allRules.push({ name: c.name, group: '净化-自动', replacePattern: c.pat, replacement: '', scope: '', isEnabled: true, isRegex: true, sortNo: ++sortNo });
+    allRules.push({ name: c.name, group: '净化-自动', pattern: c.pat, replacement: '', scope: '', isEnabled: true, isRegex: true, order: ++order, sortNo: ++sortNo });
   }
   fs.writeFileSync(R + 'replaceRule.json', '[\n' + allRules.map(r => '  ' + JSON.stringify(r)).join(',\n') + '\n]');
   console.log('\n== 写入完成 ==');
