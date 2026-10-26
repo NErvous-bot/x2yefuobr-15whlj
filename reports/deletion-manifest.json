@@ -1,4 +1,9 @@
 {
+ "https://www.18shuku.com": {
+  "name": "🙈十八书库",
+  "reason": "manual-confirmed",
+  "evidence": "章节页 /read/* 全部返回书籍详情页（多本书实测均为同一 26718 字节页面，class.readcontent 取不到任何内容），搜索/目录正常但正文接口失效，属站点改版；CI 与本地均复现 CONTENT_EMPTY @ 2026-10-26"
+ },
  "https://m.fqxs123.com": {
   "name": "番茄小说123",
   "reason": "aging-failed",
@@ -6,6 +11,11 @@
  },
  "https://chuangshi.qq.com": {
   "name": "创世中文网",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
+ },
+ "https://www.alicesw.com": {
+  "name": "爱丽丝书屋",
   "reason": "aging-failed",
   "evidence": "目录为空"
  },
