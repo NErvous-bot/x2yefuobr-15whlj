@@ -5,24 +5,22 @@
    72  available->available
     1  available->broken
     3  available->untestable
-    1  broken->available
-   66  broken->broken
-    3  broken->removed
-    4  broken->untestable
-    3  untestable->available
-    4  untestable->broken
-  218  untestable->untestable
-新增源 0
+    3  broken->available
+   65  broken->broken
+    3  broken->untestable
+    2  untestable->available
+    2  untestable->broken
+  221  untestable->untestable
+新增源 2
 
 ━━ 一级复查：旧可用 → 确认坏 1 ━━
-  FLAPPING 1
-  [FLAPPING 4/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,SEARCH_EMPTY
+  SUSPECT 1
+  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: CHAPTER_EMPTY,CONTENT_EMPTY,PASS,SEARCH_EMPTY,SEARCH_EMPTY | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 2（基线 9190202） ━━
-  [REMOVED] (T1 原REAL_DEATH_CANDIDATE) 🙈十八书库
-  [STILL_BROKEN] (T1 原SUSPECT) 998读书 h=33 [目录为空] recent=fail/fail/pass/fail/fail flap=true
+━━ 往轮候选终态 1（基线 98facfc） ━━
+  [RECOVERED] (T1 原FLAPPING) ncode_syosetu(成为小说家吧 h=93 [三关全过] recent=fail/fail/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
 PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）

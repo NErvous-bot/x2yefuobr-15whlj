@@ -1,33 +1,29 @@
 {
- "generatedAt": 1793013623677,
- "runAt": "2026-10-26T11:20:23.677Z",
+ "generatedAt": 1793015636956,
+ "runAt": "2026-10-26T11:53:56.956Z",
  "oldRef": "HEAD",
- "baselineSha": "9190202694b902baabed9f64cb2cb712fb754e56",
+ "baselineSha": "98facfca6764f75a29076947f67ede839e33c851",
  "tier1": [
   {
-   "name": "ncode_syosetu(成为小说家吧)",
-   "url": "https://ncode.syosetu.com/",
-   "traits": [],
-   "oldNote": "三关全过",
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "traits": [
+    "GBK"
+   ],
+   "oldNote": "三关全过（第1本正文为空，换书后通过）",
    "newNote": "搜索无结果",
    "attempts": [
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）；另换 2 本仍失败"
     },
     {
      "pass": true,
@@ -40,44 +36,42 @@
      "kind": "fail",
      "stage": "SEARCH_EMPTY",
      "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     }
    ],
-   "verdict": "FLAPPING"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "🙈十八书库",
-   "url": "https://www.18shuku.com",
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
    "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "REMOVED",
-   "evidence": null
-  },
-  {
-   "name": "998读书",
-   "url": "http://www.998ds.net",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "STILL_BROKEN",
+   "prevVerdict": "FLAPPING",
+   "state": "RECOVERED",
    "evidence": {
-    "health": 33,
+    "health": 93,
     "search": true,
-    "toc": false,
-    "content": false,
-    "chapters": 0,
-    "contentLen": 0,
-    "note": "目录为空",
+    "toc": true,
+    "content": true,
+    "chapters": 37,
+    "contentLen": 4431,
+    "note": "三关全过",
     "flapping": true,
     "recent": [
      "fail",
      "fail",
      "pass",
      "fail",
-     "fail"
+     "pass"
     ],
-    "checkedAt": 1793013607347
+    "checkedAt": 1793015608740
    }
   }
  ]
