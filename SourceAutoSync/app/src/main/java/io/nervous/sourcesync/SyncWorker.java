@@ -55,6 +55,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  *  - 每天自动检查：先下载约70字节内容指纹（version.txt，书源+规则两个 md5），
  *    内容没变当天不下载全量书源（无更新只刷新状态行，不发通知）；
  *  - 数量兜底：新书源数少于上次一半视为仓库数据异常，拒绝导入保护书架。
+ *
+ * v3.19：
+ *  - 写入回查改用单源路由 bookSource/query?url=，避免复数路由把全部源塞进
+ *    一个 cursor 行（374 源≈2.5MB）超过 CursorWindow 2MB 上限，造成
+ *    「实际写入成功、回查却报失败」的假阴性；
+ *  - 只有回查真正通过才记 lastVerified，防止一次兜底导入后永久跳过写入。
  */
 public class SyncWorker extends Worker {
 
@@ -224,7 +230,11 @@ public class SyncWorker extends Worker {
     /**
      * 写入后回查：provider 的 insert 恒返回 null（官方 ReaderProvider 源码里固定 return null），
      * 唯一可靠的成功信号是「回查能看到刚写入的样本源」。
-     * 查询返回的 cursor 只有一列 result，内容是 {"isSuccess":..,"data":[源...]}。
+     *
+     * 必须用单源路由 bookSource/query?url= 回查：复数路由 bookSources/query
+     * 会把全部书源序列化成一个 cursor 行，当前仓库 374 源约 2.5MB，超过
+     * Android CursorWindow 2MB 上限时会直接抛异常，造成「写入成功却回查失败」
+     * 的假阴性（v3.18 线上现象）。单源路由的 data 是对象，这里兼容数组形态。
      */
     private boolean verifyWritten(String authority, JSONArray written) {
         android.database.Cursor c = null;
@@ -232,14 +242,17 @@ public class SyncWorker extends Worker {
             if (written.length() == 0) return true;
             String sample = written.getJSONObject(0).optString("bookSourceUrl", "");
             if (sample.isEmpty()) return true;
+            Uri uri = Uri.parse("content://" + authority + "/bookSource/query")
+                    .buildUpon().appendQueryParameter("url", sample).build();
             c = getApplicationContext().getContentResolver()
-                    .query(Uri.parse("content://" + authority + "/bookSources/query"),
-                            null, null, null, null);
+                    .query(uri, null, null, null, null);
             if (c == null || !c.moveToFirst()) return false;
             String raw = c.getString(0);
             if (raw == null || raw.isEmpty()) return false;
             JSONObject o = new JSONObject(raw);
             if (!o.optBoolean("isSuccess", false)) return false;
+            JSONObject one = o.optJSONObject("data");
+            if (one != null) return sample.equals(one.optString("bookSourceUrl", ""));
             JSONArray arr = o.optJSONArray("data");
             if (arr == null) return false;
             for (int i = 0; i < arr.length(); i++) {
@@ -402,7 +415,11 @@ public class SyncWorker extends Worker {
         // 3) 内容没变就跳过写入（省电）；顺带同步规则并记录内容指纹
         //    （走到这里多半是规则单独更新，或镜像指纹瞬时不一致）
         File cache = new File(getApplicationContext().getFilesDir(), "last.json");
-        if (cache.exists() && md5(cache).equals(md5(json))) {
+        // 只有上一轮「写入 + 回查」都成功才允许按 md5 跳过。兜底深链导入
+        // 无法确认阅读App真的落库，不写 lastVerified，下次仍会重新写入校验。
+        boolean lastVerified = ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
+                .getBoolean("lastVerified", false);
+        if (cache.exists() && md5(cache).equals(md5(json)) && lastVerified) {
             String ruleMsg = syncRules(lines);
             saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
@@ -450,6 +467,9 @@ public class SyncWorker extends Worker {
             boolean fired = fireOnlineImport("bookSource", src);
             if (fired) {
                 writeFile(cache, json);
+                // 深链导入无法确认落库，清掉验证标记，下次仍走 provider 写入+回查
+                ctx.getSharedPreferences("sync", Context.MODE_PRIVATE).edit()
+                        .putBoolean("lastVerified", false).apply();
                 // 兜底路径也要落健康缓存，否则每轮都重复探测同一批源
                 saveHealthCache(healthCache);
                 String ruleMsg = syncRules(lines);
@@ -502,7 +522,8 @@ public class SyncWorker extends Worker {
             String ruleMsg = syncRules(lines);
             saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
-                    .edit().putLong("lastOk", System.currentTimeMillis()).apply();
+                    .edit().putLong("lastOk", System.currentTimeMillis())
+                    .putBoolean("lastVerified", true).apply();
             done(true, "成功：已写入" + finalTotal + "源（本地禁用" + locallyDead + "）"
                     + delMsg + "｜" + ruleMsg);
             return Result.success();
@@ -511,6 +532,8 @@ public class SyncWorker extends Worker {
             String src = fallbackUrl("legado.json");
             boolean fired = fireOnlineImport("bookSource", src);
             saveHealthCache(healthCache);
+            ctx.getSharedPreferences("sync", Context.MODE_PRIVATE).edit()
+                    .putBoolean("lastVerified", false).apply();
             String m = e.getMessage();
             done(fired,
                     (fired ? "写入异常已转自动导入，原因：" : "失败：")
