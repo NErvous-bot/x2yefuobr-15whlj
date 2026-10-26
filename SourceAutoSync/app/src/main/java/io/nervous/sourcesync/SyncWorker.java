@@ -130,6 +130,9 @@ public class SyncWorker extends Worker {
     /** 接口诊断信息（探针失败时写进结果，用户截图即可远程定位） */
     private String authorityDiag = "";
 
+    /** 最近一条验签通过的下载线路；深链兜底时复用它，避免写死 ghproxy 单点 */
+    private String lastGoodLine = "";
+
     public SyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
     }
@@ -208,6 +211,46 @@ public class SyncWorker extends Worker {
         } catch (Exception e) {
             android.util.Log.w("SyncWorker", "唤起导入失败: " + e.getMessage());
             return false;
+        }
+    }
+
+    /** 深链兜底地址：优先用刚验签成功的线路，其次内置第一条（防单条镜像挂掉就导入失败） */
+    private String fallbackUrl(String fileName) {
+        String base = lastGoodLine.isEmpty() ? defaultLines(decodeRepo())[0] : lastGoodLine;
+        return base.replace("legado.json", fileName) + "?cb=" + System.currentTimeMillis();
+    }
+
+    /**
+     * 写入后回查：provider 的 insert 恒返回 null（官方 ReaderProvider 源码里固定 return null），
+     * 唯一可靠的成功信号是「回查能看到刚写入的样本源」。
+     * 查询返回的 cursor 只有一列 result，内容是 {"isSuccess":..,"data":[源...]}。
+     */
+    private boolean verifyWritten(String authority, JSONArray written) {
+        android.database.Cursor c = null;
+        try {
+            if (written.length() == 0) return true;
+            String sample = written.getJSONObject(0).optString("bookSourceUrl", "");
+            if (sample.isEmpty()) return true;
+            c = getApplicationContext().getContentResolver()
+                    .query(Uri.parse("content://" + authority + "/bookSources/query"),
+                            null, null, null, null);
+            if (c == null || !c.moveToFirst()) return false;
+            String raw = c.getString(0);
+            if (raw == null || raw.isEmpty()) return false;
+            JSONObject o = new JSONObject(raw);
+            if (!o.optBoolean("isSuccess", false)) return false;
+            JSONArray arr = o.optJSONArray("data");
+            if (arr == null) return false;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject s = arr.optJSONObject(i);
+                if (s != null && sample.equals(s.optString("bookSourceUrl", ""))) return true;
+            }
+            return false;
+        } catch (Exception e) {
+            android.util.Log.w("SyncWorker", "写入回查异常: " + e.getMessage());
+            return false;
+        } finally {
+            if (c != null) try { c.close(); } catch (Exception ignored) {}
         }
     }
 
@@ -299,10 +342,12 @@ public class SyncWorker extends Worker {
         if (authority == null) {
             // 兜底：唤起阅读App官方在线导入（legado://import/bookSource 深链，
             // autoImport=true 全自动，阅读App 自己下载，无需文件中转）
-            String src = defaultLines(decodeRepo())[0] + "?cb=" + System.currentTimeMillis();
+            String src = fallbackUrl("legado.json");
             boolean fired = fireOnlineImport("bookSource", src);
             if (fired) {
                 writeFile(cache, json);
+                // 兜底路径也要落健康缓存，否则每轮都重复探测同一批源
+                saveHealthCache(healthCache);
                 String ruleMsg = syncRules(lines);
                 saveFingerprints(md5(json));
                 done(true, "接口探针全不通过（" + authorityDiag.trim()
@@ -327,6 +372,11 @@ public class SyncWorker extends Worker {
                 getApplicationContext().getContentResolver().insert(uri, v);
                 prog("正在写入书源 " + Math.min(i + BATCH, finalTotal) + "/" + finalTotal + "…");
             }
+            // 官方 Provider 的 insert 无论成败都 return null（源码固定 return null），
+            // 不能靠返回值判断；写完后回查一次，确认样本源真的落库
+            if (!verifyWritten(authority, finalSources)) {
+                throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
+            }
             OutputStream os = new FileOutputStream(cache);
             os.write(json.getBytes("UTF-8"));
             os.close();
@@ -340,8 +390,9 @@ public class SyncWorker extends Worker {
             return Result.success();
         } catch (Exception e) {
             // provider 写入中途失败（版本差异/权限拦截）：唤起官方在线导入兜底
-            String src = defaultLines(decodeRepo())[0] + "?cb=" + System.currentTimeMillis();
+            String src = fallbackUrl("legado.json");
             boolean fired = fireOnlineImport("bookSource", src);
+            saveHealthCache(healthCache);
             String m = e.getMessage();
             done(fired,
                     (fired ? "写入异常已转自动导入，原因：" : "失败：")
@@ -369,7 +420,10 @@ public class SyncWorker extends Worker {
             byte[] sigB = fetchBytes(url + ".sig" + cb);
             if (sigB == null) { fail++; lastWhy = host.trim() + " 无签名"; continue; }
             String vr = verify(body, new String(sigB, java.nio.charset.StandardCharsets.UTF_8).trim());
-            if (vr == null) return new String(body, java.nio.charset.StandardCharsets.UTF_8);
+            if (vr == null) {
+                lastGoodLine = lines.get(i);   // 记住验签通过的线路，供深链兜底复用
+                return new String(body, java.nio.charset.StandardCharsets.UTF_8);
+            }
             fail++; lastWhy = host.trim() + " " + vr;
         }
         err.append(fail).append("/").append(total).append("条线路不可信，末次：").append(lastWhy);
@@ -420,8 +474,7 @@ public class SyncWorker extends Worker {
                 return "规则无变化";
             }
 
-            String src = defaultLines(decodeRepo())[0].replace("legado.json", "replaceRule.json")
-                    + "?cb=" + System.currentTimeMillis();
+            String src = fallbackUrl("replaceRule.json");
             boolean fired = fireOnlineImport("replaceRule", src);
             if (!fired) {
                 // 后台同步时系统拦截界面启动——引导用户手动同步（前台必成）
@@ -644,6 +697,8 @@ public class SyncWorker extends Worker {
      */
     private void done(boolean ok, String msg) {
         save(msg);
+        // 同一轮失败后的 WorkManager 自动重试不再弹通知：网络差时否则每次退避都刷一条
+        if (!ok && getRunAttemptCount() > 0) return;
         try {
             Context ctx = getApplicationContext();
             android.app.NotificationManager nm = (android.app.NotificationManager)
@@ -773,7 +828,12 @@ public class SyncWorker extends Worker {
                 if (ad != bd) return ad ? -1 : 1;
                 // 上次判死中，failCount 多的排后面（退避更深）
                 if (ad && bd) return ha.failCount - hb.failCount;
-                return 0;
+                // 其余按 lastCheck 升序轮转：最久没测的先测。
+                // （旧实现这里 return 0，稳定排序后每天永远只测数组最前 60 个，
+                //   372 个源里后 312 个永远轮不到）
+                long ta = ha == null ? 0L : ha.lastCheck;
+                long tb = hb == null ? 0L : hb.lastCheck;
+                return Long.compare(ta, tb);
             } catch (Exception e) { return 0; }
         });
         // 截断到 60 个以内
@@ -798,9 +858,9 @@ public class SyncWorker extends Worker {
                     String url = "";
                     try {
                         url = src.optString("bookSourceUrl", "");
-                        // 只探测域名根路径（比完整搜索页轻很多，也足够判断站点存活）
-                        String root = new URL(url).getProtocol() + "://" + new URL(url).getHost() + "/";
-                        boolean ok = probeHost(root);
+                        // 直接探测源地址本身：旧实现只探域名根，bookSourceUrl 是子路径/API 的源
+                        // 会被根路径 404 误判为不可达
+                        boolean ok = probeHost(url);
                         probeResults.put(url, ok);
                     } catch (Exception e) {
                         probeResults.put(url, false);
@@ -902,8 +962,8 @@ public class SyncWorker extends Worker {
                     "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/142.0 Mobile");
             conn.setInstanceFollowRedirects(true);
             int code = conn.getResponseCode();
-            // 2xx/3xx = 活；405 = HEAD 不支持但 GET 可用 = 活；403 = 反爬但站点存在 = 活
-            return (code >= 200 && code < 400) || code == 403 || code == 405;
+            // 2xx/3xx = 活；401/403 = 需登录/反爬但站点存在；405 = 方法不支持但服务在
+            return (code >= 200 && code < 400) || code == 401 || code == 403 || code == 405;
         } catch (Exception e) {
             return false;
         } finally {

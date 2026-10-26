@@ -17,8 +17,9 @@
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
-- `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每周一凌晨窗口自动同步：多镜像轮询下载 → 逐字节 ECDSA 验签 → 唤起阅读App官方在线导入（legado://import）自动写入，无需手动操作；同步结束通过系统通知栏告知结果（成功/失败/无变化）
-- `sync-app.apk`：上述源码的 CI 自动构建产物（release 固定签名，可覆盖安装升级）
+- `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每天 5:00 自动检查：先拉 `version.txt` 指纹（内容没变当天不下载）→ 多镜像轮询下载 + 逐字节 ECDSA 验签 → 通过阅读App的 ContentProvider 批量写入（写前按手机可达性禁用断网源），接口不可用或写入失败时自动改走官方在线导入深链（`legado://import`）；同步结束通过系统通知栏告知结果（成功/失败/无变化）
+- `sync-app.apk`：上述源码的 CI 自动构建产物（release 固定签名，可覆盖安装升级；源码变更会自动触发重新构建）
+- `rssSources.json`：RSS 订阅源，从仓库 raw 链接手动导入（`legado://import/rssSource?src=<raw链接>`）
 
 ## 升级流程（开发者）
 

@@ -1,6 +1,12 @@
 name: 编译同步App
 on:
   workflow_dispatch:
+  # 源码一改就自动重编发布，避免 APK 长期落后于源码（此前只有手动触发，
+  # 10-08 起的本地健康层等改动一直没进 APK）。本工作流只提交 sync-app.apk，
+  # 不会命中 SourceAutoSync/** 路径，因此不会自我循环触发
+  push:
+    paths:
+      - 'SourceAutoSync/**'
 permissions:
   contents: write
 concurrency:

@@ -1,5 +1,5 @@
 {
- "generatedAt": 1792914358319,
+ "generatedAt": 1793009448701,
  "layers": {
   "core": [
    {
@@ -2108,6 +2108,20 @@
     "layer": "untestable",
     "weight": 380,
     "url": "http://www.biqugehxs.com"
+   },
+   {
+    "name": "猫扑小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 380,
+    "url": "https://www.mopbook.com"
+   },
+   {
+    "name": "X小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 380,
+    "url": "https://xn--x-ny6ap04bvzfcy2d.com"
    }
   ],
   "dead": [
@@ -2617,5 +2631,5 @@
    }
   ]
  },
- "total": 372
+ "total": 374
 }

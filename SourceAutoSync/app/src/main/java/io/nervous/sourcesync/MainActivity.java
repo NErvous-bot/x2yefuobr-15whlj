@@ -20,26 +20,42 @@ public class MainActivity extends Activity {
     private TextView status;
     private volatile String progress;   // 实时进度（来自 WorkInfo.progress）
     private final Handler poll = new Handler();
+    // WorkManager 的查询是阻塞式 Future.get()，必须在后台线程跑：
+    // 旧实现放在主线程每秒 .get()，低端机/数据库繁忙时会卡界面甚至 ANR
+    private final java.util.concurrent.ExecutorService queryExec =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+    private volatile boolean querying;   // 上一次查询没回来就跳过本轮，避免任务堆积
 
     private final Runnable pollTask = new Runnable() {
         @Override public void run() {
-            try {
-                WorkManager wm = WorkManager.getInstance(MainActivity.this);
-                String found = null;
-                for (String name : new String[]{"manual", "daily"}) {
-                    List<WorkInfo> list = wm.getWorkInfosForUniqueWork(name).get();
-                    if (list != null && !list.isEmpty()) {
-                        WorkInfo wi = list.get(0);
-                        if (wi.getState() == WorkInfo.State.RUNNING) {
-                            String m = wi.getProgress().getString("msg");
-                            found = (m == null ? "正在同步…" : m);
-                            break;
+            if (!querying) {
+                querying = true;
+                queryExec.execute(() -> {
+                    String found = null;
+                    try {
+                        WorkManager wm = WorkManager.getInstance(MainActivity.this);
+                        for (String name : new String[]{"manual", "daily"}) {
+                            List<WorkInfo> list = wm.getWorkInfosForUniqueWork(name).get();
+                            if (list != null && !list.isEmpty()) {
+                                WorkInfo wi = list.get(0);
+                                if (wi.getState() == WorkInfo.State.RUNNING) {
+                                    String m = wi.getProgress().getString("msg");
+                                    found = (m == null ? "正在同步…" : m);
+                                    break;
+                                }
+                            }
                         }
+                    } catch (Exception ignored) {
+                    } finally {
+                        querying = false;
                     }
-                }
-                progress = found;   // null = 没有任务在跑，显示历史结果
-            } catch (Exception ignored) {}
-            refresh();
+                    final String result = found;   // null = 没有任务在跑，显示历史结果
+                    runOnUiThread(() -> {
+                        progress = result;
+                        refresh();
+                    });
+                });
+            }
             poll.postDelayed(this, 1000);
         }
     };
@@ -112,7 +128,7 @@ public class MainActivity extends Activity {
         }
         String progLine = (progress == null) ? "" : "\n▶ " + progress + "\n";
         status.setText(
-                "书源自动同步 v3.15" + progLine +
+                "书源自动同步 v" + BuildConfig.VERSION_NAME + progLine +
                 "\n上次：" + last + "\n" +
                 (hist.length() == 0 ? "" : "\n最近记录：" + hist + "\n") +
                 "\n每天自动检查更新（有更新才下载写入）· 镜像自动切换 · 全程验签");
@@ -128,5 +144,12 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         poll.removeCallbacks(pollTask);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        poll.removeCallbacks(pollTask);
+        queryExec.shutdownNow();
     }
 }
