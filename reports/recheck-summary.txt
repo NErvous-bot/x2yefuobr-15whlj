@@ -2,26 +2,27 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   55  available->available
+   67  available->available
     2  available->broken
-    3  available->untestable
-    3  broken->available
-   69  broken->broken
-    3  broken->untestable
-   11  untestable->available
-    6  untestable->broken
-  220  untestable->untestable
-新增源 0
+    6  broken->available
+   67  broken->broken
+    4  broken->untestable
+    3  untestable->available
+    5  untestable->broken
+  218  untestable->untestable
+新增源 3
 
 ━━ 一级复查：旧可用 → 确认坏 2 ━━
   REAL_DEATH_CANDIDATE 1
   SUSPECT 1
-  [REAL_DEATH_CANDIDATE 0/5] 小说ABC | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY | 特征: js规则
-  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  [REAL_DEATH_CANDIDATE 0/5] 🙈十八书库 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY | 特征: POST+js规则
+  [SUSPECT 1/5] 998读书 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS,CHAPTER_EMPTY | 特征: GBK
 
-━━ 二级复查：旧BL不可测 → 确认坏 1（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 0（基线 c5d90bb） ━━
+━━ 往轮候选终态 2（基线 d03f9c4） ━━
+  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) 小说ABC h=100 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=100 [三关全过] recent=pass/pass/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
 BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死

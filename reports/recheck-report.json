@@ -1,14 +1,57 @@
 {
- "generatedAt": 1792914373826,
- "runAt": "2026-10-25T07:46:13.826Z",
+ "generatedAt": 1793010959874,
+ "runAt": "2026-10-26T10:35:59.874Z",
  "oldRef": "HEAD",
- "baselineSha": "c5d90bba9ce654e109a902b6377db506fa9b389a",
+ "baselineSha": "d03f9c49f2b2cc1ed1fc227d578bdd04474de97e",
  "tier1": [
   {
-   "name": "小说ABC",
-   "url": "http://www.xsabc.com",
+   "name": "🙈十八书库",
+   "url": "https://www.18shuku.com",
    "traits": [
+    "POST",
     "js规则"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "正文不足200字（实得0）",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）"
+    }
+   ],
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "998读书",
+   "url": "http://www.998ds.net",
+   "traits": [
+    "GBK"
    ],
    "oldNote": "三关全过",
    "newNote": "目录为空",
@@ -22,39 +65,15 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
-  },
-  {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
-   "traits": [
-    "POST"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
     {
      "pass": true,
      "kind": "pass",
@@ -64,31 +83,64 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     }
    ],
    "verdict": "SUSPECT"
   }
  ],
  "tier2": [],
- "resolved": []
+ "resolved": [
+  {
+   "name": "小说ABC",
+   "url": "http://www.xsabc.com",
+   "tier": 1,
+   "prevVerdict": "REAL_DEATH_CANDIDATE",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 100,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 100,
+    "contentLen": 1692,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793010926486
+   }
+  },
+  {
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 100,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 319,
+    "contentLen": 3562,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793010926486
+   }
+  }
+ ]
 }
