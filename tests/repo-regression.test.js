@@ -31,11 +31,8 @@ function makeTempDir() {
 // 0. 准备：所有脚本都能 node --check 过
 // ============================================================
 console.log('\n=== 0. 语法检查 ===');
-const filesToCheck = [
-    'rank-legado.js',
-    'health.js',
-    'smoke-p0.js',
-];
+// 根目录所有 .js 都必须是语法合法的 CommonJS（新增脚本无需再手动登记）
+const filesToCheck = fs.readdirSync(REPO).filter(f => f.endsWith('.js')).sort();
 for (const f of filesToCheck) {
     test(`node --check ${f}`, () => {
         const r = spawnSync(process.execPath, ['--check', path.join(REPO, f)]);
@@ -593,6 +590,58 @@ test('兼容性：div.0 仍按"第 0 个 div"解析，不被误认成 class="0"'
     const r = selectAll(html, 'div.0');
     assert.ok(r && r.items.length === 1, '应只取 0 号 div，实际: ' + (r && r.items.length));
     assert.ok(r.items[0].includes('甲'), '应命中第 0 个 div');
+});
+
+// ============================================================
+// 13. 同步 App：清理仓库已剔除的源
+// ============================================================
+console.log('\n=== 13. 同步 App：清理已下架源 ===');
+const SYNC_WORKER = path.join(REPO, 'SourceAutoSync', 'app', 'src', 'main', 'java', 'io', 'nervous', 'sourcesync', 'SyncWorker.java');
+
+test('通过官方 bookSources/delete 清理仓库已剔除的源', () => {
+    const code = fs.readFileSync(SYNC_WORKER, 'utf8');
+    assert.ok(code.includes('/bookSources/delete'), '应使用官方删除路由 bookSources/delete');
+    assert.ok(code.includes('private JSONArray diffSources('), '应定义 diffSources 对比旧清单');
+    assert.ok(code.includes('mergePending(diffSources(oldArr, finalSources), finalSources)'), '应在写入成功后对比旧清单');
+    assert.ok(code.includes('deleteSources(authority, merged)'), '应调用 deleteSources 清理');
+    assert.ok(code.includes('pending-delete.json'), '删除失败清单应落盘，下次同步重试');
+    assert.ok(code.includes('keep.contains(url)'), '重新收录的源不得因旧失败记录被误删');
+    // 删除必须在「写入回查通过」之后：避免新数据没落库就把旧源删掉
+    assert.ok(code.indexOf('verifyWritten(authority, finalSources)') < code.indexOf('deleteSources(authority, merged)'),
+        '删除应在写入回查通过之后执行');
+});
+
+test('App 版本号已递增（APK 可覆盖升级）', () => {
+    const g = fs.readFileSync(path.join(REPO, 'SourceAutoSync', 'app', 'build.gradle'), 'utf8');
+    const m = g.match(/versionCode\s+(\d+)/);
+    assert.ok(m && Number(m[1]) >= 23, 'versionCode 应 ≥ 23，实际: ' + (m && m[1]));
+});
+
+test('sign.js 校验签名私钥与 App 内置公钥配对', () => {
+    const code = fs.readFileSync(path.join(REPO, 'sign.js'), 'utf8');
+    const app = fs.readFileSync(SYNC_WORKER, 'utf8');
+    const m = code.match(/APP_PUB_B64\s*=\s*'([^']+)'/);
+    assert.ok(m, 'sign.js 应定义 APP_PUB_B64');
+    assert.ok(app.includes(m[1]), 'sign.js 的 APP_PUB_B64 必须与 SyncWorker.PUB_B64 完全一致');
+    assert.ok(code.includes('createPublicKey(key)'), '应从私钥导出公钥并比对');
+});
+
+// ============================================================
+// 14. rssSources.json 结构校验
+// ============================================================
+console.log('\n=== 14. rssSources.json 结构校验 ===');
+test('可解析、非空、必要字段齐全、sourceUrl 无重复', () => {
+    const arr = JSON.parse(fs.readFileSync(path.join(REPO, 'rssSources.json'), 'utf8'));
+    assert.ok(Array.isArray(arr) && arr.length > 0, '应为非空数组');
+    const seen = new Set();
+    for (const s of arr) {
+        for (const k of ['sourceUrl', 'sourceName', 'ruleArticles', 'ruleContent']) {
+            assert.ok(typeof s[k] === 'string' && s[k].trim() !== '',
+                `${s.sourceName || '?'} 缺字段 ${k}`);
+        }
+        assert.ok(!seen.has(s.sourceUrl), 'sourceUrl 重复: ' + s.sourceUrl);
+        seen.add(s.sourceUrl);
+    }
 });
 
 // ============================================================

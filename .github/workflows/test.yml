@@ -30,7 +30,7 @@ jobs:
       - name: Node 语法检查
         run: |
           echo "### node --check 语法检查" >> $GITHUB_STEP_SUMMARY
-          for f in rank-legado.js health.js smoke-p0.js filter.js fuse.js sign.js score.js probe.js; do
+          for f in *.js; do
             echo "  检查 $f" >> $GITHUB_STEP_SUMMARY
             node --check "$f" || exit 1
           done

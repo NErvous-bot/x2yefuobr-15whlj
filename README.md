@@ -17,10 +17,10 @@
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
-- `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每天 5:00 自动检查：先拉 `version.txt` 指纹（内容没变当天不下载）→ 多镜像轮询下载 + 逐字节 ECDSA 验签 → 通过阅读App的 ContentProvider 批量写入（写前按手机可达性禁用断网源），接口不可用或写入失败时自动改走官方在线导入深链（`legado://import`）；同步结束通过系统通知栏告知结果（成功/失败/无变化）
+- `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每天 5:00 自动检查：先拉 `version.txt` 指纹（内容没变当天不下载）→ 多镜像轮询下载 + 逐字节 ECDSA 验签 → 通过阅读App的 ContentProvider 批量写入（写前按手机可达性禁用断网源），写入回查通过后按上次同步清单删除仓库已剔除的旧源（按 `bookSourceUrl` 精确匹配，不会动用户自建源）；接口不可用或写入失败时自动改走官方在线导入深链（`legado://import`）；同步结束通过系统通知栏告知结果（成功/失败/无变化）
 - `sync-app.apk`：上述源码的 CI 自动构建产物（release 固定签名，可覆盖安装升级；源码变更会自动触发重新构建）
 - `dead-sources.json`：人工确认死亡名单（`url` + 原因 + 确认日期）。列进去的源会被 filter.js 无条件剔除并写入删除清单 `manual-confirmed`；用于站点改版导致正文永久失效、测试器每轮都判坏又无法自动删除的情况，否则 fuse 会一直 BLOCKED
-- `rssSources.json`：RSS 订阅源，从仓库 raw 链接手动导入（`legado://import/rssSource?src=<raw链接>`）
+- `rssSources.json`：RSS 订阅源（**18+ 成人向视频/写真站点，仅限成年人个人使用**）。不参与任何 CI 校验与自动发布，需自行从仓库 raw 链接手动导入（`legado://import/rssSource?src=<raw链接>`）；不接受该内容定位请勿导入
 
 ## 升级流程（开发者）
 
@@ -36,7 +36,7 @@ node preflight.js
 
 书源数据整理自以下开源仓库，感谢原作者的持续维护：
 
-- [LegadoTeam/legado](https://github.com/LegadoTeam/legado) （阅读App 本体，GPL-3.0）— 本仓库的书源与净化规则均服务于该阅读软件
+- [LegadoTeam/legado](https://github.com/LegadoTeam/legado) （阅读App 本体，GPL-3.0）— 本仓库的书源与净化规则均服务于该阅读软件。注：原上游 `gedoor/legado` 仓库已因版权方投诉被清空，本仓库**不包含**该 App 的任何源码，只通过其公开导入接口传递配置文件
 - [shidahuilang/shuyuan-bak](https://github.com/shidahuilang/shuyuan-bak) （大灰狼订阅源，GPL-3.0）— 体量最大的中文小说书源合集
 - [tickmao/Novel](https://github.com/tickmao/Novel) （MIT）— 精而稳的 legado 源，每日验证维护
 - [jiwangyihao/source-j-legado](https://github.com/jiwangyihao/source-j-legado) （MIT）— 轻小说/二次元专项源集
@@ -46,11 +46,13 @@ node preflight.js
 
 - 本仓库自有代码（`filter.js`、`aging-test.js`、`probe.js`、`preflight.js`、SourceAutoSync App）以 GPL-3.0 协议发布，见 [LICENSE](LICENSE)。
 - 书源数据沿用各上游仓库的原许可证（GPL-3.0 / MIT / AGPL-3.0），完整许可证文本与版权声明见各上游仓库。
-- 本仓库仅包含书源规则配置，不存储、不分发任何小说正文内容。
+- 本仓库仅包含书源规则配置，不存储、不分发任何小说正文内容，也不提供任何下载或在线播放服务。
 - `sync-app.apk` 由 GitHub Actions 从本仓库 `SourceAutoSync/` 源码自动构建（构建日志公开可查），对应完整源码即本仓库，满足 GPL-3.0 的源码提供要求。
 - 本 App 不包含、不修改「阅读」(legado) 的任何代码，仅通过其官方公开的导入接口传递配置文件。
-- 书源指向的第三方网站内容，版权归原网站及原作者所有；请支持正版，仅作个人学习研究用途。
-- 如有侵权，请提 Issue 联系，确认后会第一时间删除相关内容。
+- 书源指向的第三方网站内容，版权归原网站及原作者所有；请支持正版，仅作个人学习研究用途。**免责声明不能使未经授权的内容分发变为合法**，使用者需自行承担所在地区的合规责任。
+- `rssSources.json` 含成人向站点规则，仅面向成年人，不参与任何自动流水线；请遵守所在地法律，勿传播、勿用于商业用途。
+- 本仓库为个人自用配置备份，未主动公开推广；不构成对任何第三方内容的授权、认可或担保。
+- 版权方或权利代理人可通过 Issue 提出下架请求（请注明具体源或规则条目），确认后会第一时间删除相关内容。
 
 ## 实现说明
 

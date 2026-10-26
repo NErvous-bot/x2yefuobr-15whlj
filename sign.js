@@ -13,6 +13,20 @@ if (!pem.includes('PRIVATE KEY')) {
   process.exit(1);
 }
 const key = crypto.createPrivateKey(pem);
+
+// App 内置验签公钥（SyncWorker.java 的 PUB_B64）。私钥必须与它配对，否则
+// CI 全绿但手机端所有更新都会验签失败，且用户完全无感——这里提前硬校验。
+const APP_PUB_B64 = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYJwAmT/ACOVylm2nMFauKPsuFG6lAxXm9Vqe1ztgalp3udP0JgsZjLC3velPRa9YBq+8xdexXD4DfQae8kOKQg==';
+const derivedPub = crypto.createPublicKey(key).export({ type: 'spki', format: 'der' }).toString('base64');
+if (derivedPub !== APP_PUB_B64) {
+  console.error('× ED25519_KEY 与 App 内置公钥不匹配');
+  console.error('  私钥导出的 SPKI: ' + derivedPub);
+  console.error('  App 的 PUB_B64  : ' + APP_PUB_B64);
+  console.error('  两边必须是同一对 EC P-256 密钥，否则手机上全部更新验签失败');
+  process.exit(1);
+}
+console.log('√ 签名私钥与 App 内置公钥配对');
+
 let fail = false;
 for (const f of ['legado.json', 'replaceRule.json']) {
   const data = fs.readFileSync(f);

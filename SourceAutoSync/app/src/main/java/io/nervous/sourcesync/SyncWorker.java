@@ -255,6 +255,108 @@ public class SyncWorker extends Worker {
         }
     }
 
+    /**
+     * 对比上次写入的书源与本次清单，找出「仓库已剔除」的旧源。
+     * 只返回 {bookSourceUrl} 最小对象：官方 ReaderProvider 的
+     * bookSources/delete 会 GSON 反序列化后只取 bookSourceUrl 删除
+     * （SourceHelp.deleteBookSources），字段越少 binder 传输越安全。
+     */
+    private JSONArray diffSources(JSONArray oldArr, JSONArray newArr) {
+        Set<String> keep = new java.util.HashSet<>();
+        for (int i = 0; i < newArr.length(); i++) {
+            JSONObject o = newArr.optJSONObject(i);
+            if (o != null) keep.add(o.optString("bookSourceUrl", ""));
+        }
+        JSONArray out = new JSONArray();
+        Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < oldArr.length(); i++) {
+            JSONObject o = oldArr.optJSONObject(i);
+            if (o == null) continue;
+            String url = o.optString("bookSourceUrl", "");
+            if (url.isEmpty() || keep.contains(url) || !seen.add(url)) continue;
+            try {
+                out.put(new JSONObject().put("bookSourceUrl", url));
+            } catch (JSONException ignored) {}
+        }
+        return out;
+    }
+
+    /**
+     * 与上次遗留的删除失败清单合并，并排除本次清单里仍然存在的 URL——
+     * 已被仓库重新收录的源不能因为旧失败记录又被删掉。
+     */
+    private JSONArray mergePending(JSONArray removed, JSONArray newArr) {
+        Set<String> keep = new java.util.HashSet<>();
+        for (int i = 0; i < newArr.length(); i++) {
+            JSONObject o = newArr.optJSONObject(i);
+            if (o != null) keep.add(o.optString("bookSourceUrl", ""));
+        }
+        JSONArray pending = new JSONArray();
+        File pf = pendingDeleteFile();
+        if (pf.exists()) {
+            try { pending = new JSONArray(readFile(pf)); } catch (Exception ignored) {}
+        }
+        JSONArray out = new JSONArray();
+        Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < pending.length() + removed.length(); i++) {
+            JSONObject o = i < pending.length()
+                    ? pending.optJSONObject(i)
+                    : removed.optJSONObject(i - pending.length());
+            if (o == null) continue;
+            String url = o.optString("bookSourceUrl", "");
+            if (url.isEmpty() || keep.contains(url) || !seen.add(url)) continue;
+            try { out.put(new JSONObject().put("bookSourceUrl", url)); }
+            catch (JSONException ignored) {}
+        }
+        return out;
+    }
+
+    private File pendingDeleteFile() {
+        return new File(getApplicationContext().getFilesDir(), "pending-delete.json");
+    }
+
+    /** 删除失败清单落盘，下次同步重试；全部成功则清掉文件。 */
+    private void savePendingDelete(JSONArray failed) {
+        try {
+            File pf = pendingDeleteFile();
+            if (failed.length() == 0) {
+                if (pf.exists()) pf.delete();
+                return;
+            }
+            writeFile(pf, failed.toString());
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * 删除阅读App中已不在仓库的旧源：官方路由 bookSources/delete，
+     * ReaderProvider.delete() 把 selection 当 JSON 数组反序列化后按
+     * bookSourceUrl 逐个删除，不会误删用户自建源。分批发送避免 binder
+     * 事务超限；返回失败条目供下次重试（不影响本次写入结果）。
+     */
+    private JSONArray deleteSources(String authority, JSONArray removed) {
+        Uri uri = Uri.parse("content://" + authority + "/bookSources/delete");
+        JSONArray failed = new JSONArray();
+        for (int i = 0; i < removed.length(); i += 100) {
+            JSONArray part = new JSONArray();
+            for (int j = i; j < Math.min(i + 100, removed.length()); j++) {
+                JSONObject o = removed.optJSONObject(j);
+                if (o != null) part.put(o);
+            }
+            try {
+                getApplicationContext().getContentResolver().delete(uri, part.toString(), null);
+            } catch (Exception e) {
+                android.util.Log.w("SyncWorker", "清理已下架源失败: " + e.getMessage());
+                for (int j = 0; j < part.length(); j++) {
+                    JSONObject o = part.optJSONObject(j);
+                    if (o == null) continue;
+                    try { failed.put(new JSONObject().put("bookSourceUrl", o.optString("bookSourceUrl", ""))); }
+                    catch (JSONException ignored) {}
+                }
+            }
+        }
+        return failed;
+    }
+
     @NonNull
     @Override
     public Result doWork() {
@@ -311,10 +413,11 @@ public class SyncWorker extends Worker {
 
         // 3.5) 数量兜底：新书源数少于上次的一半，视为仓库数据异常（上游事故/
         //      投毒），拒绝导入保护书架——深链兜底导入同样受此保护
-        int oldCount = 0;
+        JSONArray oldArr = new JSONArray();
         if (cache.exists()) {
-            try { oldCount = new JSONArray(readFile(cache)).length(); } catch (Exception ignored) {}
+            try { oldArr = new JSONArray(readFile(cache)); } catch (Exception ignored) {}
         }
+        int oldCount = oldArr.length();
         JSONArray all;
         int total;
         try {
@@ -378,6 +481,19 @@ public class SyncWorker extends Worker {
             if (!verifyWritten(authority, finalSources)) {
                 throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
             }
+            // 4.5) 清理仓库已剔除的源：provider 的 insert 只增不删，不主动清理会让
+            //      已判死/已下架的源永远留在手机里（本地可达性只探测域名存活，
+            //      识别不出「站点改版导致正文永久失效」的源）。
+            //      只删「上次写入过、本次已不在仓库」的源，按 bookSourceUrl 精确
+            //      匹配；用户自建源不在 last.json 里，不受影响。
+            JSONArray merged = mergePending(diffSources(oldArr, finalSources), finalSources);
+            JSONArray stillFailed = merged.length() == 0
+                    ? new JSONArray() : deleteSources(authority, merged);
+            savePendingDelete(stillFailed);
+            int cleaned = merged.length() - stillFailed.length();
+            String delMsg = cleaned == 0 ? ""
+                    : "，已清理已下架 " + cleaned + " 源"
+                    + (stillFailed.length() == 0 ? "" : "（" + stillFailed.length() + " 个失败，下次同步自动重试）");
             OutputStream os = new FileOutputStream(cache);
             os.write(json.getBytes("UTF-8"));
             os.close();
@@ -387,7 +503,8 @@ public class SyncWorker extends Worker {
             saveFingerprints(md5(json));
             ctx.getSharedPreferences("sync", Context.MODE_PRIVATE)
                     .edit().putLong("lastOk", System.currentTimeMillis()).apply();
-            done(true, "成功：已写入" + finalTotal + "源（本地禁用" + locallyDead + "）｜" + ruleMsg);
+            done(true, "成功：已写入" + finalTotal + "源（本地禁用" + locallyDead + "）"
+                    + delMsg + "｜" + ruleMsg);
             return Result.success();
         } catch (Exception e) {
             // provider 写入中途失败（版本差异/权限拦截）：唤起官方在线导入兜底
