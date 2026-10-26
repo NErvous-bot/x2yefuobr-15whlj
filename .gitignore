@@ -11,3 +11,6 @@ node_modules/
 
 # 排名诊断输出（由 rank-legado.js 生成，可随时重算；仅 reports/ 下的汇总入库）
 ranked-legado.json
+
+# 成人向 RSS 订阅源：因内容合规原因不进入公开仓库，本地副本为 rssSources.local.json
+rssSources.json

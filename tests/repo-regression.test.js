@@ -651,21 +651,14 @@ test('sign.js 校验签名私钥与 App 内置公钥配对', () => {
 });
 
 // ============================================================
-// 14. rssSources.json 结构校验
+// 14. 成人向 RSS 源不得进入公开仓库
 // ============================================================
-console.log('\n=== 14. rssSources.json 结构校验 ===');
-test('可解析、非空、必要字段齐全、sourceUrl 无重复', () => {
-    const arr = JSON.parse(fs.readFileSync(path.join(REPO, 'rssSources.json'), 'utf8'));
-    assert.ok(Array.isArray(arr) && arr.length > 0, '应为非空数组');
-    const seen = new Set();
-    for (const s of arr) {
-        for (const k of ['sourceUrl', 'sourceName', 'ruleArticles', 'ruleContent']) {
-            assert.ok(typeof s[k] === 'string' && s[k].trim() !== '',
-                `${s.sourceName || '?'} 缺字段 ${k}`);
-        }
-        assert.ok(!seen.has(s.sourceUrl), 'sourceUrl 重复: ' + s.sourceUrl);
-        seen.add(s.sourceUrl);
-    }
+console.log('\n=== 14. 成人向 RSS 源不入公开仓库 ===');
+test('rssSources.json 不在仓库内，且已被 .gitignore 拦截', () => {
+    assert.ok(!fs.existsSync(path.join(REPO, 'rssSources.json')),
+        '成人向订阅源不得进入公开仓库（本地副本应放在 rssSources.local.json）');
+    const gi = fs.readFileSync(path.join(REPO, '.gitignore'), 'utf8');
+    assert.ok(gi.includes('rssSources.json'), '.gitignore 应阻止该文件被误提交');
 });
 
 // ============================================================
