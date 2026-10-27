@@ -1,0 +1,29 @@
+name: 发布验签检查
+# 书源/规则/签名一进 main 就独立验签（只读，不提交任何文件，因此不会与
+# update.yml 形成循环触发）。update.yml 的签名步骤虽自带自验签，但那只覆盖
+# 「本轮 CI 生成物」；这一关校验的是「仓库里真实落地的状态」——任何人绕过
+# 签名流程直接手改 json，这里立刻标红，避免手机端全线验签失败却 CI 全绿。
+on:
+  push:
+    paths:
+      - 'legado.json'
+      - 'legado.json.sig'
+      - 'replaceRule.json'
+      - 'replaceRule.json.sig'
+      - 'version.txt'
+      - 'verify-sign.js'
+permissions:
+  contents: read
+concurrency:
+  group: verify-signature
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 公钥验签 + 指纹一致性
+        run: node verify-sign.js

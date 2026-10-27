@@ -5,10 +5,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.widget.TextView;
 
-import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
-import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
@@ -19,6 +17,7 @@ public class MainActivity extends Activity {
 
     private TextView status;
     private volatile String progress;   // 实时进度（来自 WorkInfo.progress）
+    private String lastRendered;        // 上次渲染的整段文案，相同则跳过 setText
     private final Handler poll = new Handler();
     // WorkManager 的查询是阻塞式 Future.get()，必须在后台线程跑：
     // 旧实现放在主线程每秒 .get()，低端机/数据库繁忙时会卡界面甚至 ANR
@@ -34,7 +33,7 @@ public class MainActivity extends Activity {
                     String found = null;
                     try {
                         WorkManager wm = WorkManager.getInstance(MainActivity.this);
-                        for (String name : new String[]{"manual", "daily"}) {
+                        for (String name : new String[]{"manual", "daily-next", "daily"}) {
                             List<WorkInfo> list = wm.getWorkInfosForUniqueWork(name).get();
                             if (list != null && !list.isEmpty()) {
                                 WorkInfo wi = list.get(0);
@@ -84,33 +83,41 @@ public class MainActivity extends Activity {
             refresh();
         });
 
-        // runs every 24h; the worker first does a ~70-byte fingerprint check
-        // (version.txt) and downloads/writes sources only when repo content changed
-        androidx.work.Constraints cons = new androidx.work.Constraints.Builder()
-                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                .build();
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork("daily",
-                ExistingPeriodicWorkPolicy.KEEP,
-                new PeriodicWorkRequest.Builder(SyncWorker.class, 24, TimeUnit.HOURS)
-                        .setInitialDelay(delayUntilNext5am(), TimeUnit.MILLISECONDS)
-                        .setConstraints(cons)
-                        .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
-                                30, TimeUnit.MINUTES)
-                        .build());
+        // 固定 05:00（v3.20）：24h 周期任务从「上次执行完成」重新计时，逐日漂移；
+        // 改为一次性任务链 daily-next——每轮成功后 Worker 自己预约次日 05:00。
+        // 这里取消旧的周期任务，并在没有待执行任务时补一条（避免用户长期不开本App 断链）。
+        WorkManager.getInstance(this).cancelUniqueWork("daily");
+        ensureNextDailyScheduled();
 
         refresh();
     }
 
-    /** milliseconds until next 5:00 am */
-    private static long delayUntilNext5am() {
-        java.util.Calendar cal = java.util.Calendar.getInstance();
-        cal.set(java.util.Calendar.HOUR_OF_DAY, 5);
-        cal.set(java.util.Calendar.MINUTE, 0);
-        cal.set(java.util.Calendar.SECOND, 0);
-        if (cal.getTimeInMillis() <= System.currentTimeMillis()) {
-            cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
-        }
-        return cal.getTimeInMillis() - System.currentTimeMillis();
+    /** 没有待执行的 daily-next 时才预约，避免每次打开 App 都把时间往后推 */
+    private void ensureNextDailyScheduled() {
+        queryExec.execute(() -> {
+            try {
+                List<WorkInfo> list = WorkManager.getInstance(this)
+                        .getWorkInfosForUniqueWork("daily-next").get();
+                for (WorkInfo wi : list) {
+                    WorkInfo.State st = wi.getState();
+                    if (st == WorkInfo.State.ENQUEUED || st == WorkInfo.State.RUNNING
+                            || st == WorkInfo.State.BLOCKED) return;
+                }
+            } catch (Exception ignored) {}
+            try {
+                WorkManager.getInstance(this).enqueueUniqueWork("daily-next",
+                        ExistingWorkPolicy.REPLACE,
+                        new OneTimeWorkRequest.Builder(SyncWorker.class)
+                                .setInitialDelay(SyncWorker.delayUntilNext5am(),
+                                        TimeUnit.MILLISECONDS)
+                                .setConstraints(new androidx.work.Constraints.Builder()
+                                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                        .build())
+                                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                        30, TimeUnit.MINUTES)
+                                .build());
+            } catch (Exception ignored) {}
+        });
     }
 
     private void refresh() {
@@ -127,11 +134,16 @@ public class MainActivity extends Activity {
             }
         }
         String progLine = (progress == null) ? "" : "\n▶ " + progress + "\n";
-        status.setText(
+        String text =
                 "同步器 v" + BuildConfig.VERSION_NAME + progLine +
                 "\n上次：" + last + "\n" +
                 (hist.length() == 0 ? "" : "\n最近记录：" + hist + "\n") +
-                "\n每天自动检查更新（有更新才下载写入）· 镜像自动切换 · 全程验签");
+                "\n每天自动检查更新（有更新才下载写入）· 镜像自动切换 · 全程验签";
+        // 文案没变就不重设 TextView：每秒无条件 setText 会触发整段重排/绘制
+        if (!text.equals(lastRendered)) {
+            lastRendered = text;
+            status.setText(text);
+        }
     }
 
     @Override

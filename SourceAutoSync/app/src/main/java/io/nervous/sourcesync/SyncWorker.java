@@ -61,6 +61,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  *    一个 cursor 行（374 源≈2.5MB）超过 CursorWindow 2MB 上限，造成
  *    「实际写入成功、回查却报失败」的假阴性；
  *  - 只有回查真正通过才记 lastVerified，防止一次兜底导入后永久跳过写入。
+ *
+ * v3.20（稳定性/可观测性收口）：
+ *  - 回查抽查首/中/尾三条；深链兜底不再一劳永逸（规则 24h 后可再唤起，
+ *    删除失败清单 7 天过期）；urls.txt 只接受指向本仓库的线路；
+ *  - 下载线路失败 15 分钟冷却、连接超时 20s→8s；jsDelivr 走 purge 而非无效
+ *    的 cb 参数；全部线路签名不符时直连 raw 源站重试一次；
+ *  - 指纹改为多线路投票（2 票一致才采信），避免 CDN 滞后导致漏更新；
+ *  - 每日检查改为一次性任务链，固定在 05:00；错误文案区分网络失败与验签/缓存不符。
  */
 public class SyncWorker extends Worker {
 
@@ -139,6 +147,14 @@ public class SyncWorker extends Worker {
 
     /** 最近一条验签通过的下载线路；深链兜底时复用它，避免写死 ghproxy 单点 */
     private String lastGoodLine = "";
+
+    /**
+     * 线路冷却表：host → 解禁时间戳。一次同步里同一线路最多被尝试 3 次
+     * （指纹、书源、规则），死线路每次都要白等 8s 超时；失败后短期拉黑，
+     * 后续步骤直接跳过。手动同步不受冷却限制（用户明确要求马上重试）。
+     */
+    private static final Map<String, Long> LINE_COOLDOWN = new ConcurrentHashMap<>();
+    private static final long COOLDOWN_MS = 15 * 60 * 1000L;
 
     public SyncWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -237,11 +253,24 @@ public class SyncWorker extends Worker {
      * 的假阴性（v3.18 线上现象）。单源路由的 data 是对象，这里兼容数组形态。
      */
     private boolean verifyWritten(String authority, JSONArray written) {
+        int n = written.length();
+        if (n == 0) return true;
+        // 只抽查第 1 条时，尾部批次整体没写进（binder 截断/中途异常）也照样
+        // 判「成功」。v3.20 起抽查首/中/尾三条，代价仍只有 3 次单源查询。
+        int[] idx = n == 1 ? new int[]{0} : new int[]{0, n / 2, n - 1};
+        for (int i : idx) {
+            JSONObject src = written.optJSONObject(i);
+            if (src == null) continue;
+            if (!verifyOne(authority, src.optString("bookSourceUrl", ""))) return false;
+        }
+        return true;
+    }
+
+    /** 单源回查：provider 返回 isSuccess=true 且 data 里能找到该 bookSourceUrl */
+    private boolean verifyOne(String authority, String sample) {
+        if (sample.isEmpty()) return true;
         android.database.Cursor c = null;
         try {
-            if (written.length() == 0) return true;
-            String sample = written.getJSONObject(0).optString("bookSourceUrl", "");
-            if (sample.isEmpty()) return true;
             Uri uri = Uri.parse("content://" + authority + "/bookSource/query")
                     .buildUpon().appendQueryParameter("url", sample).build();
             c = getApplicationContext().getContentResolver()
@@ -297,8 +326,12 @@ public class SyncWorker extends Worker {
     /**
      * 与上次遗留的删除失败清单合并，并排除本次清单里仍然存在的 URL——
      * 已被仓库重新收录的源不能因为旧失败记录又被删掉。
+     *
+     * 每条记录带首次入队时间 ts：超过 7 天仍删不掉的（阅读App版本差异/
+     * 源被用户手动加回）直接放弃，避免「永远删不掉」的条目每天重试一次。
      */
     private JSONArray mergePending(JSONArray removed, JSONArray newArr) {
+        long now = System.currentTimeMillis();
         Set<String> keep = new java.util.HashSet<>();
         for (int i = 0; i < newArr.length(); i++) {
             JSONObject o = newArr.optJSONObject(i);
@@ -318,7 +351,9 @@ public class SyncWorker extends Worker {
             if (o == null) continue;
             String url = o.optString("bookSourceUrl", "");
             if (url.isEmpty() || keep.contains(url) || !seen.add(url)) continue;
-            try { out.put(new JSONObject().put("bookSourceUrl", url)); }
+            long ts = o.optLong("ts", now);
+            if (now - ts > 7L * 24 * 3600 * 1000) continue;
+            try { out.put(new JSONObject().put("bookSourceUrl", url).put("ts", ts)); }
             catch (JSONException ignored) {}
         }
         return out;
@@ -347,6 +382,7 @@ public class SyncWorker extends Worker {
      * 事务超限；返回失败条目供下次重试（不影响本次写入结果）。
      */
     private JSONArray deleteSources(String authority, JSONArray removed) {
+        long now = System.currentTimeMillis();
         Uri uri = Uri.parse("content://" + authority + "/bookSources/delete");
         JSONArray failed = new JSONArray();
         for (int i = 0; i < removed.length(); i += 100) {
@@ -362,8 +398,11 @@ public class SyncWorker extends Worker {
                 for (int j = 0; j < part.length(); j++) {
                     JSONObject o = part.optJSONObject(j);
                     if (o == null) continue;
-                    try { failed.put(new JSONObject().put("bookSourceUrl", o.optString("bookSourceUrl", ""))); }
-                    catch (JSONException ignored) {}
+                    try {
+                        // 保留首次入队时间，供 7 天过期判断；provider 只取 bookSourceUrl，多带字段无害
+                        failed.put(new JSONObject().put("bookSourceUrl", o.optString("bookSourceUrl", ""))
+                                .put("ts", o.optLong("ts", now)));
+                    } catch (JSONException ignored) {}
                 }
             }
         }
@@ -373,32 +412,87 @@ public class SyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        Result r;
+        try {
+            r = doSync();
+        } catch (Exception e) {
+            String m = e.getMessage();
+            done(false, "失败：" + (m == null ? e.getClass().getSimpleName() : m));
+            r = Result.failure();
+        }
+        // 固定 05:00：24h 周期任务每次从「上次执行完成」重新计时，越跑越偏；
+        // v3.20 改成一次性任务链——本轮成功后自行预约下一次 05:00 的检查。
+        if (r instanceof Result.Success
+                && !"manual".equals(getInputData().getString("mode"))) {
+            scheduleNextDaily();
+        }
+        return r;
+    }
+
+    /** 预约下一次每日检查：唯一任务名 daily-next，重复预约以最后一次为准 */
+    private void scheduleNextDaily() {
+        try {
+            androidx.work.WorkManager.getInstance(getApplicationContext())
+                    .enqueueUniqueWork("daily-next",
+                            androidx.work.ExistingWorkPolicy.REPLACE,
+                            new androidx.work.OneTimeWorkRequest.Builder(SyncWorker.class)
+                                    .setInitialDelay(delayUntilNext5am(), TimeUnit.MILLISECONDS)
+                                    .setConstraints(new androidx.work.Constraints.Builder()
+                                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                            .build())
+                                    .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                            30, TimeUnit.MINUTES)
+                                    .build());
+        } catch (Exception ignored) {}
+    }
+
+    /** 距下一个 05:00 的毫秒数；与 MainActivity 共用同一份算法 */
+    static long delayUntilNext5am() {
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 5);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        if (cal.getTimeInMillis() <= System.currentTimeMillis()) {
+            cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+        }
+        return cal.getTimeInMillis() - System.currentTimeMillis();
+    }
+
+    /**
+     * 每日轻量检查（仅非手动模式）：两个指纹都与本地一致 → 直接返回 success；
+     * 探测失败但 7 天内有成功记录 → 返回 retry（多为瞬时网络问题）；
+     * 需要继续全量流程时返回 null。
+     */
+    private Result checkFingerprintOrNull() {
+        if ("manual".equals(getInputData().getString("mode"))) return null;
+        Context ctx = getApplicationContext();
+        android.content.SharedPreferences sp0 = ctx.getSharedPreferences("sync", Context.MODE_PRIVATE);
+        long lastOk = sp0.getLong("lastOk", 0);
+        boolean stale = System.currentTimeMillis() - lastOk > 7L * 24 * 3600 * 1000;
+        prog("正在检查是否有更新…");
+        String[] fp = fetchFingerprint(decodeRepo());
+        if (fp != null && fp[0].equals(sp0.getString("fpJson", null))
+                && fp[1].equals(sp0.getString("fpRules", null))) {
+            sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
+            saveQuiet("今日检查：无更新，书源已是最新");
+            return Result.success();
+        }
+        if (fp == null && !stale) {
+            saveQuiet("今日检查失败（网络），稍后自动重试");
+            return Result.retry();
+        }
+        return null;
+    }
+
+    private Result doSync() {
         Context ctx = getApplicationContext();
 
-        // 0) v3.15 起每天自动检查：先做轻量指纹探测（约70字节的 version.txt，
-        //    内容为书源+规则两个 md5）。两个 md5 都与本地一致 → 当天到此为止
-        //    （只刷新「上次」状态行，不发通知不下载全量）；探测失败且 7 天内
-        //    有成功记录 → 多为瞬时网络问题，交给 WorkManager 退避重试；
-        //    连续 7 天没检查成功、指纹有变化（有更新）、或手动「立即同步」
-        //    → 走全量下载写入
-        if (!"manual".equals(getInputData().getString("mode"))) {
-            android.content.SharedPreferences sp0 = ctx.getSharedPreferences("sync", Context.MODE_PRIVATE);
-            long lastOk = sp0.getLong("lastOk", 0);
-            boolean stale = System.currentTimeMillis() - lastOk > 7L * 24 * 3600 * 1000;
-            prog("正在检查是否有更新…");
-            String[] fp = fetchFingerprint(decodeRepo());
-            if (fp != null && fp[0].equals(sp0.getString("fpJson", null))
-                    && fp[1].equals(sp0.getString("fpRules", null))) {
-                sp0.edit().putLong("lastOk", System.currentTimeMillis()).apply();
-                saveQuiet("今日检查：无更新，书源已是最新");
-                return Result.success();
-            }
-            if (fp == null && !stale) {
-                saveQuiet("今日检查失败（网络），稍后自动重试");
-                return Result.retry();
-            }
-            // 指纹有变化（有更新）或连续7天没检查成功：继续全量流程
-        }
+        // 0) 每天自动检查：先做轻量指纹探测（约70字节的 version.txt，内容为
+        //    书源+规则两个 md5）。没变化当天到此为止；探测失败且 7 天内有过
+        //    成功记录 → 交给 WorkManager 退避重试；否则走全量下载写入。
+        Result skip = checkFingerprintOrNull();
+        if (skip != null) return skip;
 
         // 1) 刷新镜像名单
         prog("正在刷新镜像名单…");
@@ -481,39 +575,10 @@ public class SyncWorker extends Worker {
             }
             return Result.success();
         }
+        int finalTotal = finalSources.length();
         try {
             prog("验签通过，正在写入阅读App…");
-            // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
-            Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
-            int finalTotal = finalSources.length();
-            for (int i = 0; i < finalTotal; i += BATCH) {
-                JSONArray part = new JSONArray();
-                for (int j = i; j < Math.min(i + BATCH, finalTotal); j++) {
-                    part.put(finalSources.get(j));
-                }
-                ContentValues v = new ContentValues();
-                v.put("json", part.toString());
-                getApplicationContext().getContentResolver().insert(uri, v);
-                prog("正在写入书源 " + Math.min(i + BATCH, finalTotal) + "/" + finalTotal + "…");
-            }
-            // 官方 Provider 的 insert 无论成败都 return null（源码固定 return null），
-            // 不能靠返回值判断；写完后回查一次，确认样本源真的落库
-            if (!verifyWritten(authority, finalSources)) {
-                throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
-            }
-            // 4.5) 清理仓库已剔除的源：provider 的 insert 只增不删，不主动清理会让
-            //      已判死/已下架的源永远留在手机里（本地可达性只探测域名存活，
-            //      识别不出「站点改版导致正文永久失效」的源）。
-            //      只删「上次写入过、本次已不在仓库」的源，按 bookSourceUrl 精确
-            //      匹配；用户自建源不在 last.json 里，不受影响。
-            JSONArray merged = mergePending(diffSources(oldArr, finalSources), finalSources);
-            JSONArray stillFailed = merged.length() == 0
-                    ? new JSONArray() : deleteSources(authority, merged);
-            savePendingDelete(stillFailed);
-            int cleaned = merged.length() - stillFailed.length();
-            String delMsg = cleaned == 0 ? ""
-                    : "，已清理已下架 " + cleaned + " 源"
-                    + (stillFailed.length() == 0 ? "" : "（" + stillFailed.length() + " 个失败，下次同步自动重试）");
+            String delMsg = writeViaProvider(authority, finalSources, oldArr);
             OutputStream os = new FileOutputStream(cache);
             os.write(json.getBytes("UTF-8"));
             os.close();
@@ -543,32 +608,148 @@ public class SyncWorker extends Worker {
     }
 
     /**
-     * 带 Ed25519 验签的下载：对每条线路，同时取「文件 + 文件.sig」，
+     * 通过 provider 写入全部书源，并清理仓库已剔除的源。
+     * @return 清理结果文案（没有清理时为空串）；写入/回查失败抛异常，由调用方兜底
+     */
+    private String writeViaProvider(String authority, JSONArray finalSources, JSONArray oldArr)
+            throws Exception {
+        // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
+        Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
+        int total = finalSources.length();
+        for (int i = 0; i < total; i += BATCH) {
+            JSONArray part = new JSONArray();
+            for (int j = i; j < Math.min(i + BATCH, total); j++) {
+                part.put(finalSources.get(j));
+            }
+            ContentValues v = new ContentValues();
+            v.put("json", part.toString());
+            getApplicationContext().getContentResolver().insert(uri, v);
+            prog("正在写入书源 " + Math.min(i + BATCH, total) + "/" + total + "…");
+        }
+        // 官方 Provider 的 insert 无论成败都 return null（源码固定 return null），
+        // 不能靠返回值判断；写完后抽查首/中/尾确认真的落库
+        if (!verifyWritten(authority, finalSources)) {
+            throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
+        }
+        // 清理仓库已剔除的源：provider 的 insert 只增不删，不主动清理会让
+        // 已判死/已下架的源永远留在手机里（本地可达性只探测域名存活，
+        // 识别不出「站点改版导致正文永久失效」的源）。
+        // 只删「上次写入过、本次已不在仓库」的源，按 bookSourceUrl 精确
+        // 匹配；用户自建源不在 last.json 里，不受影响。
+        JSONArray merged = mergePending(diffSources(oldArr, finalSources), finalSources);
+        JSONArray stillFailed = merged.length() == 0
+                ? new JSONArray() : deleteSources(authority, merged);
+        savePendingDelete(stillFailed);
+        int cleaned = merged.length() - stillFailed.length();
+        return cleaned == 0 ? ""
+                : "，已清理已下架 " + cleaned + " 源"
+                + (stillFailed.length() == 0 ? ""
+                : "（" + stillFailed.length() + " 个失败，下次同步自动重试）");
+    }
+
+    /**
+     * 带 ECDSA 验签的下载：对每条线路，同时取「文件 + 文件.sig」，
      * 验签通过才返回内容；任何一环失败都换下一条线路（fail closed）。
-     * 请求带随机 cb 参数穿透代理/CDN 缓存，保证 body 与 sig 来自同一
-     * 份回源数据，杜绝「旧内容配新签名」的缓存错位。
+     *
+     * 缓存穿透（v3.20）：
+     *  - 普通线路追加随机 cb 参数，保证 body 与 sig 来自同一份回源数据；
+     *  - jsDelivr 的缓存键是路径而非 query，cb 对它完全无效（线上实测持续
+     *    返回「新 json + 旧 sig」），验签失败时先调官方 purge 再重试一次；
+     *  - 全部线路都因签名不符失败时，再直连 raw 源站试一次；
+     *  - 失败线路按 host 冷却 15 分钟，后续步骤（规则/指纹）不再白等超时。
      */
     private String fetchVerified(String fileName, List<String> lines, StringBuilder err) {
-        int total = lines.size(), fail = 0;
+        int total = lines.size(), netFail = 0, sigFail = 0;
         String lastWhy = "";
+        boolean manual = "manual".equals(getInputData().getString("mode"));
         for (int i = 0; i < total; i++) {
-            String url = lines.get(i).replace("legado.json", fileName);
-            String host = hostOf(url);
-            prog("正在尝试线路 " + (i + 1) + "/" + total + "：" + host.trim());
-            String cb = (url.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
+            String line = lines.get(i);
+            String host = hostName(line);
+            if (!manual && cooling(host)) {
+                prog("跳过冷却中的线路：" + host);
+                continue;
+            }
+            String url = line.replace("legado.json", fileName);
+            prog("正在尝试线路 " + (i + 1) + "/" + total + "：" + host);
+            // jsDelivr 忽略 query 参数，cb 加了也没用（还会让 .sig 与 body 落到不同缓存键）
+            String cb = jsdelivr(url) ? "" : (url.contains("?") ? "&" : "?")
+                    + "cb=" + System.currentTimeMillis();
             byte[] body = fetchBytes(url + cb);
-            if (body == null) { fail++; lastWhy = host.trim() + " 下载失败"; continue; }
+            if (body == null) { netFail++; markFail(host); lastWhy = host + " 下载失败"; continue; }
             byte[] sigB = fetchBytes(url + ".sig" + cb);
-            if (sigB == null) { fail++; lastWhy = host.trim() + " 无签名"; continue; }
+            if (sigB == null) { netFail++; markFail(host); lastWhy = host + " 无签名"; continue; }
             String vr = verify(body, new String(sigB, java.nio.charset.StandardCharsets.UTF_8).trim());
             if (vr == null) {
-                lastGoodLine = lines.get(i);   // 记住验签通过的线路，供深链兜底复用
+                markOk(host);
+                lastGoodLine = line;   // 记住验签通过的线路，供深链兜底复用
                 return new String(body, java.nio.charset.StandardCharsets.UTF_8);
             }
-            fail++; lastWhy = host.trim() + " " + vr;
+            if (jsdelivr(url) && purgeJsdelivr(url)) {
+                // purge 是异步的，立刻重试一次；命中就继续用，没命中换线路
+                byte[] b2 = fetchBytes(url);
+                byte[] s2 = fetchBytes(url + ".sig");
+                if (b2 != null && s2 != null) {
+                    String vr2 = verify(b2,
+                            new String(s2, java.nio.charset.StandardCharsets.UTF_8).trim());
+                    if (vr2 == null) {
+                        markOk(host);
+                        lastGoodLine = line;
+                        return new String(b2, java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                }
+            }
+            sigFail++;
+            lastWhy = host + " " + vr;
         }
-        err.append(fail).append("/").append(total).append("条线路不可信，末次：").append(lastWhy);
+        // 签名不符多半是 CDN 把旧内容和新签名混搭：直连源站（raw）再试一次
+        if (sigFail > 0) {
+            prog("直连源站重试：" + fileName);
+            String ts = "?cb=" + System.currentTimeMillis();
+            String raw = GH_RAW + decodeRepo() + "/main/" + fileName;
+            byte[] body = fetchBytes(raw + ts);
+            byte[] sigB = body == null ? null : fetchBytes(raw + ".sig" + ts);
+            if (body != null && sigB != null
+                    && verify(body, new String(sigB, java.nio.charset.StandardCharsets.UTF_8).trim()) == null) {
+                markOk(hostName(raw));
+                lastGoodLine = raw;
+                return new String(body, java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+        err.append(netFail).append(" 条网络失败、").append(sigFail).append(" 条验签/缓存不符")
+                .append("（共 ").append(total).append(" 条线路，末次：").append(lastWhy).append("）");
         return null;
+    }
+
+    /** host 是否为 jsDelivr（它的缓存忽略 query，只能用 purge 接口穿透） */
+    private boolean jsdelivr(String url) {
+        return url.contains("cdn.jsdelivr.net");
+    }
+
+    /** 调 jsDelivr 官方 purge 让边缘节点失效；返回是否请求成功 */
+    private boolean purgeJsdelivr(String url) {
+        int i = url.indexOf("/gh/");
+        if (i < 0) return false;
+        String path = url.substring(i);
+        int q = path.indexOf('?');
+        if (q >= 0) path = path.substring(0, q);
+        return fetch("https://purge.jsdelivr.net" + path) != null;
+    }
+
+    private String hostName(String url) {
+        try { return new URL(url).getHost(); } catch (Exception e) { return ""; }
+    }
+
+    private boolean cooling(String host) {
+        Long until = LINE_COOLDOWN.get(host);
+        return until != null && System.currentTimeMillis() < until;
+    }
+
+    private void markFail(String host) {
+        if (!host.isEmpty()) LINE_COOLDOWN.put(host, System.currentTimeMillis() + COOLDOWN_MS);
+    }
+
+    private void markOk(String host) {
+        if (!host.isEmpty()) LINE_COOLDOWN.remove(host);
     }
 
     /**
@@ -592,17 +773,17 @@ public class SyncWorker extends Worker {
         }
     }
 
-    private String hostOf(String url) {
-        try { return new URL(url).getHost() + " "; }
-        catch (Exception e) { return "? "; }
-    }
-
     /**
      * 同步全局净化规则。官方 ReaderProvider 路由表（源码实测）只有
      * 书源/rss/书籍三类路由，【没有】净化规则路由——之前用 provider 写
      * 规则的路从来不存在。v3.13 起规则变化时唤起阅读App官方在线导入
      * 深链（legado://import/replaceRule），阅读App 自行下载并自动导入。
      * 失败只汇报，不影响书源同步。
+     *
+     * v3.20：深链唤起无法确认阅读App是否真的导入（后台可能被系统拦截），
+     * 旧实现唤起后立刻写 last_rules.json，导致之后永远显示「规则无变化」、
+     * 再也不会重试。现在记录「已唤起的内容 md5 + 时间」：同一份内容 24h 内
+     * 不重复打扰，超过 24h 且仍未确认则再唤起一次，最多 3 次后转为提示手动。
      */
     private String syncRules(List<String> lines) {
         try {
@@ -610,11 +791,25 @@ public class SyncWorker extends Worker {
             String rjson = fetchVerified("replaceRule.json", lines, err);
             if (rjson == null) return "规则未同步：" + err;
 
+            String remoteMd5 = md5(rjson);
             File rcache = new File(getApplicationContext().getFilesDir(), "last_rules.json");
-            if (rcache.exists() && md5(rcache).equals(md5(rjson))) {
+            android.content.SharedPreferences sp =
+                    getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE);
+            String firedMd5 = sp.getString("rulesFiredMd5", null);
+            long firedAt = sp.getLong("rulesFiredAt", 0);
+            boolean firedSame = remoteMd5.equals(firedMd5);
+            long sinceFire = System.currentTimeMillis() - firedAt;
+
+            if (rcache.exists() && md5(rcache).equals(remoteMd5) && !firedSame) {
                 return "规则无变化";
             }
-
+            if (firedSame && sinceFire < 24L * 3600 * 1000) {
+                return "规则已唤起导入（24h内不重复）";
+            }
+            int tries = firedSame ? sp.getInt("rulesFireTries", 0) : 0;
+            if (tries >= 3) {
+                return "规则有更新：请打开本App点「立即同步」完成导入";
+            }
             String src = fallbackUrl("replaceRule.json");
             boolean fired = fireOnlineImport("replaceRule", src);
             if (!fired) {
@@ -624,6 +819,9 @@ public class SyncWorker extends Worker {
             OutputStream os = new FileOutputStream(rcache);
             os.write(rjson.getBytes("UTF-8"));
             os.close();
+            sp.edit().putString("rulesFiredMd5", remoteMd5)
+                    .putLong("rulesFiredAt", System.currentTimeMillis())
+                    .putInt("rulesFireTries", tries + 1).apply();
             return "规则更新：已唤起阅读App自动导入";
         } catch (Exception e) {
             return "规则未同步：异常";
@@ -651,17 +849,46 @@ public class SyncWorker extends Worker {
     /**
      * 轻量版本探测：下载 version.txt（两行 md5 内容指纹，约70字节，CI 签名时
      * 生成）。md5 随内容确定——健康检查等无关提交不会误触发全量下载。
-     * 逐线路尝试直到拿到合法指纹；全部失败返回 null（调用方按「不确定」处理）。
+     *
+     * v3.20：旧实现「第一条能解析的线路说了算」，jsDelivr 缓存滞后时会拿到
+     * 旧指纹，判定「无更新」而漏掉真实更新。现在多线路投票，2 票一致才算
+     * 采信；只剩单一意见时直接用；分歧且含 raw 源站时以源站为准。
      */
     private String[] fetchFingerprint(String repo) {
+        Map<String, Integer> votes = new java.util.LinkedHashMap<>();
+        Map<String, String[]> fps = new HashMap<>();
+        String[] rawFp = null;
         for (String base : defaultLines(repo)) {
+            String host = hostName(base);
+            if (cooling(host)) continue;
             String txt = fetch(base.replace("legado.json", "version.txt")
                     + "?cb=" + System.currentTimeMillis());
-            if (txt == null) continue;
-            String[] ps = txt.trim().split("\\s+");
-            if (ps.length == 2 && ps[0].matches("[0-9a-f]{32}")
-                    && ps[1].matches("[0-9a-f]{32}")) return ps;
+            if (txt == null) { markFail(host); continue; }
+            String[] ps = parseFingerprint(txt);
+            if (ps == null) { markFail(host); continue; }
+            markOk(host);
+            String key = ps[0] + " " + ps[1];
+            Integer n = votes.get(key);
+            votes.put(key, n == null ? 1 : n + 1);
+            if (!fps.containsKey(key)) fps.put(key, ps);
+            if ("raw.githubusercontent.com".equals(host)) rawFp = ps;
+            if (votes.get(key) >= 2) return ps;      // 两条线路一致，直接采信
         }
+        String best = null;
+        int bestN = 0;
+        for (Map.Entry<String, Integer> e : votes.entrySet()) {
+            if (e.getValue() > bestN) { bestN = e.getValue(); best = e.getKey(); }
+        }
+        if (best != null && (bestN >= 2 || votes.size() == 1)) return fps.get(best);
+        if (rawFp != null) return rawFp;             // 分歧时以 GitHub 源站为准
+        return null;
+    }
+
+    /** 解析 version.txt：必须正好两行 32 位小写 md5，否则视为无效内容 */
+    private String[] parseFingerprint(String txt) {
+        String[] ps = txt.trim().split("\\s+");
+        if (ps.length == 2 && ps[0].matches("[0-9a-f]{32}")
+                && ps[1].matches("[0-9a-f]{32}")) return ps;
         return null;
     }
 
@@ -684,14 +911,20 @@ public class SyncWorker extends Worker {
         return sb.toString();
     }
 
-    /** 解析名单文本：只接受 https:// 且指向 legado.json 的行。 */
+    /**
+     * 解析名单文本：只接受 https:// 且指向本仓库 legado.json 的行。
+     * v3.20 起加了仓库路径校验——旧实现任何 https 链接都收，一旦 urls.txt
+     * 被投毒（或缓存被篡改），App 会去作者指定的任意站点下载，虽仍要验签，
+     * 但没必要给外部地址发请求。
+     */
     private List<String> parseLines(String txt) {
         List<String> out = new ArrayList<>();
         if (txt == null) return out;
+        String repo = decodeRepo();
         for (String s : txt.split("\n")) {
             s = s.trim();
             if (!s.isEmpty() && !s.startsWith("#") && s.contains("legado.json")
-                    && s.startsWith("https://")) out.add(s);
+                    && s.startsWith("https://") && s.contains(repo)) out.add(s);
         }
         return out;
     }
@@ -734,7 +967,9 @@ public class SyncWorker extends Worker {
             conn = (HttpURLConnection) (proxy == Proxy.NO_PROXY
                     ? url.openConnection()
                     : url.openConnection(proxy));
-            conn.setConnectTimeout(20000);
+            // 连接超时 8s（旧 20s 让死线路把整轮同步拖到分钟级；读超时仍 20s，
+            // 国内镜像首字节慢但一旦开始传输就很快）
+            conn.setConnectTimeout(8000);
             conn.setReadTimeout(20000);
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent",
@@ -958,7 +1193,8 @@ public class SyncWorker extends Worker {
             } catch (Exception ignored) {}
         }
 
-        // Step 2: 从探测队列里优先挑"上次判死且到期"的，最多 60 个
+        // Step 2: 从探测队列里优先挑"上次判死且到期"的，最多 100 个
+        // （旧上限 60 个/天，372 源要 6 天才能轮一遍；16 线程 × 3s 足够覆盖）
         toProbe.sort((a, b) -> {
             try {
                 HealthEntry ha = cache.get(a.optString("bookSourceUrl", ""));
@@ -977,11 +1213,11 @@ public class SyncWorker extends Worker {
                 return Long.compare(ta, tb);
             } catch (Exception e) { return 0; }
         });
-        // 截断到 60 个以内
-        int probeLimit = Math.min(toProbe.size(), 60);
+        // 截断到 100 个以内
+        int probeLimit = Math.min(toProbe.size(), 100);
         List<JSONObject> actualProbe = toProbe.subList(0, probeLimit);
 
-        // Step 3: 并发探测（12 线程，每个超时 3s）
+        // Step 3: 并发探测（16 线程，每个超时 3s；100 个约 20s 跑完）
         // 用 ConcurrentHashMap：多线程并发 put，HashMap 非线程安全会丢数据
         Map<String, Boolean> probeResults = new ConcurrentHashMap<>();
         // 记录哪些 URL 在本轮探测队列里（用于区分"队列溢出未测"和"超时未完成"）
@@ -991,7 +1227,7 @@ public class SyncWorker extends Worker {
         }
         int probeTimeoutCount = 0;
         if (!actualProbe.isEmpty()) {
-            ExecutorService pool = Executors.newFixedThreadPool(12);
+            ExecutorService pool = Executors.newFixedThreadPool(16);
             CountDownLatch latch = new CountDownLatch(actualProbe.size());
             AtomicInteger done = new AtomicInteger(0);
             for (JSONObject src : actualProbe) {
@@ -1015,7 +1251,8 @@ public class SyncWorker extends Worker {
                 });
             }
             boolean completed = true;
-            try { completed = latch.await(30, TimeUnit.SECONDS); }
+            // 上限 45s：100 个源 / 16 线程 × 3s ≈ 20s，留足抖动余量
+            try { completed = latch.await(45, TimeUnit.SECONDS); }
             catch (InterruptedException ie) {
                 Thread.currentThread().interrupt(); // 恢复中断标志，让上层决定
                 completed = false;
