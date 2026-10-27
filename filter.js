@@ -192,6 +192,30 @@ function variants(o) {
     const list = JSON.parse(fs.readFileSync(file, 'utf8'));
     let merged = 0, repaired = 0;
 
+    // 0) 本地策展源：extra-sources.json（人工整理、已去重落地在仓库里的源）
+    //    上游列表之外的自有来源：只补进「当前 legado.json 还没有」的 norm 身份键，
+    //    补进来后依靠上面的「已有源保留」语义长期存在，不依赖任何上游继续提供。
+    let localAdded = 0;
+    try {
+        const extraFile = 'extra-sources.json';
+        if (fs.existsSync(extraFile)) {
+            const extra = JSON.parse(fs.readFileSync(extraFile, 'utf8'));
+            if (Array.isArray(extra)) {
+                const have = new Set(list.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+                for (const s of extra) {
+                    const k = norm(s && s.bookSourceUrl);
+                    if (!k || have.has(k)) continue;
+                    list.push(s);
+                    have.add(k);
+                    localAdded++;
+                }
+            }
+            if (localAdded) console.log('并入本地策展源 ' + localAdded + ' 个（extra-sources.json）');
+        }
+    } catch (e) {
+        console.log('⚠️ extra-sources.json 读取失败，跳过本地策展源: ' + e.message);
+    }
+
     // Phase B-1 基线：读 HEAD legado.json 做 diff，供删除清单和 fuse.js 裁决使用
     // 与 fuse.js 保持同样的三态语义（git ls-tree 模式）：
     //   HEAD:legado.json exit 0 + 空输出 → 真不存在（首次运行，空 oldLegado）
@@ -478,12 +502,12 @@ function variants(o) {
         console.log('⚠️ 本次剔除超过 30%，疑似运行环境网络抖动，放弃写入，旧版本保留。');
         return;
     }
-    if (merged === 0 && repaired === 0 && removed === 0 && manualRemoved === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0) {
+    if (merged === 0 && repaired === 0 && removed === 0 && manualRemoved === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0 && localAdded === 0) {
         console.log('无变化，不提交');
         return;
     }
     fs.writeFileSync(file, JSON.stringify(out));
-    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
+    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / 本地策展+' + localAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
 
     // Phase B-1 → Phase D-1: 对比 HEAD legado.json 补删除清单 + 存活保留
     // P1-1 修复：上游不再提供 ≠ 源已失效。对每个 missing 源先 alive() 探测 origin：
