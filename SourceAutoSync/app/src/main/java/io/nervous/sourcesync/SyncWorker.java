@@ -715,6 +715,11 @@ public class SyncWorker extends Worker {
                 return new String(body, java.nio.charset.StandardCharsets.UTF_8);
             }
         }
+        // 全部线路都在冷却期（本轮前面步骤刚踩过）：给明确文案，别报「0 条失败」
+        if (netFail == 0 && sigFail == 0) {
+            err.append("全部线路仍在冷却期，稍后自动重试");
+            return null;
+        }
         err.append(netFail).append(" 条网络失败、").append(sigFail).append(" 条验签/缓存不符")
                 .append("（共 ").append(total).append(" 条线路，末次：").append(lastWhy).append("）");
         return null;
