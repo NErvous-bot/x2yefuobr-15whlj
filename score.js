@@ -4,7 +4,7 @@
 // 评分（100分）：搜索20 + 目录25 + 正文25 + 稳定性20 + 最近连续成功10
 //   稳定性：recent≥2个样本时按窗口成功率×20，否则中性12；连续失败1次-5、2次-15、≥3次强制观察层
 // 分层：≥90核心(weight500~700) / 75~89稳定(300~468) / 60~74备用(150~276) / <60观察(50)
-//       连续失败≥3→观察(30) / 不可测保护池(曾经实测通过440,从未验证380 — "测不了"不判死但也不绝对置顶) / 确认坏(5,待老化剔除)
+//       连续失败≥3→观察(30) / 不可测保护池(曾经实测通过120,从未验证90 — "测不了"不判死，但必须排在备用层150之后) / 确认坏(5 → 由 quarantine.js 移出成品)
 // 历史记录复用 health.json 的 recent 数组（最近5次有结论实测），不另建文件避免状态漂移
 const fs = require('fs');
 const { norm } = require('./src/source-id');
@@ -15,9 +15,11 @@ const consOf = (recent, tag) => { let n = 0; for (let i = recent.length - 1; i >
 function grade(v) {
     // v: health.json 源条目 → { score, layer, weight }
     if (!v || v.health === null || v.health === undefined) {
-        // 不可测保护池：曾经实测通过(recent有pass)→440，从未验证→380；不判死但也不绝对置顶
+        // 不可测保护池：曾经实测通过(recent有pass)→120，从未验证→90。
+        // 必须低于备用层下界 150：旧值 440/380 高于 stable 下界 300，会让「从没验证过
+        // 的源」排在「已验证稳定」的源前面，与「不判死但也不置顶」的设计意图相反。
         const verified = Array.isArray(v && v.recent) && v.recent.includes('pass');
-        return { score: null, layer: 'untestable', weight: verified ? 440 : 380 };
+        return { score: null, layer: 'untestable', weight: verified ? 120 : 90 };
     }
     const recent = Array.isArray(v.recent) ? v.recent : [];
     const consFail = consOf(recent, 'fail');
@@ -71,9 +73,9 @@ try {
     L.push('稳定源  ' + layers.stable.length + ' 个（75~89分，weight 300~468）');
     L.push('备用源  ' + layers.backup.length + ' 个（60~74分，weight 150~276）');
     L.push('观察    ' + layers.watch.length + ' 个（<60分或连续失败，weight 30~50）');
-    const uv = layers.untestable.filter(x => x.weight === 440).length;
-    L.push('不可测保护池  ' + layers.untestable.length + ' 个（曾实测通过 ' + uv + ' 个weight440 / 从未验证 ' + (layers.untestable.length - uv) + ' 个weight380，不判死不置顶）');
-    L.push('确认坏  ' + layers.dead.length + ' 个（weight 5，待探活/老化层剔除）');
+    const uv = layers.untestable.filter(x => x.weight === 120).length;
+    L.push('不可测保护池  ' + layers.untestable.length + ' 个（曾实测通过 ' + uv + ' 个weight120 / 从未验证 ' + (layers.untestable.length - uv) + ' 个weight90，不判死但排在备用层之后）');
+    L.push('确认坏  ' + layers.dead.length + ' 个（weight 5，由 quarantine.js 移出成品，不进手机）');
     L.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(L.join('\n'));
     process.exit(0);

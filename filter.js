@@ -39,6 +39,26 @@ const UPSTREAMS = [
 
 const { norm, originOf } = require('./src/source-id');
 
+// ── 隔离池（P0-1）：quarantine.json 里的源永久不进成品 ──
+// 由 quarantine.js 维护（score.js 判定的 dead 层 = 连续 3 次 content=false）；
+// 也支持人工往数组里加 {url,name,reason,since} 手工封禁。
+// 为什么必须在 filter 层过滤，而不是只在成品侧删一次：
+//   上游合并、extra-sources.json 策展、扩容池、upstream-removed 复活
+//   这四条路径都会把已隔离的源重新带回 out，只删一次会造成「死源复活」循环。
+//   （实测：264 个被隔离源里有 196 个同时躺在 extra-sources.json 里）
+// 解析失败时返回空集合（不误删），但会打日志，避免静默失效。
+function loadQuarantine() {
+    try {
+        if (!fs.existsSync('quarantine.json')) return new Set();
+        const arr = JSON.parse(fs.readFileSync('quarantine.json', 'utf8'));
+        const list = Array.isArray(arr) ? arr : [];
+        return new Set(list.map(x => norm(typeof x === 'string' ? x : (x && x.url))).filter(Boolean));
+    } catch (e) {
+        console.log('⚠️ quarantine.json 解析失败，本轮不启用隔离池: ' + e.message);
+        return new Set();
+    }
+}
+
 // ── D3（Round3 补测 2026-10-20）URL 规范化：只做两类静态可确认等价的收敛 ──
 // 收紧原则：宁可保留也不制造新书源故障。
 //  1) 纯根路径重复斜杠（pathname 全为斜杠且 ≥2 个，如 https://x//）→ 收敛为单斜杠；
@@ -497,17 +517,28 @@ function variants(o) {
         console.log('URL规范化: 无改写无合并（保留型冲突 ' + canonLog.advisories.length + ' 个不产生提交）');
     }
 
+    // 3.9) 隔离池过滤（P0-1）：quarantine.json 里的源不得进入成品。
+    //      放在阈值保护和「无变化」判定之前，保证「只有隔离发生变化」的轮次也能正常写回。
+    const BAN = loadQuarantine();
+    let quarantined = 0;
+    if (BAN.size) {
+        const beforeQ = out.length;
+        out = out.filter(s => !BAN.has(norm(s.bookSourceUrl)));
+        quarantined = beforeQ - out.length;
+        if (quarantined) console.log('隔离池过滤 ' + quarantined + ' 个（quarantine.json 共 ' + BAN.size + ' 条）');
+    }
+
     // 4) 阈值保护：单次剔除超 30% 视为 Actions 网络抖动，放弃写入（旧版本保留）
     if (list.length > 0 && removed > list.length * 0.3) {
         console.log('⚠️ 本次剔除超过 30%，疑似运行环境网络抖动，放弃写入，旧版本保留。');
         return;
     }
-    if (merged === 0 && repaired === 0 && removed === 0 && manualRemoved === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0 && localAdded === 0) {
+    if (merged === 0 && repaired === 0 && removed === 0 && manualRemoved === 0 && agedRemoved === 0 && added === 0 && fanqieAdded === 0 && canonChanged === 0 && canonMerged === 0 && localAdded === 0 && quarantined === 0) {
         console.log('无变化，不提交');
         return;
     }
     fs.writeFileSync(file, JSON.stringify(out));
-    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / 本地策展+' + localAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
+    console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 隔离 ' + quarantined + ' / 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / 本地策展+' + localAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
 
     // Phase B-1 → Phase D-1: 对比 HEAD legado.json 补删除清单 + 存活保留
     // P1-1 修复：上游不再提供 ≠ 源已失效。对每个 missing 源先 alive() 探测 origin：

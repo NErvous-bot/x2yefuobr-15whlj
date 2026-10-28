@@ -60,3 +60,9 @@ node preflight.js
 - HTTPS 安全：2026-10-14 起移除全局 NODE_TLS_REJECT_UNAUTHORIZED=0（8 个脚本），上游 jsdelivr/GitHub raw 证书链完整，正常强校验无问题。
 - 审计脚本：smoke-p0.js（上游拉取+实测 smoke）、test-p0.js（P0 回归）、freshness-audit.js（分页完整性）、rank-legado.js（跨书排序）独立运行。
 - 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js动态语法、JSONPath高级语法、bookUrl模板拼接）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
+
+## 隔离池（quarantine.js）
+
+`score.js` 判定的 dead 层（连续 3 次 `content=false`，`weight=5`）以前只是降权，仍然会随 `legado.json` 下发到手机：用户搜一次书要并发打几百个死站。`quarantine.js` 在 `fuse.js` 之后、签名之前把这一层移出成品并写入 `quarantine.json`；`filter.js` 每轮读取该名单做过滤，防止上游合并 / `extra-sources.json` 策展 / 扩容池 / upstream 复活把它们重新带回成品（实测 264 个被隔离源中有 196 个同时存在于 `extra-sources.json`，不拦就会隔天全部复活）。健康报告证明已复活（`content=true`）的源会自动解除隔离并回到成品。
+
+同轮把「不可测保护池」的权重由 440/380 下调为 120/90 —— 旧值高于 stable 层下界 300，会让从未验证过的源排在已验证稳定的源之前，与"不判死但也不置顶"的注释相反。
