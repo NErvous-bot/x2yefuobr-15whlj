@@ -2,33 +2,33 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-   68  available->available
+  111  available->available
     3  available->broken
-    4  available->untestable
-    4  broken->available
-   61  broken->broken
-    1  broken->removed
-    4  broken->untestable
-    1  untestable->available
-    1  untestable->broken
-  227  untestable->untestable
-新增源 605
+    7  available->untestable
+    6  broken->available
+  256  broken->broken
+    4  broken->removed
+    8  broken->untestable
+    2  untestable->available
+   18  untestable->broken
+    2  untestable->removed
+  561  untestable->untestable
+新增源 4
 
 ━━ 一级复查：旧可用 → 确认坏 3 ━━
-  REAL_DEATH_CANDIDATE 2
-  SUSPECT 1
-  [REAL_DEATH_CANDIDATE 0/5] 墨坛文学 | 阶段: HTTP_404,HTTP_404,HTTP_404,HTTP_404,HTTP_404 | 特征: js规则
-  [REAL_DEATH_CANDIDATE 0/5] 🔰 海棠书屋 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY,CONTENT_EMPTY | 特征: POST+GBK
-  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  SUSPECT 2
+  NET_UNREACHABLE 1
+  [SUSPECT 1/5] 🔖八块小说网 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,PASS | 特征: GBK
+  [NET_UNREACHABLE 0/2] 芙蓉小说-δ | 阶段: SEARCH_EMPTY,NETWORK,NETWORK,CHAPTER_EMPTY,NETWORK | 特征: GBK
+  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: SEARCH_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 4（基线 fbbda8a） ━━
-  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) PO18全本🎃#2 h=3 [搜索无结果] recent=pass/pass/pass/fail/fail flap=true
-  [RECOVERED] (T1 原SUSPECT) ncode_syosetu(成为小说家吧 h=88 [三关全过] recent=pass/fail/pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原SUSPECT) 998读书 h=38 [目录为空] recent=fail/fail/pass/fail/fail flap=true
-  [RECOVERED] (T1 原MIXED_DEATH) 豆花文学 h=88 [三关全过] recent=fail/fail/pass/fail/pass flap=true
+━━ 往轮候选终态 3（基线 293bb80） ━━
+  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) 墨坛文学 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) 🔰 海棠书屋 h=63 [正文不足200字（实得0）；另换 2 本仍失败] recent=pass/pass/pass/fail/fail flap=true
+  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 2 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 3（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -4,6 +4,11 @@
   "reason": "probe-dead",
   "evidence": "domain dead: https://www.bqgt.cc"
  },
+ "https://newsmiss.lofter.com": {
+  "name": "乐乎文章",
+  "reason": "probe-dead",
+  "evidence": "domain dead: https://newsmiss.lofter.com"
+ },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
@@ -18,6 +23,11 @@
   "name": "一百零一",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "https://www.qimao.com": {
+  "name": "七猫小说",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "https://www.360lele.cc": {
   "name": "乐乐小说",
@@ -54,25 +64,20 @@
   "reason": "aging-failed",
   "evidence": "目录为空"
  },
+ "http://www.hanhuaba.com": {
+  "name": "汉化吧网",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "https://yunqi.qq.com": {
   "name": "云起书院",
   "reason": "aging-failed",
-  "evidence": "正文不足200字（实得97）；另换 2 本仍失败"
+  "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
  },
  "http://m.tanzhekan7.com": {
   "name": "躺着看小说",
   "reason": "aging-failed",
   "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
- },
- "https://m.beifanghongrui.com": {
-  "name": "欻书网",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
- "https://m.juzhishuwu.com": {
-  "name": "桔纸书屋",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
  },
  "https://fu44.pw": {
   "name": "逆鳞小说",
@@ -98,6 +103,11 @@
   "name": "文窗小说",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "http://m.ubuxs.com": {
+  "name": "优步小说网",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "http://www.tcwxx.com": {
   "name": "同创文学",
@@ -148,5 +158,10 @@
   "name": "新御书屋",
   "reason": "aging-failed",
   "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
+ },
+ "https://m.yiqushuku.com": {
+  "name": "一曲书屋",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
  }
 }
