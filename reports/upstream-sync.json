@@ -1,5 +1,12 @@
 {
- "generatedAt": 1793180570747,
+ "generatedAt": 1793182195304,
+ "outcome": "no-change",
+ "addedThisRound": 0,
+ "failedUpstreams": [],
+ "licenseBlocked": [
+  "tickmao",
+  "aoaostar"
+ ],
  "allowAdult": false,
  "maxTest": 40,
  "tested": 0,
@@ -17,8 +24,9 @@
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": true,
-   "error": ""
+   "notModified": false,
+   "error": "license=NONE，未授予再分发许可，禁止自动并入公开成品",
+   "outcome": "license-blocked"
   },
   {
    "id": "jiwangyihao-bilinovel",
@@ -31,7 +39,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "jiwangyihao-bilinovel-like",
@@ -44,7 +53,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "jiwangyihao-esjzone",
@@ -57,7 +67,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "jiwangyihao-masiro",
@@ -70,7 +81,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "jiwangyihao-wenku",
@@ -83,7 +95,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "shidahuilang-bak",
@@ -96,7 +109,8 @@
    "admitted": 0,
    "skippedAdult": 0,
    "notModified": true,
-   "error": ""
+   "error": "",
+   "outcome": "not-modified"
   },
   {
    "id": "aoaostar",
@@ -108,8 +122,9 @@
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": true,
-   "error": ""
+   "notModified": false,
+   "error": "license=NONE，未授予再分发许可，禁止自动并入公开成品",
+   "outcome": "license-blocked"
   }
  ]
 }
