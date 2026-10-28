@@ -81,7 +81,6 @@ function scoreOf(r, g, ms) {
     const sources = {};
     const testedKeys = new Set();
     let usable = 0, dead = 0, untestable = 0, scoreSum = 0, scoreN = 0, flappingN = 0;
-    let exploreOk = 0, exploreBad = 0;
     for (const [s, r, ms, explore] of tested) {
         const k = norm(s.bookSourceUrl); if (!k) continue;
         testedKeys.add(k);
@@ -92,7 +91,6 @@ function scoreOf(r, g, ms) {
             scoreSum += h; scoreN++;          // 坏源分数也计入均分，否则均分虚高
             if (g.content) usable++; else dead++;
         }
-        if (explore === true) exploreOk++; else if (explore === false) exploreBad++;
         // 最近结果历史（FLAPPING 观察）：只记有结论的实测（pass/fail），不可测轮次不计入；
         // 窗口内既有 pass 又有 fail → 抖动观察期，不删不新增，下轮继续观察
         const prev = oldMap[k] || {};
@@ -128,14 +126,33 @@ function scoreOf(r, g, ms) {
     const carriedAvgAge = carried > 0 ? (carriedAgeSum / carried).toFixed(1) + '天' : 'N/A';
     const coverage = list.length > 0 ? Math.round(tested.length / list.length * 100) + '%' : 'N/A';
 
+    // 发现页四态：可用 / 确定失效 / 测不了（null）/ 未配置（没有 exploreUrl）
+    // 必须分开统计：只报「通/不通」会把「没测」误读成「通过」，这是本轮评审点名的坑。
+    let exOk = 0, exBad = 0, exUnknown = 0, exAbsent = 0;
+    for (const s of list) {
+        const k = norm(s.bookSourceUrl);
+        if (!k) continue;
+        if (!s.exploreUrl) { exAbsent++; continue; }
+        const v = sources[k];
+        if (v && v.explore === true) exOk++;
+        else if (v && v.explore === false) exBad++;
+        else exUnknown++;
+    }
+
     const out = {
         updatedAt: now,
-        summary: { total: list.length, tested: tested.length, usable, broken: dead, untestable, carried, flapping: flappingN, exploreOk, exploreBad },
+        summary: {
+            total: list.length, tested: tested.length, usable, broken: dead, untestable, carried,
+            flapping: flappingN,
+            // 发现页四态（互斥）：exploreOk + exploreBad + exploreUnknown + exploreAbsent = total
+            exploreOk: exOk, exploreBad: exBad, exploreUnknown: exUnknown, exploreAbsent: exAbsent,
+        },
         sources
     };
     fs.writeFileSync(HFILE, JSON.stringify(out));
     const avg = scoreN ? Math.round(scoreSum / scoreN) : 0;
     console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（覆盖率 ' + coverage + '，预算 ' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable + ' / 沿用上轮 ' + carried + '（平均 ' + carriedAvgAge + '，最老 ' + (carriedMaxAge || 'N/A') + '天）');
-    console.log('健康检查: 第④关发现页 → 通 ' + exploreOk + ' / 不通 ' + exploreBad + '（只测三关全过且配了 exploreUrl 的源）');
+    console.log('健康检查: 第④关发现页 → 可用 ' + exOk + ' / 确定失效 ' + exBad + ' / 测不了 ' + exUnknown
+        + ' / 未配置 exploreUrl ' + exAbsent + '（四态互斥，合计 ' + list.length + '）');
     console.log('健康检查: 全库平均健康分 ' + avg + '，抖动观察期(FLAPPING) ' + flappingN + ' 个，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
 })().catch(e => { console.error('健康检查失败（致命异常，阻断发布）:', e); process.exit(1); });
