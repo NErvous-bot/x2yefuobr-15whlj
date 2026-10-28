@@ -2,29 +2,29 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  109  available->available
-    1  available->broken
-    7  available->untestable
-    1  broken->available
-    5  broken->broken
-   11  broken->removed
-    1  broken->untestable
-    3  untestable->available
-    7  untestable->broken
-  562  untestable->untestable
-新增源 2
+   99  available->available
+    3  available->broken
+   11  available->untestable
+    3  broken->available
+    2  broken->broken
+    8  broken->removed
+   44  untestable->available
+   12  untestable->broken
+  516  untestable->untestable
+新增源 6
 
-━━ 一级复查：旧可用 → 确认坏 1 ━━
-  SUSPECT 1
-  [SUSPECT 2/5] ncode_syosetu(成为小说家吧 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS,PASS
+━━ 一级复查：旧可用 → 确认坏 3 ━━
+  RECOVERED 2
+  UNTESTABLE_RULE 1
+  [RECOVERED 5/5] 色友小说 | 阶段: PASS,PASS,PASS,PASS,OTHER
+  [RECOVERED 2/2] 书法小说 | 阶段: HTTP_502,HTTP_502,HTTP_502,PASS,PASS
+  [UNTESTABLE_RULE 0/5] 墨坛文学 | 阶段: HTTP_502,HTTP_502,HTTP_502,HTTP_502,HTTP_502 | 特征: js规则
 
-━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 5（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 5f53763） ━━
-  [STILL_BROKEN] (T1 原MIXED_DEATH) 998读书 h=33 [目录为空] recent=pass/pass/pass/fail/fail flap=true
-  [RECOVERED] (T1 原SUSPECT) 🎃太子爷小说网🎃 h=88 [三关全过（第1本正文为空，换书后通过）] recent=fail/pass/pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原SUSPECT) 豆花文学 h=33 [目录为空] recent=pass/fail/pass/fail/fail flap=true
+━━ 往轮候选终态 1（基线 3159869） ━━
+  [RECOVERED] (T1 原SUSPECT) ncode_syosetu(成为小说家吧 h=93 [三关全过] recent=pass/fail/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
+PASS：旧可用 → 确认坏 = 3（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

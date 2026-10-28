@@ -1,33 +1,73 @@
 {
- "generatedAt": 1793186655654,
- "runAt": "2026-10-28T11:24:15.654Z",
+ "generatedAt": 1793203750140,
+ "runAt": "2026-10-28T16:09:10.140Z",
  "oldRef": "HEAD",
- "baselineSha": "5f53763039a8077ffeac945b24dc982e5269bd8a",
+ "baselineSha": "3159869eaf381f8b32178c10ecaae12c10574cd9",
  "tier1": [
   {
-   "name": "ncode_syosetu(成为小说家吧)",
-   "url": "https://ncode.syosetu.com/",
+   "name": "色友小说",
+   "url": "https://seyouxiaoshuo.com",
    "traits": [],
    "oldNote": "三关全过",
-   "newNote": "搜索无结果",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "OTHER",
+     "reason": "三关全过（第1本正文为空，换书后通过）"
+    }
+   ],
+   "verdict": "RECOVERED"
+  },
+  {
+   "name": "书法小说",
+   "url": "http://www.sfwx.com/",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
    "attempts": [
     {
      "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "正文页HTTP 502"
     },
     {
      "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "正文页HTTP 502"
     },
     {
      "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "正文页HTTP 502"
     },
     {
      "pass": true,
@@ -42,84 +82,76 @@
      "reason": "三关全过"
     }
    ],
-   "verdict": "SUSPECT"
+   "verdict": "RECOVERED"
+  },
+  {
+   "name": "墨坛文学",
+   "url": "http://www.22mt.net/",
+   "traits": [
+    "js规则"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "书籍页HTTP 502"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "书籍页HTTP 502"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "书籍页HTTP 502"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "书籍页HTTP 502"
+    },
+    {
+     "pass": false,
+     "kind": "skip",
+     "stage": "HTTP_502",
+     "reason": "书籍页HTTP 502"
+    }
+   ],
+   "verdict": "UNTESTABLE_RULE"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "998读书",
-   "url": "http://www.998ds.net",
-   "tier": 1,
-   "prevVerdict": "MIXED_DEATH",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 33,
-    "search": true,
-    "toc": false,
-    "content": false,
-    "chapters": 0,
-    "contentLen": 0,
-    "note": "目录为空",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1793186634441
-   }
-  },
-  {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
    "tier": 1,
    "prevVerdict": "SUSPECT",
    "state": "RECOVERED",
    "evidence": {
-    "health": 88,
+    "health": 93,
     "search": true,
     "toc": true,
     "content": true,
-    "chapters": 47,
-    "contentLen": 5204,
-    "note": "三关全过（第1本正文为空，换书后通过）",
+    "chapters": 1,
+    "contentLen": 7309,
+    "note": "三关全过",
     "flapping": true,
     "recent": [
-     "fail",
      "pass",
+     "fail",
      "pass",
      "fail",
      "pass"
     ],
-    "checkedAt": 1793186634441
-   }
-  },
-  {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 33,
-    "search": true,
-    "toc": false,
-    "content": false,
-    "chapters": 0,
-    "contentLen": 0,
-    "note": "目录为空",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "fail",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1793186634441
+    "checkedAt": 1793203733303
    }
   }
  ]
