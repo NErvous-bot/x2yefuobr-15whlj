@@ -181,6 +181,17 @@ function innerAll(html, type, name) {
     if (type === 'tag') {
         const re = new RegExp('<' + name + '\\b[^>]*>', 'gi');
         let m; while ((m = re.exec(html))) hits.push([m.index, m[0]]);
+    } else if (type === 'idclass') {
+        // CSS 的 tag#id.class（如 div#content.showtxt）：先按 id 取，再用标签与 class 过滤
+        const [tag, idn, cls] = name;
+        const clsRe = new RegExp('(?<![\w-])' + esc(cls) + '(?![\w-])');
+        return innerAll(html, 'id', idn)
+            .filter(el => new RegExp('^<' + tag + '\\b', 'i').test(el))
+            .filter(el => {
+                const gt = el.indexOf('>');
+                const cm = /class\s*=\s*(["'"])([^"']*)\1/i.exec(gt > 0 ? el.slice(0, gt + 1) : el);
+                return !!(cm && clsRe.test(cm[2]));
+            });
     } else if (type === 'tagclass') {
         // CSS 的 tag.class（如 div.bk）：先按标签取元素，再用开标签里的 class 过滤
         const nameRe = new RegExp('(?<![\\w-])' + esc(name[1]) + '(?![\\w-])');
@@ -278,46 +289,109 @@ function selectAll(html, rule) {
         let clean = '';
         const ci = sel.indexOf('##');
         if (ci >= 0) { clean = sel.slice(ci + 2); sel = sel.slice(0, ci); }
-        // token 序列：@ 分段，段内再按空格拆后代链
-        const toks = sel.split('@').flatMap(p => p.trim().split(/\s+/)).filter(Boolean);
+
+        // ── 2026-10-28 扩能：对齐 legado 支持但此前被判「规则不可测」的几种写法 ──
+        //  ① @css: 前缀（与 legado 的 .class/#id/tag.class 语义一致，去掉前缀走同一套引擎）
+        //  ② > 子代选择器（我们按后代处理；盗版站绝大多数是直接子代，差异可忽略）
+        //  ③ 裸类名（token 不是已知标签时按 class 处理，legado 同口径）
+        //  ④ class.a b 多词类名（legado 允许 class 里带空格，如 class.pt-card pt-card-2）
+        //  ⑤ [class="x"] / [id="x"] 属性选择器
+        //  ⑥ .class.N / .class.-N 点索引
+        // 安全阀：只要用了上述新写法且最终取不到元素，就按「不可测」返回 null，
+        // 而不是返回空数组——空数组会被上游当成「搜索无结果」判死源，那是误杀。
+        let usedNew = false;
+        if (/^@css:/i.test(sel.trim())) { usedNew = true; sel = sel.trim().slice(5); }
+        // 用了 > 子代写法也算新语法：取不到就判不可测，避免把「解析没命中」误判成「源已死」
+        if (sel.includes('>')) usedNew = true;
+
+        // 先按 legado 的 @ 分段，段内再按空格 / > 拆后代链
+        const toks = [];
+        for (const seg of sel.split('@')) {
+            const parts = seg.split(/\s*(?:>|\s)\s*/).filter(Boolean);
+            for (const p of parts) toks.push(p);
+        }
         if (!toks.length) continue;
+
+        // ④ 多词类名合并：class.xxx 后面紧跟的裸词若既不是已知标签也不是选择器写法，并入类名
+        const merged = [];
+        for (let i = 0; i < toks.length; i++) {
+            const tk = toks[i];
+            if (/^class\./i.test(tk) && i + 1 < toks.length) {
+                const nx = toks[i + 1];
+                const looksSelector = /^(class|id|tag)\./i.test(nx) || /^[.#]/.test(nx) || nx.startsWith('[')
+                    || /^(text|textnodes|html|href|all)$/i.test(nx) || TAGS.has(nx.toLowerCase());
+                if (!looksSelector) { merged.push(tk + ' ' + nx); usedNew = true; i++; continue; }
+            }
+            merged.push(tk);
+        }
+
         let frags = [html], ok = true;
-        for (let tk of toks) {
+        for (let tk of merged) {
             if (/^(text|textnodes|html|href|all)$/i.test(tk)) {
+                if (usedNew && !frags.length) { ok = false; break; }
                 const kind = tk.toLowerCase();
                 const items = applyClean(frags.map(f => kind === 'href' ? firstHref(f) : (kind === 'html' || kind === 'all') ? f : toText(f)), clean);
                 return { items, isText: true };
             }
-            // 排除后缀 !N / !-N（legado「去掉第 N 项」，负数为从末尾数）
-            let excl = null;
-            const em = /^(.+?)!(-?\d+)$/.exec(tk);
-            if (em) { tk = em[1]; excl = parseInt(em[2], 10); }
+            // 前导 - 表示该步结果反转
+            let rev = false;
+            if (tk.length > 1 && tk[0] === '-') { rev = true; tk = tk.slice(1); usedNew = true; }
+
+            // ⑤ 属性选择器 [class="x"] / [id="x"]
+            let am;
+            if ((am = /^\[(class|id)\s*=\s*["']([^"']+)["']\]$/i.exec(tk))) {
+                usedNew = true;
+                let acc = [];
+                for (const f of frags) acc = acc.concat(innerAll(f, am[1].toLowerCase(), am[2]));
+                frags = acc;
+                if (!frags.length) break;
+                continue;
+            }
+
+            // 排除后缀 !N / !-N / !0:1:2
+            let exclList = null;
+            const em = /^(.+?)!(-?\d+(?::-?\d+)*)$/.exec(tk);
+            if (em) { tk = em[1]; exclList = em[2].split(':').map(Number); }
+
             let type, name, idx = null, m;
-            if ((m = /^(class|id|tag)\.([\w\u4e00-\u9fff\-$]+)(?:[.:](\d+))?$/.exec(tk))) {
-                type = m[1]; name = m[2]; if (m[3]) idx = parseInt(m[3], 10);
-            } else if ((m = /^\.([\w\u4e00-\u9fff\-$]+)(?::(\d+))?$/.exec(tk))) {
-                type = 'class'; name = m[1]; if (m[2]) idx = parseInt(m[2], 10);
-            } else if ((m = /^#([\w\u4e00-\u9fff\-$]+)(?::(\d+))?$/.exec(tk))) {
-                type = 'id'; name = m[1]; if (m[2]) idx = parseInt(m[2], 10);
-            } else if ((m = /^tag\.([\w\u4e00-\u9fff\-$]+)(?::(\d+))?$/.exec(tk))) {
-                type = 'tag'; name = m[1]; if (m[2]) idx = parseInt(m[2], 10);
-            } else if ((m = /^([a-z][a-z0-9]*)(?:[.:](\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
+            if ((m = /^class\.([\w\u4e00-\u9fff\-\$ ]+?)(?:[.:](-?\d+))?$/.exec(tk))) {
+                // class 允许带空格（legado 的 class.pt-card pt-card-2 = class 属性里同时含两个词）
+                type = 'class'; name = m[1].trim(); if (m[2]) { idx = parseInt(m[2], 10); usedNew = true; }
+            } else if ((m = /^(id|tag)\.([\w\u4e00-\u9fff\-\$]+?)(?:[.:](-?\d+))?$/.exec(tk))) {
+                type = m[1]; name = m[2]; if (m[3]) { idx = parseInt(m[3], 10); usedNew = true; }
+            } else if ((m = /^\.([\w\u4e00-\u9fff\-\$]+?)(?:[.:](-?\d+))?$/.exec(tk))) {
+                type = 'class'; name = m[1]; if (m[2]) { idx = parseInt(m[2], 10); usedNew = true; }
+            } else if ((m = /^#([\w\u4e00-\u9fff\-\$]+?)(?:[.:](-?\d+))?$/.exec(tk))) {
+                type = 'id'; name = m[1]; if (m[2]) { idx = parseInt(m[2], 10); usedNew = true; }
+            } else if ((m = /^([a-z][a-z0-9]*)#([\w\u4e00-\u9fff\-\$]+)\.([\w\u4e00-\u9fff\-\$]+)(?:[.:](-?\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
+                type = 'idclass'; name = [m[1].toLowerCase(), m[2], m[3]]; if (m[4]) idx = parseInt(m[4], 10);
+                usedNew = true;
+            } else if ((m = /^([a-z][a-z0-9]*)(?:[.:](-?\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
                 type = 'tag'; name = m[1].toLowerCase(); if (m[2]) idx = parseInt(m[2], 10);
-            } else if ((m = /^([a-z][a-z0-9]*)\.([\w\u4e00-\u9fff\-$]+)(?::(\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
-                // 裸 tag.class（如 div.bk）；纯数字后缀已在上一支按索引处理，不会落到这里
+            } else if ((m = /^([a-z][a-z0-9]*)\.([\w\u4e00-\u9fff\-\$]+?)(?:[.:](-?\d+))?$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
+                // 裸 tag.class（如 div.bk）
                 type = 'tagclass'; name = [m[1].toLowerCase(), m[2]]; if (m[3]) idx = parseInt(m[3], 10);
+            } else if (/^[\w\u4e00-\u9fff\-\$]+$/.test(tk)) {
+                // ③ 裸类名（不是已知标签）：legado 按 class 处理
+                type = 'class'; name = tk; usedNew = true;
             } else { ok = false; break; }
+
             let next = [];
             for (const f of frags) next = next.concat(innerAll(f, type, type === 'tag' ? name.toLowerCase() : name));
-            if (idx != null) next = next[idx] ? [next[idx]] : [];
-            if (excl != null) {
-                const real = excl < 0 ? next.length + excl : excl;
-                next = next.filter((_, i) => i !== real);
+            if (idx != null) next = idx < 0 ? (next.length + idx >= 0 ? [next[next.length + idx]] : []) : (next[idx] ? [next[idx]] : []);
+            if (exclList) {
+                const drop = new Set(exclList.map(n => (n < 0 ? next.length + n : n)));
+                next = next.filter((_, i) => !drop.has(i));
             }
+            if (rev) next.reverse();
             frags = next;
             if (!frags.length) break;
         }
-        if (ok) return { items: frags, isText: false };
+        if (ok) {
+            // 新写法取不到任何元素 → 宁可判「不可测」也不要让上游当成「源已死」
+            if (usedNew && frags.length === 0) continue;
+            return { items: frags, isText: false };
+        }
     }
     return null;
 }
