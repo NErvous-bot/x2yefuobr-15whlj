@@ -153,6 +153,17 @@ function pool(items, n, fn) {
 
 /* ---------- 主流程 ---------- */
 
+// 本轮总体结局（纯函数）：把「脚本跑通」与「真的收到源」分开表达。
+// CI 绿只代表流程没崩；这里才是本轮有没有产出的唯一结论。
+function summarizeOutcome(rows, admittedCount) {
+    const list = Array.isArray(rows) ? rows : [];
+    if (!list.length) return 'empty-config';
+    const failed = list.filter(x => x.outcome === 'failed');
+    if (admittedCount > 0) return failed.length ? 'partial-failed' : 'updated';
+    if (failed.length === list.length) return 'all-failed';
+    return 'no-change';
+}
+
 async function main() {
     const cfg = readJson(CFG, []);
     if (!Array.isArray(cfg) || !cfg.length) {
@@ -188,13 +199,28 @@ async function main() {
             id, name: u.name || id, license: u.license || 'NONE', adult: !!u.adult,
             fetched: 0, candidates: 0, tested: 0, admitted: 0, skippedAdult: 0,
             notModified: false, error: '',
+            // 本轮结局（可执行结论，不靠 exit 0 代表成功）：
+            //   updated 有新准入 / no-admitted 有候选但三关未过 / no-new 无新候选
+            //   not-modified ETag 未变 / skipped-adult 成人源未开 / license-blocked 授权限制
+            //   failed 拉取或解析失败 / no-url 配置缺 URL / budget 实测预算用完
+            outcome: '',
         };
 
-        if (!urls.length) { row.error = 'no url'; perUpstream.push(row); continue; }
+        if (!urls.length) { row.error = 'no url'; row.outcome = 'no-url'; perUpstream.push(row); continue; }
         if (u.adult && !ALLOW_ADULT) {
             row.error = 'adult upstream disabled (ALLOW_ADULT off)';
+            row.outcome = 'skipped-adult';
             perUpstream.push(row);
             console.log('[' + row.name + '] 跳过：成人源需 ALLOW_ADULT=1');
+            continue;
+        }
+        // 授权闸门：仓库没有 LICENSE / 未明确许可的上游，只能本地个人引用，
+        // 不得自动并入公开成品。这是一条可执行限制，而不是 NOTICE 里的一句说明。
+        if (u.publicPublish === false) {
+            row.error = 'license=' + row.license + '，未授予再分发许可，禁止自动并入公开成品';
+            row.outcome = 'license-blocked';
+            perUpstream.push(row);
+            console.log('[' + row.name + '] 跳过：' + row.error);
             continue;
         }
 
@@ -202,12 +228,14 @@ async function main() {
         const r = await fetchText(urls, st.etag);
         if (!r.ok) {
             row.error = r.err || 'fetch failed';
+            row.outcome = 'failed';
             perUpstream.push(row);
             console.log('  ✗ ' + row.error);
             continue;
         }
         if (r.notModified) {
             row.notModified = true;
+            row.outcome = 'not-modified';
             perUpstream.push(row);
             console.log('  = 304 未变更，跳过');
             st.lastRun = NOW;
@@ -216,8 +244,20 @@ async function main() {
         }
 
         let arr;
-        try { arr = JSON.parse(r.text); } catch (e) { row.error = 'JSON 解析失败'; perUpstream.push(row); continue; }
-        if (!Array.isArray(arr)) { row.error = '不是书源数组'; perUpstream.push(row); continue; }
+        try { arr = JSON.parse(r.text); } catch (e) {
+            row.error = 'JSON 解析失败';
+            row.outcome = 'failed';
+            perUpstream.push(row);
+            console.log('  ✗ ' + row.error);
+            continue;
+        }
+        if (!Array.isArray(arr)) {
+            row.error = '不是书源数组';
+            row.outcome = 'failed';
+            perUpstream.push(row);
+            console.log('  ✗ ' + row.error);
+            continue;
+        }
         row.fetched = arr.length;
         st.etag = r.etag || st.etag || '';
         st.url = r.url;
@@ -239,11 +279,11 @@ async function main() {
             if (before !== cands.length) console.log('  · 过滤成人源 ' + row.skippedAdult + ' 个（ALLOW_ADULT=' + (ALLOW_ADULT ? '1' : '0') + '）');
         }
         row.candidates = cands.length;
-        if (!cands.length) { perUpstream.push(row); state.upstreams[id] = st; console.log('  · 无新候选'); continue; }
+        if (!cands.length) { row.outcome = 'no-new'; perUpstream.push(row); state.upstreams[id] = st; console.log('  · 无新候选'); continue; }
 
         const take = Math.max(0, Math.min(cands.length, MAX_TEST - testedCount));
         const toTest = cands.slice(0, take);
-        if (!toTest.length) { perUpstream.push(row); state.upstreams[id] = st; console.log('  · 本轮实测预算已用完'); break; }
+        if (!toTest.length) { row.outcome = 'budget'; perUpstream.push(row); state.upstreams[id] = st; console.log('  · 本轮实测预算已用完'); break; }
 
         console.log('  · 候选 ' + cands.length + '，本轮实测 ' + toTest.length);
         let admittedHere = 0;
@@ -266,6 +306,7 @@ async function main() {
         });
         if (admittedHere) console.log('  ✓ 准入 ' + admittedHere + ' 个（三关全过）');
         else console.log('  · 实测全部不通过（三关未过，不收）');
+        row.outcome = admittedHere ? 'updated' : 'no-admitted';
         state.upstreams[id] = st;
         perUpstream.push(row);
         if (Date.now() - t0 > BUDGET_MS) { console.log('  · 时间预算用完，停止后续上游'); break; }
@@ -277,8 +318,16 @@ async function main() {
     fs.writeFileSync(STATE, JSON.stringify(state, null, 1));
 
     fs.mkdirSync('reports', { recursive: true });
+    // 本轮总体结局：把「流程跑完」和「真的收到源」分开表达，CI 绿不等于有产出
+    const failedUp = perUpstream.filter(x => x.outcome === 'failed');
+    const blockedUp = perUpstream.filter(x => x.outcome === 'license-blocked');
+    const outcome = summarizeOutcome(perUpstream, admitted.length);
     fs.writeFileSync(REPORT, JSON.stringify({
         generatedAt: NOW,
+        outcome,
+        addedThisRound: admitted.length,
+        failedUpstreams: failedUp.map(x => x.id),
+        licenseBlocked: blockedUp.map(x => x.id),
         allowAdult: ALLOW_ADULT,
         maxTest: MAX_TEST,
         tested: testedCount,
@@ -291,6 +340,11 @@ async function main() {
     console.log('上游同步: 实测 ' + testedCount + ' / 准入 ' + admitted.length +
         ' / harvested 共 ' + merged.length + ' / 用时 ' + Math.round((Date.now() - t0) / 1000) + 's' +
         (ALLOW_ADULT ? '（成人源已开启）' : '（成人源已关闭）'));
+    console.log('上游同步结论: ' + (outcome === 'updated'
+        ? '本轮新增 ' + admitted.length + ' 个（' + perUpstream.filter(x => x.outcome === 'updated').map(x => x.id).join('、') + '）'
+        : '本轮未更新（' + outcome + '）') +
+        (failedUp.length ? '；失败上游 ' + failedUp.length + ' 个：' + failedUp.map(x => x.id).join('、') : '') +
+        (blockedUp.length ? '；授权受限跳过 ' + blockedUp.length + ' 个：' + blockedUp.map(x => x.id).join('、') : ''));
 }
 
 if (require.main === module) {
@@ -308,4 +362,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { adultOf, selectCandidates, mergeHarvested };
+module.exports = { adultOf, selectCandidates, mergeHarvested, summarizeOutcome };

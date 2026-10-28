@@ -19,8 +19,8 @@
 | [shidahuilang/shuyuan-bak](https://github.com/shidahuilang/shuyuan-bak) | **GPL-3.0** | 书源条目合并入 `legado.json` |
 | [XIU2/Yuedu](https://github.com/XIU2/Yuedu) | **GPL-3.0** | 书源条目合并入 `legado.json` |
 | [jiwangyihao/source-j-legado](https://github.com/jiwangyihao/source-j-legado) | **MPL-2.0** | 书源条目合并入 `harvested.json` → `legado.json` |
-| [tickmao/Novel](https://github.com/tickmao/Novel) | **无 LICENSE 文件**（`license: null`） | 仅作个人使用的引用，**不主张任何授权**，不再分发 |
-| [aoaostar/legado](https://github.com/aoaostar/legado) | **无 LICENSE 文件**（README 声称 AGPL-3.0，但未附许可证文本） | 仅作个人使用的引用，**不主张任何授权**，不再分发 |
+| [tickmao/Novel](https://github.com/tickmao/Novel) | **无 LICENSE 文件**（`license: null`） | 自动收录通道已关闭（`publicPublish: false`）；历史条目仍在 `legado.json`，见下方遗留说明 |
+| [aoaostar/legado](https://github.com/aoaostar/legado) | **无 LICENSE 文件**（README 声称 AGPL-3.0，但未附许可证文本） | 同上 |
 | [LegadoTeam/legado](https://github.com/LegadoTeam/legado) | **GPL-3.0** | 本仓库不含其源码，仅通过其公开导入接口传递配置 |
 | 各书源指向的第三方小说站点 | 版权归原站点及原作者 | 本仓库只存规则，不存任何正文内容 |
 
@@ -32,6 +32,23 @@
 2. **只做个人使用场景下的引用/聚合**，不主张对这些条目的著作权；
 3. 若你是私人仓库使用，不构成《著作权法》意义上的"发行/分发"，相关义务不触发；
 4. 若上游作者提出异议，请按 `README` 里的下架流程删除对应条目。
+
+### 可执行的收录限制（不是一句免责说明）
+
+`upstreams.json` 中每条上游有 `publicPublish` 字段，由 `upstream-sync.js` 强制执行：
+
+- `license` 为 `NONE`（仓库内无 LICENSE 文件）的上游 → `publicPublish: false`，
+  自动收录脚本**直接跳过**，本轮报告中记为 `outcome: "license-blocked"`，
+  其条目不会进入 `harvested.json` 及后续公开成品；
+- `MPL-2.0` / `GPL-3.0` 等有明确许可的上游 → `publicPublish: true`，正常收录；
+- 回归测试断言「`license === NONE` 的条目必须 `publicPublish === false`」，
+  防止以后有人把无授权来源悄悄打开。
+
+**已知遗留**：`filter.js` 的 `UPSTREAMS` 是这条流水线上线前写死的静态清单，
+其中仍包含 `tickmao` 与 `aoaostar`，所以它们的条目目前仍会被合并进 `legado.json`。
+移除这两个上游会让成品从 700 余条骤降到百条量级（并触发发布保险丝的源量熔断），
+因此没有自动执行、留待人工决策：若要彻底合规，需要同时调整 `UPSTREAMS`、
+`fuse.js` 的数量阈值，并接受书源数量的大幅下降。
 
 ---
 

@@ -728,27 +728,58 @@ test('upstreams.json 结构合法：每条都有 license 与 urls，且 license 
     }
 });
 
+test('upstreams.json：无 LICENSE 的上游必须关闭自动收录（publicPublish=false）', () => {
+    const cfg = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
+    for (const u of cfg) {
+        assert.strictEqual(typeof u.publicPublish, 'boolean', u.id + ' 必须显式声明 publicPublish');
+        if (u.license === 'NONE') {
+            assert.strictEqual(u.publicPublish, false, u.id + ' 无 LICENSE 却允许自动并入公开成品');
+        }
+    }
+    assert.ok(cfg.some(u => u.license === 'NONE'), '本仓库确实存在无 LICENSE 上游，规则必须生效');
+});
+
+test('上游同步结论：流程成功 ≠ 质量成功（outcome 语义）', () => {
+    assert.strictEqual(US.summarizeOutcome([], 0), 'empty-config', '空配置');
+    assert.strictEqual(US.summarizeOutcome([{ outcome: 'updated' }, { outcome: 'no-new' }], 3), 'updated', '有准入且无失败');
+    assert.strictEqual(US.summarizeOutcome([{ outcome: 'updated' }, { outcome: 'failed' }], 3), 'partial-failed', '有准入但有上游失败');
+    assert.strictEqual(US.summarizeOutcome([{ outcome: 'failed' }, { outcome: 'failed' }], 0), 'all-failed', '全部上游失败');
+    assert.strictEqual(US.summarizeOutcome([{ outcome: 'no-new' }, { outcome: 'not-modified' }], 0), 'no-change', '没崩但零产出');
+    assert.strictEqual(US.summarizeOutcome([{ outcome: 'no-new' }, { outcome: 'failed' }], 0), 'no-change', '部分失败且零产出');
+});
+
 // ============================================================
 // 隔离池（quarantine.js）阈值语义
 // 背景：阈值曾把「历史名单 + 本轮新增」与总量比，历史累积到 237 后，
 // 第 63 轮仅新增 23 个就 260/719 > 30% 被误拦，整条流水线红灯。
 // 语义固定为：只看本轮新增占比；历史规模只观察；成品下限由 MIN_KEEP 保底。
 // ============================================================
-function stageQuarantine(legado, quarantine) {
-    const tmp = makeTempDir();
+function runQuarantineIn(opts, dir) {
+    const o = opts || {};
+    const tmp = dir || makeTempDir();
     fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(tmp, 'quarantine.js'));
-    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.mkdirSync(path.join(tmp, 'src'), { recursive: true });
     fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
-    fs.mkdirSync(path.join(tmp, 'health'));
-    fs.writeFileSync(path.join(tmp, 'legado.json'), JSON.stringify(legado));
-    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), JSON.stringify({ sources: {} }));
-    fs.writeFileSync(path.join(tmp, 'quarantine.json'), JSON.stringify(quarantine));
+    fs.mkdirSync(path.join(tmp, 'health'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'legado.json'), typeof o.legado === 'string' ? o.legado : JSON.stringify(o.legado || []));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'),
+        o.healthRaw !== undefined ? o.healthRaw : JSON.stringify({ sources: {} }));
+    if (o.quarantine !== null && o.quarantine !== undefined) {
+        fs.writeFileSync(path.join(tmp, 'quarantine.json'),
+            typeof o.quarantine === 'string' ? o.quarantine : JSON.stringify(o.quarantine));
+    }
     const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: tmp, encoding: 'utf8' });
-    const read = f => JSON.parse(fs.readFileSync(path.join(tmp, f), 'utf8'));
-    const out = read('legado.json');
-    const q = read('quarantine.json');
-    cleanupDir(tmp);
-    return { status: r.status, stderr: r.stderr || '', out, q };
+    const readOrNull = f => { try { return JSON.parse(fs.readFileSync(path.join(tmp, f), 'utf8')); } catch { return null; } };
+    const res = {
+        status: r.status, stdout: r.stdout || '', stderr: r.stderr || '',
+        out: readOrNull('legado.json'), q: readOrNull('quarantine.json'), tmp,
+    };
+    if (!dir) cleanupDir(tmp);
+    return res;
+}
+
+function stageQuarantine(legado, quarantine, health) {
+    return runQuarantineIn({ legado, quarantine, healthRaw: JSON.stringify({ sources: health || {} }) });
 }
 
 test('隔离池：历史 237 条 + 本轮新增 23 条（总量 719）不应被误拦', () => {
@@ -797,6 +828,37 @@ test('隔离池：健康报告证明复活 → 解除隔离', () => {
     cleanupDir(tmp);
     assert.strictEqual(r.status, 0, r.stderr);
     assert.deepStrictEqual(q.map(x => x.name), ['仍死'], '只解除已证复活的源');
+});
+
+test('隔离池：健康报告损坏 → 只收不放，且不阻断发布', () => {
+    const legado = [];
+    for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'S' + i, bookSourceUrl: 'https://s' + i + '.example.com', weight: i < 3 ? 5 : 300 });
+    const quarantine = [{ url: 'https://q1.example.com', name: '历史项', reason: 'stable-dead', since: 1 }];
+    const r = runQuarantineIn({ legado, quarantine, healthRaw: '{这不是合法 JSON' });
+    assert.strictEqual(r.status, 0, '健康报告损坏不应阻断隔离（只做收回）: ' + r.stderr);
+    assert.strictEqual(r.q.length, 4, '历史 1 + 本轮 3，且历史项不得被解除，实际: ' + r.q.length);
+    assert.ok(r.stdout.includes('健康报告不可读'), '应明确提示未做解除: ' + r.stdout);
+});
+
+test('隔离池：名单损坏 → fail-closed 拒绝执行', () => {
+    const legado = [{ bookSourceName: 'A', bookSourceUrl: 'https://a.example.com', weight: 300 }];
+    const r = runQuarantineIn({ legado, quarantine: '[{坏掉的名单' });
+    assert.strictEqual(r.status, 1, '名单损坏必须拒绝，不能静默覆盖');
+    assert.match(r.stderr, /quarantine\.json 解析失败/, '错误信息应指向名单文件');
+});
+
+test('隔离池：重复执行幂等（第二次不重复计数、不重复删除）', () => {
+    const legado = [];
+    for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'S' + i, bookSourceUrl: 'https://s' + i + '.example.com', weight: i < 3 ? 5 : 300 });
+    const dir = makeTempDir();
+    const a = runQuarantineIn({ legado, quarantine: [] }, dir);
+    assert.strictEqual(a.status, 0, a.stderr);
+    assert.strictEqual(a.q.length, 3, '首次应收 3 个');
+    const b = runQuarantineIn({ legado: a.out, quarantine: a.q }, dir);
+    cleanupDir(dir);
+    assert.strictEqual(b.status, 0, b.stderr);
+    assert.strictEqual(b.q.length, 3, '第二次名单不应增长，实际: ' + b.q.length);
+    assert.strictEqual(b.out.length, a.out.length, '第二次成品不应再减少');
 });
 
 // ============================================================
