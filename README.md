@@ -66,6 +66,7 @@ node preflight.js
 - 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js动态语法、JSONPath高级语法、bookUrl模板拼接）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
 - 成品字段白名单：score.js 的 OFFICIAL_FIELDS 与官方 BookSource.kt 的 33 个字段逐字对齐，写 legado.json 前用 sanitizeSource() 裁掉上游私有元数据（_validation_status / normalizedName / searchRule / tocRule 等 22 个），实测成品 5.20 MB → 4.69 MB（−9.8%）；只额外保留 lastUsableCheck（filter.js 老化复测依赖）。
 - 官方契约测试：tests/official-contract.test.js 每轮 CI 拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt 与 BookSource.kt；官方删路由或删字段即 FAIL，官方新增只 WARN，拉不到官方源码则 SKIP 且不阻断发布。
+- 四关实测 + CI 分组标签：在官方三段式基础上加第④关「发现页」，并把判定结论写进 bookSourceGroup（CI-搜索失效 / CI-目录失效 / CI-正文失效 / CI-发现失效），手机端按分组即筛，详见下节。
 
 ## 隔离池（quarantine.js）
 
@@ -119,3 +120,34 @@ v3.21 改成 read-merge-write：
 - `enabled` 不保留——它由本地健康层 `applyLocalHealth` 决定，保留了会挡住断网自动禁用；
 - 权重只按档位（core / stable / backup / untestable / watch / dead）比较，避免每天权重微调触发全量重写；
 - 回查对象从全量改成增量集，`verifyOne` 的单源查询抽成 `queryOne` 复用，避免两套解析逻辑漂移。
+
+## 健康判定的四关与 CI 分组标签
+
+`aging-test.js` 的四关实测，环节对齐阅读 App 官方实现（`CheckSourceService.doCheckSource`），但**不照抄它的宽松度**：
+
+| 关卡 | 官方 | 本仓库 |
+| --- | --- | --- |
+| ① 搜索出书 | `ruleSearch.checkKeyWord` → 否则全局默认 | 同（采纳条件也一致：不含 `http` / `::` / `++` / `--`），本仓库兜底关键词为「都市」→「重生」，并做三次复核 |
+| ② 目录 ≥1 章 | 章节列表非空 | 同 |
+| ③ 正文 | `contentStr.isBlank()` —— 一个字就算过 | **≥200 字**，外加换书重试与 1.5s 抖动复核 |
+| ④ 发现页 | `checkDiscovery` 默认开 | 2026-10-28 补上；只对「三关全过且配了 `exploreUrl`」的源探测，不参与 usable 判定 |
+
+第③关故意比官方严：官方只判空，所以「正文是『请稍后再试』」也会被判 PASSED；本仓库的 200 字门槛才是 `quarantine.js` 能清掉死源的前提，不随官方下调。
+
+### CI 分组标签（手机端按组筛，免去手动校验）
+
+对齐官方失败时 `source.addGroup("搜索失效")` 的做法，`score.js` 把 CI 判定直接写进 `bookSourceGroup`：
+
+| 标签 | 含义 |
+| --- | --- |
+| `CI-搜索失效` | 搜索关确定失败（HTTP 错误 / 无结果） |
+| `CI-目录失效` | 目录为空 |
+| `CI-正文失效` | 正文不足 200 字 |
+| `CI-发现失效` | 源本身可用，但发现页刷不出来 |
+| `CI-校验失败` | 其他确定失败 |
+
+三条规则：
+
+- 只给**有结论**的实测打标：`health=null`（js 规则 / 反爬 / 超时）一律不打，否则 578 个不可测源会被集体误标，分组就废了；
+- 每轮先剥掉旧的 `CI-` 标签再加，**幂等不累积**；
+- 用户自己建的分组原样保留，只做追加，不动别人的命名。

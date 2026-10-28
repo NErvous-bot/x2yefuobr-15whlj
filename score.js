@@ -53,6 +53,42 @@ function sanitizeSource(s) {
 // 最近 N 次结果 → 末尾连续 pass / fail 计数
 const consOf = (recent, tag) => { let n = 0; for (let i = recent.length - 1; i >= 0 && recent[i] === tag; i--) n++; return n; };
 
+// ── CI 判定标签（对齐官方 CheckSourceService 的 addGroup 做法）────────────────
+// 官方校验失败时会往书源分组里打「搜索失效 / 目录失效 / 正文失效 / 域名失效 / 校验超时」，
+// 用户就能在 App 里按分组筛。我们此前所有判定只活在 reports/ 里，手机上只有一个 weight 数字，
+// 所以用户还得自己回手机上再点一遍「校验书源」。
+// 这里把 CI 的结论同样写进 bookSourceGroup：前缀统一 CI-，每轮先剥旧标签再加，
+// 保证幂等、不会越积越多；用户自己建的分组原样保留。
+const CI_PREFIX = 'CI-';
+
+function stripCIGroups(group) {
+    return String(group || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s && !s.startsWith(CI_PREFIX))
+        .join(',');
+}
+
+function ciTagsOf(v) {
+    const tags = [];
+    if (!v) return tags;
+    // 只在「有结论」的实测上打标。
+    // health===null 表示这一轮压根测不了（js 规则 / 反爬 / 超时），它的 content 也是 false，
+    // 但那是「不知道」不是「坏了」。若把这类也算进去，578 个不可测源会集体被打成
+    // CI-校验失败，分组就废了（实测过一次：696 个源里 579 个被打标，其中 339 个是冤枉的）。
+    const hasVerdict = v.health !== null && v.health !== undefined;
+    if (hasVerdict && v.content === false) {
+        const n = String(v.note || '');
+        if (/^(搜索|书籍页)/.test(n)) tags.push('CI-搜索失效');
+        else if (/^目录/.test(n)) tags.push('CI-目录失效');
+        else if (/^正文/.test(n)) tags.push('CI-正文失效');
+        else tags.push('CI-校验失败');
+    }
+    // 第④关：发现页不通（源本身可用，只是发现页刷不出来）
+    if (v.explore === false) tags.push('CI-发现失效');
+    return tags;
+}
+
 function grade(v) {
     // v: health.json 源条目 → { score, layer, weight }
     if (!v || v.health === null || v.health === undefined) {
@@ -88,10 +124,25 @@ try {
     const H = JSON.parse(fs.readFileSync('health/source_health.json', 'utf8')).sources || {};
 
     const layers = { core: [], stable: [], backup: [], watch: [], untestable: [], dead: [] };
+    const tagCount = {};
+    let tagged = 0;
     for (const s of list) {
         const k = norm(s.bookSourceUrl);
-        const g = grade(H[k]);
+        const v = H[k];
+        const g = grade(v);
         s.weight = g.weight;
+
+        // CI 判定标签：先剥掉上一轮留下的 CI- 标签，再按本轮结论补上（幂等，不累积）
+        const baseGroup = stripCIGroups(s.bookSourceGroup);
+        const tags = ciTagsOf(v);
+        const mergedGroup = [baseGroup].concat(tags).filter(Boolean).join(',');
+        if (mergedGroup) s.bookSourceGroup = mergedGroup;
+        else delete s.bookSourceGroup;
+        if (tags.length) {
+            tagged++;
+            for (const t of tags) tagCount[t] = (tagCount[t] || 0) + 1;
+        }
+
         (layers[g.layer] || layers.watch).push({ name: String(s.bookSourceName || '').slice(0, 16), score: g.score, layer: g.layer, weight: g.weight, url: k });
     }
 
@@ -127,6 +178,9 @@ try {
     const uv = layers.untestable.filter(x => x.weight === 120).length;
     L.push('不可测保护池  ' + layers.untestable.length + ' 个（曾实测通过 ' + uv + ' 个weight120 / 从未验证 ' + (layers.untestable.length - uv) + ' 个weight90，不判死但排在备用层之后）');
     L.push('确认坏  ' + layers.dead.length + ' 个（weight 5，由 quarantine.js 移出成品，不进手机）');
+    const tagLine = Object.entries(tagCount).sort((a, b) => b[1] - a[1])
+        .map(([t, n]) => t + ' ' + n + ' 个').join(' / ');
+    L.push('CI 判定标签  ' + tagged + ' 个源被打标' + (tagLine ? '（' + tagLine + '）' : '') + '，手机端可按分组筛');
     L.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(L.join('\n'));
     process.exit(0);
@@ -137,4 +191,4 @@ try {
 } // end require.main === module
 
 // 测试用导出（grade/consOf 不依赖文件 IO，require 时只加载函数不执行主流程）
-module.exports = { grade, consOf, sanitizeSource, OFFICIAL_FIELDS, REPO_FIELDS, KEEP_FIELDS };
+module.exports = { grade, consOf, sanitizeSource, stripCIGroups, ciTagsOf, OFFICIAL_FIELDS, REPO_FIELDS, KEEP_FIELDS };

@@ -962,6 +962,85 @@ test('sanitizeSource 不补默认值（空对象进 → 空对象出）', () => 
 });
 
 // ============================================================
+// 18. 对齐官方校验：checkKeyWord / 发现页入口 / CI 分组标签
+// ============================================================
+console.log('\n=== 18. 对齐官方校验（关键词 / 发现页 / CI 标签） ===');
+const AT = require(path.join(REPO, 'aging-test.js'));
+const S2 = require(path.join(REPO, 'score.js'));
+
+test('checkKeyWordOf 采用官方采纳条件（不含 http / :: / ++ / --）', () => {
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: { checkKeyWord: '我的模拟长生路' } }), '我的模拟长生路');
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: { checkKeyWord: '  ' } }), null, '空串不采纳');
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: { checkKeyWord: 'http://x' } }), null, '含 http 不采纳');
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: { checkKeyWord: 'a::b' } }), null, '含 :: 不采纳');
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: { checkKeyWord: '@js:xx' } }), '@js:xx', 'js 前缀不在官方排除列表里');
+    assert.strictEqual(AT.checkKeyWordOf({ ruleSearch: {} }), null);
+    assert.strictEqual(AT.checkKeyWordOf(null), null);
+});
+
+test('exploreKinds 兼容官方三种形态（文本 / JSON / js）', () => {
+    // ① 官方文本格式：分类名::url模板，行间用换行或 &&（实测绝大多数源用这个）
+    assert.deepStrictEqual(
+        AT.exploreKinds('玄幻::/sort/1_{{page}}/\n都市::/sort/2_{{page}}/'),
+        ['/sort/1_{{page}}/', '/sort/2_{{page}}/']);
+    assert.deepStrictEqual(AT.exploreKinds('A::/a&&B::/b'), ['/a', '/b']);
+    // ② JSON 数组形态
+    assert.deepStrictEqual(
+        AT.exploreKinds('[{"title":"X","url":"https://a.com/x"},{"title":"Y","url":"https://a.com/y"}]'),
+        ['https://a.com/x', 'https://a.com/y']);
+    assert.deepStrictEqual(
+        AT.exploreKinds('[{"title":"按钮","type":"text","url":"x"}]'), [],
+        'type 不是 url 的是按钮/开关，不该拿去请求');
+    // ③ 脚本生成 → 静态解析不了，返回空
+    assert.deepStrictEqual(AT.exploreKinds('@js:s=[];push=(t,u)=>{}'), []);
+    assert.deepStrictEqual(AT.exploreKinds('<js>var a=1</js>'), []);
+    assert.deepStrictEqual(AT.exploreKinds(''), []);
+    assert.deepStrictEqual(AT.exploreKinds(null), []);
+});
+
+test('发现页判定区分「确定失效」与「测不了」（后者不打 CI-发现失效）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'health.js'), 'utf8');
+    assert.ok(code.includes('const definite = /^(无发现入口|exploreRule为空|发现页404'),
+        '应有一份「确定失效」白名单正则');
+    assert.ok(code.includes('explore = definite ? false : null'),
+        '确定失效→false，测不了→null（js 生成/网络抖动/选择器超出能力）');
+});
+
+test('stripCIGroups 只剥 CI- 前缀，用户自己的分组原样保留', () => {
+    assert.strictEqual(S2.stripCIGroups('6666666666666666,CI-正文失效'), '6666666666666666');
+    assert.strictEqual(S2.stripCIGroups('CI-搜索失效'), '');
+    assert.strictEqual(S2.stripCIGroups('备用, 精品 ,CI-发现失效'), '备用,精品');
+    assert.strictEqual(S2.stripCIGroups(undefined), '');
+});
+
+test('ciTagsOf：不可测（health=null）不打标，只有真失败才打', () => {
+    // 不可测：content 也是 false，但这是「不知道」不是「坏了」
+    assert.deepStrictEqual(S2.ciTagsOf({ health: null, content: false, note: '搜索HTTP 403' }), [],
+        'health=null 一律不打标，否则 578 个不可测源会被集体误标');
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 40, content: false, note: '搜索HTTP 403' }), ['CI-搜索失效']);
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 40, content: false, note: '目录为空' }), ['CI-目录失效']);
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 40, content: false, note: '正文不足200字（实得0）' }), ['CI-正文失效']);
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 40, content: false, note: '书籍页404' }), ['CI-搜索失效']);
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 100, content: true, explore: false }), ['CI-发现失效']);
+    assert.deepStrictEqual(S2.ciTagsOf({ health: 100, content: true, explore: true }), []);
+});
+
+test('score.js 打标前会先剥旧标签（幂等，不累积）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    assert.ok(code.includes('const baseGroup = stripCIGroups(s.bookSourceGroup)'),
+        '应先剥掉上一轮的 CI- 标签');
+    assert.ok(code.includes("[baseGroup].concat(tags)"), '再把本轮标签拼回去');
+});
+
+test('发现页只对「三关全过且配了 exploreUrl」的源实测（不浪费预算）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'health.js'), 'utf8');
+    assert.ok(code.includes('if (r.usable === true && s.exploreUrl)'),
+        '应同时判断 usable===true 与 s.exploreUrl');
+    assert.ok(code.includes('const { checkSource, checkExplore }'),
+        'health.js 应引入 checkExplore');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
