@@ -2,33 +2,34 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  111  available->available
-    3  available->broken
-    5  available->untestable
-    2  broken->available
-  234  broken->broken
-   23  broken->removed
-   20  broken->untestable
-    9  untestable->available
-    6  untestable->broken
-    1  untestable->removed
-  562  untestable->untestable
-新增源 3
+  107  available->available
+    4  available->broken
+   11  available->untestable
+    1  broken->available
+    6  broken->broken
+  237  broken->removed
+    1  broken->untestable
+    3  untestable->available
+   18  untestable->broken
+  567  untestable->untestable
+新增源 4
 
-━━ 一级复查：旧可用 → 确认坏 3 ━━
-  SUSPECT 2
-  MIXED_DEATH 1
-  [SUSPECT 2/5] 豆花文学 | 阶段: SEARCH_EMPTY,OTHER,CHAPTER_EMPTY,PASS,CHAPTER_EMPTY
-  [SUSPECT 1/4] 轻之文库 | 阶段: CHAPTER_EMPTY,NETWORK,CONTENT_EMPTY,PASS,CHAPTER_EMPTY | 特征: js规则
-  [MIXED_DEATH 0/5] 必读居 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY,CHAPTER_EMPTY | 特征: GBK
+━━ 一级复查：旧可用 → 确认坏 4 ━━
+  RECOVERED 2
+  UNTESTABLE_RULE 1
+  SUSPECT 1
+  [RECOVERED 1/1] 夜伴书屋 | 阶段: PASS,HTTP_403,HTTP_403,HTTP_403,HTTP_403 | 特征: js规则
+  [RECOVERED 5/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,PASS
+  [UNTESTABLE_RULE 0/5] 🚬 肉文屋 | 阶段: NETWORK,NETWORK,NETWORK,NETWORK,NETWORK | 特征: POST+GBK
+  [SUSPECT 2/5] 🔖八块小说网 | 阶段: SEARCH_EMPTY,PASS,SEARCH_EMPTY,SEARCH_EMPTY,PASS | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 2b5170a） ━━
-  [RECOVERED] (T1 原SUSPECT) 🔖八块小说网 h=88 [三关全过] recent=pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原NET_UNREACHABLE) 芙蓉小说-δ h=33 [目录为空] recent=pass/fail/fail flap=true
-  [RECOVERED] (T1 原SUSPECT) 🎃太子爷小说网🎃 h=88 [三关全过] recent=fail/fail/pass/fail/pass flap=true
+━━ 往轮候选终态 3（基线 4ce34ee） ━━
+  [RECOVERED] (T1 原SUSPECT) 豆花文学 h=88 [三关全过] recent=fail/pass/pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原SUSPECT) 轻之文库 h=33 [目录为空] recent=pass/pass/fail/fail flap=true
+  [STILL_BROKEN] (T1 原MIXED_DEATH) 必读居 h=3 [搜索无结果] recent=fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 3（均属抖动/疑似误判，禁止删除即可）
+PASS：旧可用 → 确认坏 = 4（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

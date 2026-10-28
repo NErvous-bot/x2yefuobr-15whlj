@@ -1,23 +1,8 @@
 {
- "https://www.xnxx.com": {
-  "name": "Xnxx",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://www.xnxx.com"
- },
- "https://newsmiss.lofter.com": {
-  "name": "乐乎文章",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://newsmiss.lofter.com"
- },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
   "evidence": "章节页 /read/* 全部返回书籍详情页（多本书实测均为同一 26718 字节页面，class.readcontent 取不到任何内容），搜索/目录正常但正文接口失效，属站点改版；CI 与本地均复现 CONTENT_EMPTY @ 2026-10-26"
- },
- "https://m.powenxue2.com": {
-  "name": "PO文学",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
  },
  "http://www.taijizhidian.com": {
   "name": "周易易学",
@@ -159,6 +144,11 @@
   "reason": "aging-failed",
   "evidence": "目录为空"
  },
+ "https://m.powenxue2.com": {
+  "name": "PO文学",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
  "http://www.87shuwu.cc": {
   "name": "霸气书屋",
   "reason": "aging-failed",
@@ -199,18 +189,8 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://www.899zw.com": {
-  "name": "二二中文",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
  "http://www.daizhige.org": {
   "name": "殆知阁",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "https://www.bookb.net": {
-  "name": "顶点小说",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
@@ -271,6 +251,51 @@
  },
  "http://syosetu.com": {
   "name": "小説家になろう！(Wolken)",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
+ },
+ "https://www.lalashuwu.com": {
+  "name": "啦啦书屋",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "http://www.diyibanzhu.buzz": {
+  "name": "第一版主网👿",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
+ "http://7778877.com": {
+  "name": "第一版主网",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
+ "https://www.yamibo.com/site/novel": {
+  "name": "📖百合会（小说）",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.rourouwu.info": {
+  "name": "☆肉肉屋☆",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.piaotian.org": {
+  "name": "飘天文学②",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
+ "https://readnovelfull.com": {
+  "name": "🔖博览群书",
+  "reason": "aging-failed",
+  "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
+ },
+ "http://m.yuzhaiwu520.org": {
+  "name": "🚬 御宅屋③",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "http://www.daomubiji.org": {
+  "name": "盗墓笔记全集",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  }

@@ -1,23 +1,23 @@
 {
- "generatedAt": 1793164667087,
+ "generatedAt": 1793180570747,
  "allowAdult": false,
  "maxTest": 40,
- "tested": 2,
+ "tested": 0,
  "admitted": 0,
  "harvestedTotal": 0,
- "degraded": false,
+ "degraded": true,
  "upstreams": [
   {
    "id": "tickmao",
    "name": "tickmao/Novel",
    "license": "NONE",
    "adult": false,
-   "fetched": 1000,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -25,12 +25,12 @@
    "name": "jiwangyihao/bilinovel",
    "license": "MPL-2.0",
    "adult": false,
-   "fetched": 2,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -38,12 +38,12 @@
    "name": "jiwangyihao/bilinovel-like",
    "license": "MPL-2.0",
    "adult": false,
-   "fetched": 2,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -51,12 +51,12 @@
    "name": "jiwangyihao/esjzone",
    "license": "MPL-2.0",
    "adult": false,
-   "fetched": 1,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -64,12 +64,12 @@
    "name": "jiwangyihao/masiro",
    "license": "MPL-2.0",
    "adult": false,
-   "fetched": 1,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -77,12 +77,12 @@
    "name": "jiwangyihao/wenku",
    "license": "MPL-2.0",
    "adult": false,
-   "fetched": 1,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -90,12 +90,12 @@
    "name": "shidahuilang/shuyuan-bak",
    "license": "GPL-3.0",
    "adult": false,
-   "fetched": 2973,
-   "candidates": 2,
-   "tested": 2,
+   "fetched": 0,
+   "candidates": 0,
+   "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   },
   {
@@ -103,12 +103,12 @@
    "name": "aoaostar/legado",
    "license": "NONE",
    "adult": false,
-   "fetched": 3907,
+   "fetched": 0,
    "candidates": 0,
    "tested": 0,
    "admitted": 0,
    "skippedAdult": 0,
-   "notModified": false,
+   "notModified": true,
    "error": ""
   }
  ]
