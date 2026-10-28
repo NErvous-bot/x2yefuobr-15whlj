@@ -40,6 +40,12 @@ jobs:
         run: node verify-product.js
       - name: 发布保险丝（旧可用→新坏复查裁决+数量熔断，BLOCKED时回滚成品只留诊断）
         run: node fuse.js
+      # P0-1：dead 层（weight<=5）不再下发手机。必须在 fuse 之后跑——
+      # fuse BLOCKED 时会把 legado.json 回滚到 HEAD 基线，这里再按最终成品做隔离，
+      # 顺序反了会隔离掉一份马上被丢弃的候选文件（等于白跑）。
+      # 必须在 ECDSA签名 之前跑，否则手机会拿到「内容已变、签名未变」的文件而全部验签失败。
+      - name: 隔离池（稳定死亡源移出成品，写 quarantine.json，filter 下轮据此拦复活）
+        run: node quarantine.js
       - name: 成品校验（防上游返回畸形数据被自动提交）
         run: |
           node -e "const a=require('./legado.json');if(!Array.isArray(a)||a.length<100)throw new Error('书源数异常:'+a.length)"
@@ -60,7 +66,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # 清理旧命名的签名文件（v3.5首版的 legado.sig/replaceRule.sig）
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
-          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt
+          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json
           git add reports/ 2>/dev/null || true
           # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
           git diff --cached --quiet || (

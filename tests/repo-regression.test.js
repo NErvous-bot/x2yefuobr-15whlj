@@ -442,12 +442,15 @@ test('连续 3 次 fail 但 content=true → watch/30（强制观察，不进 de
     assert.strictEqual(g.weight, 30, 'consFail>=3 → weight 30');
 });
 
-test('不可测池区分：曾有 pass→440，从未验证→380', () => {
+test('不可测池区分：曾有 pass→120，从未验证→90（且均低于备用层 150）', () => {
     const v1 = { health: null, recent: ['pass'] };
     const v2 = { health: null, recent: [] };
-    assert.strictEqual(grade(v1).weight, 440, '曾实测通过 weight=440');
-    assert.strictEqual(grade(v2).weight, 380, '从未验证 weight=380');
-    assert.strictEqual(grade(null).weight, 380, 'null weight=380');
+    assert.strictEqual(grade(v1).weight, 120, '曾实测通过 weight=120');
+    assert.strictEqual(grade(v2).weight, 90, '从未验证 weight=90');
+    assert.strictEqual(grade(null).weight, 90, 'null weight=90');
+    // 回归防线：不可测池不得高于备用层下界（旧值 440/380 曾让未验证源排在已验证稳定源之前）
+    assert.ok(grade(v1).weight < 150, 'untestable 必须低于 backup 下界 150');
+    assert.ok(grade(v2).weight < 150, 'untestable 必须低于 backup 下界 150');
 });
 
 // ============================================================
