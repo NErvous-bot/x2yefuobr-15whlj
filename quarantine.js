@@ -118,7 +118,11 @@ try {
         out.push(s);
     }
 
-    // ── 落盘 ──
+    // ── 先算，再判，最后才落盘 ──
+    // 顺序很关键：MIN_KEEP 检查曾经写在 writeFileSync 之后，一旦触发 exit 1，
+    // 磁盘上 legado.json / quarantine.json / reports 其实已经被改过了。
+    // 结果是「退出码 1」不能推出「文件没动」，对回滚和审计都是隐患。
+    // 现在改成：所有硬性检查通过之后才第一次写盘，退出码非 0 时磁盘保证是原样。
     const qOut = [...qMap.entries()]
         .sort((a, b) => String(a[1].url || '').localeCompare(String(b[1].url || '')))
         .map(([, v]) => ({
@@ -127,6 +131,15 @@ try {
             reason: v.reason || 'manual',
             since: v.since || NOW,
         }));
+
+    // 硬性闸门①：隔离后成品不能少于 MIN_KEEP（防评分/健康报告异常时把库清空）
+    if (out.length < MIN_KEEP) {
+        console.error('× 隔离后成品仅剩 ' + out.length + ' 个源（<' + MIN_KEEP + '），拒绝发布；'
+            + '本轮未改动任何文件（legado.json / quarantine.json / reports 均保持原样），请检查评分与健康报告');
+        process.exit(1);
+    }
+
+    // ── 落盘（到这里所有闸门都已通过）──
     fs.writeFileSync(QFILE, JSON.stringify(qOut, null, 1));
 
     const changed = stripped > 0 || released.length > 0 || toBan.length > 0;
@@ -150,10 +163,6 @@ try {
         console.log('  已恢复并解除隔离（下轮 filter 会自动放回成品）: ' +
             released.slice(0, 8).map(x => String(x.name || x.url).slice(0, 18)).join('、') +
             (released.length > 8 ? ' 等 ' + released.length + ' 个' : ''));
-    }
-    if (out.length < MIN_KEEP) {
-        console.error('× 隔离后成品仅剩 ' + out.length + ' 个源（<' + MIN_KEEP + '），拒绝发布，请检查评分/健康报告是否异常');
-        process.exit(1);
     }
 } catch (e) {
     console.error('× 隔离池脚本异常（拒绝发布）: ' + (e.stack || e.message));

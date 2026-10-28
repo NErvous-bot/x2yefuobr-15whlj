@@ -11,7 +11,7 @@
 - `aging-test.js`：老化源实测模块（三关实测：搜索出书 → 目录≥1章 → 正文≥200字；支持 GET/POST 搜索（含 headers/charset 选项与伪 JSON 宽松解析）、GBK 编解码、JSON 响应 JSONPath 常用子集、HTML 静态选择器子集；规则不可测/网络失败/反爬验证一律豁免不误删）
 - `rules.js`：净化规则自维护流水线（每 3 天随更新自动运行：抓真实正文巡检漏网广告 → 模板法生成候选规则 → 干净语料 0 误伤 + 净化率提升双重校验通过后自动追加，单轮 ≤10 条，异常/效果不佳自动跳过不写入）
 - `health.js` + `health/source_health.json`：源级健康检查（每轮对书源做搜索/目录/正文三关实测并按响应速度评分，带时间预算轮测全库；结果 JSON 可随时查看哪些源真正可用）
-- `score.js` + `reports/source_scores.json`：源评分分层（读健康报告计算源级分数，按核心/稳定/备用/观察分层覆写 weight，按权重降序重排 legado.json，让已验证的优质源优先）
+- `score.js` + `reports/source_scores.json`：源评分分层（读健康报告计算源级分数，按核心/稳定/备用/观察分层覆写 weight，按权重降序重排 legado.json）。注意 weight 只影响**书源管理界面的排序**，搜索优先级由 `enabled` / `customOrder` 决定，见下文「weight 到底影响什么」
 - `fuse.js` + `reports/fuse-summary.txt`：发布保险丝（旧可用→新坏须经多轮实测定生死，仅"稳定死亡"才拦截发布；总源数/可用数骤降熔断；BLOCKED 时自动回滚成品文件，手机端书源逐字节不变，仅提交诊断报告）
 - `recheck-regression.js`：回归复查裁决器（对状态异常的源做多轮实测裁决，输出新旧状态迁移矩阵，只读不改正式书源）
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
@@ -120,6 +120,36 @@ v3.21 改成 read-merge-write：
 - `enabled` 不保留——它由本地健康层 `applyLocalHealth` 决定，保留了会挡住断网自动禁用；
 - 权重只按档位（core / stable / backup / untestable / watch / dead）比较，避免每天权重微调触发全量重写；
 - 回查对象从全量改成增量集，`verifyOne` 的单源查询抽成 `queryOne` 复用，避免两套解析逻辑漂移。
+
+## weight 到底影响什么（官方源码实测）
+
+2026-10-28 拿 `LegadoTeam/legado@master` 逐处核对 `.weight` 的用法，结论和很多人的直觉不一样。
+
+**weight 只被书源管理界面使用：**
+
+| 位置 | 用途 |
+| --- | --- |
+| `ui/book/source/manage/BookSourceActivity.kt:437,457` | 书源管理 → 按权重排序 |
+| `ui/book/source/manage/BookSourceViewModel.kt:225,244` | 同上 |
+
+**搜索链路完全不看 weight：**
+
+| 环节 | 实际依据 |
+| --- | --- |
+| 参与搜索的源集合 | `allEnabledPart` —— 只看 `enabled` |
+| 搜索范围列表顺序 | `SearchScope.kt:141` `list.sortedBy { it.customOrder }` |
+| 换源列表顺序 | `SourceConfig.getSourceScore(origin)` —— App 端按用户实际使用行为存在 SharedPreferences 的运行时评分 |
+
+所以本仓库的 weight 赋值只保证「打开书源管理时，实测更好的源排在前面」，**不改变搜索结果的优先级**。
+
+真正影响阅读体验的是两个杠杆：
+
+1. `enabled` —— 手机端本地健康层（不可达即禁用，1h→6h→24h 指数退避重试）；
+2. `quarantine.js` —— 把稳定死亡的源直接移出成品，手机里根本没有它。
+
+这也是本仓库不承诺「自动优选」的原因：那属于 App 端 `SourceConfig` 的运行时评分，不在书源 JSON 能控制的范围内。
+
+> 历史更正：2026-10-28 之前的 `score.js` 头部注释写着「手机端搜索结果优质源自动排前」，与官方源码不符，已更正。
 
 ## 健康判定的四关与 CI 分组标签
 

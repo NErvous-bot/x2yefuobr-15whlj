@@ -1,6 +1,21 @@
 // score.js — V3 源评分分层+自动排序（体验优化层，不改变检测/删除/保险丝逻辑）
 // 读取 health/source_health.json 的实测结果 → 计算健康分 → 核心/稳定/备用/观察分层
-// → 覆写每源 weight 并按权重降序重排 legado.json，手机端搜索结果优质源自动排前
+// → 覆写每源 weight 并按权重降序重排 legado.json
+//
+// ⚠️ weight 到底影响什么（2026-10-28 拿 LegadoTeam/legado@master 源码核对过，别再想当然）：
+//   全库搜索 `.weight` 只命中两处，都是**书源管理界面**的排序：
+//     ui/book/source/manage/BookSourceActivity.kt:437,457
+//     ui/book/source/manage/BookSourceViewModel.kt:225,244
+//   阅读 App 的搜索并**不**按 weight 排序：
+//     · 参与搜索的源集合来自 allEnabledPart（只看 enabled）
+//     · 搜索范围列表按 customOrder 排（ui/book/search/SearchScope.kt:141 `list.sortedBy { it.customOrder }`）
+//     · 换源列表按 SourceConfig.getSourceScore(origin) 排 —— 那是 App 端按用户实际使用行为
+//       存在 SharedPreferences 的运行时评分，和 JSON 里的 weight 无关
+//   所以：weight 是「书源管理界面的排序权重」，不是「搜索优先级的开关」。
+//   真正改变阅读体验的杠杆是 enabled（本地健康层控制）与 quarantine（把死源移出成品）。
+//   这里保留 weight 赋值与重排（对「打开书源管理时谁排前面」确实有效，成本为零），
+//   但不要再对外宣称「搜索结果会自动优质源优先」——那不是这个字段干的事。
+//
 // 评分（100分）：搜索20 + 目录25 + 正文25 + 稳定性20 + 最近连续成功10
 //   稳定性：recent≥2个样本时按窗口成功率×20，否则中性12；连续失败1次-5、2次-15、≥3次强制观察层
 // 分层：≥90核心(weight500~700) / 75~89稳定(300~468) / 60~74备用(150~276) / <60观察(50)

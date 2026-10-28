@@ -1041,6 +1041,74 @@ test('发现页只对「三关全过且配了 exploreUrl」的源实测（不浪
 });
 
 // ============================================================
+// 19. 回归评审点名的边界：先算后写 / weight 语义 / 发现页四态
+// ============================================================
+console.log('\n=== 19. 评审边界（先算后写 / weight 语义 / 发现页四态） ===');
+
+function stageQuarantineRaw(legado, quarantine) {
+    const dir = makeTempDir();
+    fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(dir, 'quarantine.js'));
+    fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(dir, 'src', 'source-id.js'));
+    fs.mkdirSync(path.join(dir, 'health'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'legado.json'), JSON.stringify(legado));
+    fs.writeFileSync(path.join(dir, 'health', 'source_health.json'), JSON.stringify({ sources: {} }));
+    fs.writeFileSync(path.join(dir, 'quarantine.json'), JSON.stringify(quarantine || []));
+    return dir;
+}
+
+test('隔离池：拒绝发布（成品 <100）时必须一个字节都没写盘', () => {
+    // 造 120 个源，其中 110 个已经在既有隔离名单里 → 本轮新增隔离 0（避开 30% 比例闸门），
+    // 但成品只剩 10 个 < MIN_KEEP(100) → 必须走到数量闸门
+    const legado = [];
+    const quarantine = [];
+    for (let i = 0; i < 120; i++) {
+        const url = 'https://s' + i + '.example.com';
+        legado.push({ bookSourceName: 'S' + i, bookSourceUrl: url, weight: 300 });
+        if (i < 110) quarantine.push({ url, name: 'S' + i, reason: 'stable-dead', since: 1 });
+    }
+    const dir = stageQuarantineRaw(legado, quarantine);
+    const crypto = require('crypto');
+    const hashOf = (f) => crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, f))).digest('hex');
+    const hLegado = hashOf('legado.json');
+    const hQ = hashOf('quarantine.json');
+
+    const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: dir, encoding: 'utf8' });
+
+    assert.strictEqual(r.status, 1, '成品 <100 应拒绝，实际 status=' + r.status);
+    assert.match(r.stderr, /未改动任何文件/, '错误信息应声明未改动文件，实际: ' + r.stderr.slice(0, 120));
+    assert.strictEqual(hashOf('legado.json'), hLegado, 'legado.json 必须保持原样（先算后写）');
+    assert.strictEqual(hashOf('quarantine.json'), hQ, 'quarantine.json 必须保持原样');
+    assert.ok(!fs.existsSync(path.join(dir, 'reports', 'quarantine.json')),
+        '拒绝时不应留下 reports/quarantine.json');
+    cleanupDir(dir);
+});
+
+test('score.js 不再宣称 weight 影响搜索排序（已按官方源码更正）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    assert.ok(!code.includes('手机端搜索结果优质源自动排前'),
+        '该说法与官方源码不符：weight 只用于书源管理界面排序');
+    assert.ok(code.includes('SearchScope.kt:141'), '注释应给出官方源码出处');
+    assert.ok(code.includes('SourceConfig.getSourceScore'), '应说明换源排序用的是 App 端运行时评分');
+});
+
+test('README 记录了 weight 的真实语义并留了更正记录', () => {
+    const md = fs.readFileSync(path.join(REPO, 'README.md'), 'utf8');
+    assert.ok(md.includes('weight 到底影响什么'), '应有专门小节');
+    assert.ok(md.includes('SearchScope.kt:141'), '应引用官方源码行号');
+    assert.ok(md.includes('历史更正'), '应保留一条更正记录');
+    assert.ok(!md.includes('让已验证的优质源优先'), '旧的模糊说法应被替换');
+});
+
+test('health.js 的发现页统计是四态互斥（可用/失效/测不了/未配置）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'health.js'), 'utf8');
+    for (const k of ['exploreOk', 'exploreBad', 'exploreUnknown', 'exploreAbsent']) {
+        assert.ok(code.includes(k + ':'), 'summary 应包含 ' + k);
+    }
+    assert.ok(code.includes('四态互斥'), '注释应声明四态互斥');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
