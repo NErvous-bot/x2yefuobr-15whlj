@@ -1109,6 +1109,68 @@ test('health.js 的发现页统计是四态互斥（可用/失效/测不了/未�
 });
 
 // ============================================================
+// 20. 选择器引擎扩能（对齐 legado 新写法，空结果不回判死源）
+// ============================================================
+console.log('\n=== 20. 选择器引擎扩能 ===');
+
+const SEL_HTML = `
+<div class="searchresult"><div class="bk"><a href="/b/1">书一</a></div><div class="bk"><a href="/b/2">书二</a></div></div>
+<div class="panel-body"><ul><li><a href="/c/1">c1</a></li><li><a href="/c/2">c2</a></li></ul></div>
+<div class="panel-body"><ul><li><a href="/c/3">c3</a></li></ul></div>
+<div class="panel-body"><ul><li><a href="/c/4">c4</a></li></ul></div>
+<div id="content" class="showtxt">正文内容在这里</div>
+<div class="pt-card pt-card-2"><li>tag多词</li></div>
+<div class="p2"><li>p0</li></div><div class="p2"><li>p1</li></div><div class="p2"><li>p2</li></div><div class="p2"><li>p3</li></div>
+`;
+const sel = (rule) => AT.selectAll(SEL_HTML, rule);
+
+test('选择器：> 子代写法（按后代处理）', () => {
+    const r = sel('.panel-body > ul > li');
+    assert.ok(r && r.items.length === 4, '应取到 4 个 li，实际 ' + (r && r.items.length));
+});
+
+test('选择器：.class.N 点索引（含负数）', () => {
+    const r = sel('.panel-body.2@li@a');
+    assert.ok(r && r.items.length === 1 && r.items[0].includes('/c/4'), '第 3 个 panel-body 的 a，实际 ' + JSON.stringify(r && r.items));
+});
+
+test('选择器：[class="x"] 属性选择器', () => {
+    const r = sel('[class="searchresult"]');
+    assert.ok(r && r.items.length === 1, '应命中 1 个');
+});
+
+test('选择器：tag#id.class（如 div#content.showtxt）', () => {
+    const r = sel('div#content.showtxt');
+    assert.ok(r && r.items.length === 1 && r.items[0].includes('正文内容'), '实际 ' + JSON.stringify(r && r.items));
+});
+
+test('选择器：class.a b 多词类名', () => {
+    const r = sel('class.pt-card pt-card-2@li');
+    assert.ok(r && r.items.length === 1, '应命中 class 同时含两个词的元素');
+});
+
+test('选择器：!0:1:2 多索引排除', () => {
+    const r = sel('.p2!0:1:2@li');
+    assert.ok(r && r.items.length === 1 && r.items[0].includes('p3'), '排除前 3 个后只剩 p3，实际 ' + JSON.stringify(r && r.items));
+});
+
+test('选择器：@css: 前缀走同一套引擎', () => {
+    const r = sel('@css:.bk a');
+    assert.ok(r && r.items.length === 2, '应取到 2 个 a');
+});
+
+test('安全阀：用了新写法但取不到元素 → 返回 null（不可测），而不是空数组（会被判死源）', () => {
+    assert.strictEqual(sel('@css:.definitely-not-exist a'), null, '@css: 取不到应 null');
+    assert.strictEqual(sel('.panel-body > ul > li.zzz-not-exist'), null, '> 写法取不到应 null');
+    assert.strictEqual(sel('div#no-such-id.zzz'), null, 'idclass 取不到应 null');
+});
+
+test('回归：老写法行为不变（.class 取不到仍是空数组）', () => {
+    const r = sel('.nonexist-xyz@li');
+    assert.ok(r && r.items.length === 0, '旧写法保持「空数组」语义，不被安全阀改写');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
