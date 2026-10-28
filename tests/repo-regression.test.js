@@ -729,6 +729,77 @@ test('upstreams.json 结构合法：每条都有 license 与 urls，且 license 
 });
 
 // ============================================================
+// 隔离池（quarantine.js）阈值语义
+// 背景：阈值曾把「历史名单 + 本轮新增」与总量比，历史累积到 237 后，
+// 第 63 轮仅新增 23 个就 260/719 > 30% 被误拦，整条流水线红灯。
+// 语义固定为：只看本轮新增占比；历史规模只观察；成品下限由 MIN_KEEP 保底。
+// ============================================================
+function stageQuarantine(legado, quarantine) {
+    const tmp = makeTempDir();
+    fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(tmp, 'quarantine.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+    fs.mkdirSync(path.join(tmp, 'health'));
+    fs.writeFileSync(path.join(tmp, 'legado.json'), JSON.stringify(legado));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), JSON.stringify({ sources: {} }));
+    fs.writeFileSync(path.join(tmp, 'quarantine.json'), JSON.stringify(quarantine));
+    const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: tmp, encoding: 'utf8' });
+    const read = f => JSON.parse(fs.readFileSync(path.join(tmp, f), 'utf8'));
+    const out = read('legado.json');
+    const q = read('quarantine.json');
+    cleanupDir(tmp);
+    return { status: r.status, stderr: r.stderr || '', out, q };
+}
+
+test('隔离池：历史 237 条 + 本轮新增 23 条（总量 719）不应被误拦', () => {
+    const legado = [];
+    for (let i = 0; i < 719; i++) {
+        legado.push({ bookSourceName: 'S' + i, bookSourceUrl: 'https://s' + i + '.example.com', weight: i < 23 ? 5 : 300 });
+    }
+    const quarantine = [];
+    for (let i = 0; i < 237; i++) quarantine.push({ url: 'https://q' + i + '.example.com', name: 'Q' + i, reason: 'stable-dead', since: 1 });
+    const r = stageQuarantine(legado, quarantine);
+    assert.strictEqual(r.status, 0, '历史名单累积不应阻断发布: ' + r.stderr);
+    assert.strictEqual(r.out.length, 696, '23 个本轮死亡源应被移出成品，实际: ' + r.out.length);
+    assert.strictEqual(r.q.length, 260, '名单应为 237+23，实际: ' + r.q.length);
+});
+
+test('隔离池：本轮新增 250 条（总量 719，34.8%）仍必须拒绝执行', () => {
+    const legado = [];
+    for (let i = 0; i < 719; i++) {
+        legado.push({ bookSourceName: 'S' + i, bookSourceUrl: 'https://s' + i + '.example.com', weight: i < 250 ? 5 : 300 });
+    }
+    const r = stageQuarantine(legado, []);
+    assert.strictEqual(r.status, 1, '单轮批量判死应阻断');
+    assert.match(r.stderr, /本轮新增隔离 250/, '错误信息应说明本轮新增数量，实际: ' + r.stderr);
+    assert.strictEqual(r.out.length, 719, '拒绝时不得改动成品');
+});
+
+test('隔离池：健康报告证明复活 → 解除隔离', () => {
+    // 成品至少要过 MIN_KEEP(100)，否则会被"隔离后成品下限"拦下
+    const legado = [];
+    for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'A' + i, bookSourceUrl: 'https://a' + i + '.example.com', weight: 300 });
+    const quarantine = [
+        { url: 'https://alive.example.com', name: '复活', reason: 'stable-dead', since: 1 },
+        { url: 'https://stilldead.example.com', name: '仍死', reason: 'stable-dead', since: 1 },
+    ];
+    const tmp = makeTempDir();
+    fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(tmp, 'quarantine.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+    fs.mkdirSync(path.join(tmp, 'health'));
+    fs.writeFileSync(path.join(tmp, 'legado.json'), JSON.stringify(legado));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'),
+        JSON.stringify({ sources: { 'https://alive.example.com': { content: true } } }));
+    fs.writeFileSync(path.join(tmp, 'quarantine.json'), JSON.stringify(quarantine));
+    const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: tmp, encoding: 'utf8' });
+    const q = JSON.parse(fs.readFileSync(path.join(tmp, 'quarantine.json'), 'utf8'));
+    cleanupDir(tmp);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.deepStrictEqual(q.map(x => x.name), ['仍死'], '只解除已证复活的源');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);

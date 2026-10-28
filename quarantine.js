@@ -75,10 +75,18 @@ try {
         if (Number(s.weight) <= DEAD_WEIGHT && !qMap.has(k)) toBan.push({ k, s });
     }
     const total = list.length;
-    if (toBan.length > 0 && (toBan.length + qMap.size) > total * MAX_RATIO) {
-        console.error('× 本轮新增隔离 ' + toBan.length + ' 个，叠加既有名单后超过总量 ' + total +
-            ' 的 ' + (MAX_RATIO * 100) + '%（既有 ' + qMap.size + ' 个）——疑似评分逻辑异常，拒绝执行。请人工确认后再跑。');
+    // 阈值只约束「本轮新增」：历史隔离项本来就不在成品里，若把它们计入比例，
+    // 名单越积越多会让「新增 1 个也超 30%」永久误拦（实证：237 历史 + 23 新增
+    // vs 总量 719 → 超限，CI 在第 63 轮被阻断）。防批量误杀看本轮新增，
+    // 防把库清空看下面的 MIN_KEEP，历史累积规模只作观察、不阻断。
+    if (toBan.length > 0 && toBan.length > total * MAX_RATIO) {
+        console.error('× 本轮新增隔离 ' + toBan.length + ' 个，超过总量 ' + total +
+            ' 的 ' + (MAX_RATIO * 100) + '%——疑似评分逻辑异常，拒绝执行。请人工确认后再跑。');
         process.exit(1);
+    }
+    if (qMap.size > total * MAX_RATIO) {
+        console.log('  提示：历史隔离名单 ' + qMap.size + ' 个已超过本轮总量 ' + total +
+            ' 的 ' + (MAX_RATIO * 100) + '%（正常累积，不阻断发布，仅供参考）');
     }
     for (const { k, s } of toBan) {
         qMap.set(k, {
