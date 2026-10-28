@@ -64,9 +64,58 @@ node preflight.js
 - HTTPS 安全：2026-10-14 起移除全局 NODE_TLS_REJECT_UNAUTHORIZED=0（8 个脚本），上游 jsdelivr/GitHub raw 证书链完整，正常强校验无问题。
 - 审计脚本：smoke-p0.js（上游拉取+实测 smoke）、test-p0.js（P0 回归）、freshness-audit.js（分页完整性）、rank-legado.js（跨书排序）独立运行。
 - 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js动态语法、JSONPath高级语法、bookUrl模板拼接）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
+- 成品字段白名单：score.js 的 OFFICIAL_FIELDS 与官方 BookSource.kt 的 33 个字段逐字对齐，写 legado.json 前用 sanitizeSource() 裁掉上游私有元数据（_validation_status / normalizedName / searchRule / tocRule 等 22 个），实测成品 5.20 MB → 4.69 MB（−9.8%）；只额外保留 lastUsableCheck（filter.js 老化复测依赖）。
+- 官方契约测试：tests/official-contract.test.js 每轮 CI 拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt 与 BookSource.kt；官方删路由或删字段即 FAIL，官方新增只 WARN，拉不到官方源码则 SKIP 且不阻断发布。
 
 ## 隔离池（quarantine.js）
 
 `score.js` 判定的 dead 层（连续 3 次 `content=false`，`weight=5`）以前只是降权，仍然会随 `legado.json` 下发到手机：用户搜一次书要并发打几百个死站。`quarantine.js` 在 `fuse.js` 之后、签名之前把这一层移出成品并写入 `quarantine.json`；`filter.js` 每轮读取该名单做过滤，防止上游合并 / `extra-sources.json` 策展 / 扩容池 / upstream 复活把它们重新带回成品（实测 264 个被隔离源中有 196 个同时存在于 `extra-sources.json`，不拦就会隔天全部复活）。健康报告证明已复活（`content=true`）的源会自动解除隔离并回到成品。
 
 同轮把「不可测保护池」的权重由 440/380 下调为 120/90 —— 旧值高于 stable 层下界 300，会让从未验证过的源排在已验证稳定的源之前，与"不判死但也不置顶"的注释相反。
+## 与官方阅读 App 的接口契约（官方源码实证）
+
+成品最终由 [LegadoTeam/legado](https://github.com/LegadoTeam/legado)（阅读 App）消费。接口有两处硬契约，都已写进 CI：
+
+**① ContentProvider 路由** —— 官方 `app/src/main/java/io/legado/app/api/ReaderProviderRoutes.kt`
+
+同步器实际只用三条：`bookSource/query`、`bookSources/insert`、`bookSources/delete`。
+官方另有 `bookSource/insert`（单条）与 `bookSources/query`（复数路由会把全部书源序列化成一个 cursor 行，700 源约 5 MB，超过 Android CursorWindow 2 MB 上限，因此不用）。
+
+**② 书源实体字段** —— 官方 `app/src/main/java/io/legado/app/data/entities/BookSource.kt`，共 33 个字段。
+
+`score.js` 的 `OFFICIAL_FIELDS` 与它逐字对齐；写 `legado.json` 前用 `sanitizeSource()` 裁剪，只下发这 33 个加本仓库自用的 `lastUsableCheck`。
+
+**③ 契约测试** —— `tests/official-contract.test.js`，每轮 CI 拉上面两个官方文件比对：
+
+| 情况 | 处理 |
+| --- | --- |
+| 官方删掉同步器在用的路由 / 白名单里的字段 | **FAIL**（线上会静默失败，必须跟进） |
+| 官方新增路由 / 字段 | **WARN** → `reports/contract-warnings.txt` |
+| 拉不到官方源码（网络抖动） | **SKIP + exit 0**，不因外部网络挡住发布 |
+
+## 同步器 v3.21：为什么不再每天重置校验态
+
+官方 `BookSourceDao` 的写入是这么实现的：
+
+```kotlin
+@Insert(onConflict = OnConflictStrategy.REPLACE)
+fun insertSources(vararg bookSource: BookSource)
+
+@Transaction
+fun insert(vararg bookSource: BookSource) {
+    insertSources(*bookSource)
+    saveCheckStates(*bookSource.map { BookSourceCheckState(it.bookSourceUrl) }.toTypedArray())
+}
+```
+
+而 `BookSourceCheckState` 的默认值就是「待校验」（`status = NEEDS_CHECK`、新 `revision` UUID）。也就是说 `/bookSources/insert` 的语义是**整行 REPLACE + 校验态重置**。
+
+v3.20 及以前每天把近 700 个源全量写一遍，用户体感是：昨天校验通过的源今天全变回「待校验」；在 App 里手动排的顺序、关掉的发现、写的备注也被 JSON 默认值冲掉。
+
+v3.21 改成 read-merge-write：
+
+- 先用 `last.json` 比「规则体 + 权重档位」指纹，**没变的源一次 provider 调用都不发**；
+- 变了的源先 `bookSource/query?url=` 取回旧对象，`mergeSource()` 保留 `LOCAL_KEEP`（`customOrder`、`enabledExplore`、`bookSourceComment`、`variableComment`、`respondTime`、`eventListener`、`customButton`）后写回；
+- `enabled` 不保留——它由本地健康层 `applyLocalHealth` 决定，保留了会挡住断网自动禁用；
+- 权重只按档位（core / stable / backup / untestable / watch / dead）比较，避免每天权重微调触发全量重写；
+- 回查对象从全量改成增量集，`verifyOne` 的单源查询抽成 `queryOne` 复用，避免两套解析逻辑漂移。
