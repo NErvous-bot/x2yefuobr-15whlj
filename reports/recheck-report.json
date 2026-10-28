@@ -1,17 +1,15 @@
 {
- "generatedAt": 1793182868199,
- "runAt": "2026-10-28T10:21:08.199Z",
+ "generatedAt": 1793186655654,
+ "runAt": "2026-10-28T11:24:15.654Z",
  "oldRef": "HEAD",
- "baselineSha": "750ef8fde99534008ffc3f4ebd3154522c2c4583",
+ "baselineSha": "5f53763039a8077ffeac945b24dc982e5269bd8a",
  "tier1": [
   {
-   "name": "998读书",
-   "url": "http://www.998ds.net",
-   "traits": [
-    "GBK"
-   ],
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
+   "traits": [],
    "oldNote": "三关全过",
-   "newNote": "正文不足200字（实得0）；另换 2 本仍失败",
+   "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": false,
@@ -28,96 +26,14 @@
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
      "stage": "SEARCH_EMPTY",
      "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    }
-   ],
-   "verdict": "MIXED_DEATH"
-  },
-  {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
-   "traits": [
-    "GBK"
-   ],
-   "oldNote": "三关全过（第1本正文为空，换书后通过）",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
     },
     {
      "pass": true,
      "kind": "pass",
      "stage": "PASS",
      "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    }
-   ],
-   "verdict": "SUSPECT"
-  },
-  {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
     },
     {
      "pass": true,
@@ -132,94 +48,69 @@
  "tier2": [],
  "resolved": [
   {
-   "name": "夜伴书屋",
-   "url": "https://www.ybswa.com",
+   "name": "998读书",
+   "url": "http://www.998ds.net",
    "tier": 1,
-   "prevVerdict": "RECOVERED",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 100,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 48,
-    "contentLen": 1796,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793182828026
-   }
-  },
-  {
-   "name": "ncode_syosetu(成为小说家吧)",
-   "url": "https://ncode.syosetu.com/",
-   "tier": 1,
-   "prevVerdict": "RECOVERED",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 97,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 40,
-    "contentLen": 3438,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793182828026
-   }
-  },
-  {
-   "name": "🚬 肉文屋",
-   "url": "https://m.rouwenwu14.com",
-   "tier": 1,
-   "prevVerdict": "UNTESTABLE_RULE",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 93,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 20,
-    "contentLen": 5534,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "fail",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793182828026
-   }
-  },
-  {
-   "name": "🔖八块小说网",
-   "url": "http://www.8kbook.com",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
+   "prevVerdict": "MIXED_DEATH",
    "state": "STILL_BROKEN",
    "evidence": {
-    "health": 3,
-    "search": false,
+    "health": 33,
+    "search": true,
     "toc": false,
     "content": false,
     "chapters": 0,
     "contentLen": 0,
-    "note": "搜索无结果",
+    "note": "目录为空",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1793186634441
+   }
+  },
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 88,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 47,
+    "contentLen": 5204,
+    "note": "三关全过（第1本正文为空，换书后通过）",
+    "flapping": true,
+    "recent": [
+     "fail",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793186634441
+   }
+  },
+  {
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 33,
+    "search": true,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "目录为空",
     "flapping": true,
     "recent": [
      "pass",
@@ -228,7 +119,7 @@
      "fail",
      "fail"
     ],
-    "checkedAt": 1793182828026
+    "checkedAt": 1793186634441
    }
   }
  ]
