@@ -36,9 +36,22 @@ jobs:
           done
           echo "  检查 scripts/source-audit.mjs (ESM)" >> $GITHUB_STEP_SUMMARY
           node --check "scripts/source-audit.mjs" || exit 1
+          echo "  检查 tests/official-contract.test.js" >> $GITHUB_STEP_SUMMARY
+          node --check "tests/official-contract.test.js" || exit 1
 
       - name: 回归测试（含 URL 主键 + 权重 clamp + Java 语法扫描）
         run: node tests/repo-regression.test.js
+
+      # 契约测试：拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt / BookSource.kt 对一遍。
+      # 官方删路由或删字段 → FAIL（我们还在用，会静默失败）；官方新增 → WARN（写进 reports/）。
+      # 拉不到官方源码（网络抖动）→ SKIP 且 exit 0，不因外部网络挡住发布。
+      - name: 官方契约检查（Provider 路由 + BookSource 字段）
+        run: |
+          echo "### 官方契约检查" >> $GITHUB_STEP_SUMMARY
+          node tests/official-contract.test.js 2>&1 | tee /tmp/contract.log
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/contract.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: 离线冒烟（mock HTTP，不代表真实上游验收）
         run: node smoke-p0.js

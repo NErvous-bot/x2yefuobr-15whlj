@@ -14,3 +14,6 @@ ranked-legado.json
 
 # 成人向 RSS 订阅源：因内容合规原因不进入公开仓库，本地副本为 rssSources.local.json
 rssSources.json
+
+# 官方契约检查的运行时产物（只在本机/CI 生成，不入库）
+reports/contract-warnings.txt

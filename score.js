@@ -9,6 +9,47 @@
 const fs = require('fs');
 const { norm } = require('./src/source-id');
 
+// ── 官方 BookSource 字段白名单 ────────────────────────────────────────────────
+// 来源：LegadoTeam/legado@master  app/src/main/java/io/legado/app/data/entities/BookSource.kt
+// 共 33 个字段（含 BaseSource 的 override：jsLib / enabledCookieJar / concurrentRate /
+// header / loginUrl / loginUi）。
+//
+// 上游（shidahuilang / tickmao / aoaostar）会在源对象里塞自己的元数据：
+//   _validation_status、_response_time、_domain、normalizedName、originalName、
+//   selectionScore、searchRule、tocRule、bookInfoRule、contentRule、exploreRule、
+//   loginJs、enabledReview、key、tag、score ...
+// Gson 解析未知字段时会忽略，不会崩，但会白白撑大 legado.json；更麻烦的是这些名字
+// 和官方字段长得很像（searchRule vs ruleSearch、tocRule vs ruleToc），排查问题时极易看错。
+// 所以写成品前统一裁掉，只下发白名单内的字段。
+//
+// 契约测试：.github/workflows/test.yml 的「官方契约检查」用 tests/official-contract.test.js
+// 拉官方 BookSource.kt 逐字段比对，官方删字段/加字段都会被抓住。
+const OFFICIAL_FIELDS = [
+    'bookSourceUrl', 'bookSourceName', 'bookSourceGroup', 'bookSourceType', 'bookUrlPattern',
+    'customOrder', 'enabled', 'enabledExplore',
+    'jsLib', 'enabledCookieJar', 'concurrentRate', 'header', 'loginUrl', 'loginUi',
+    'loginCheckJs', 'coverDecodeJs', 'bookSourceComment', 'variableComment',
+    'lastUpdateTime', 'respondTime', 'weight',
+    'exploreUrl', 'exploreScreen', 'ruleExplore',
+    'searchUrl', 'ruleSearch', 'ruleBookInfo', 'ruleToc', 'ruleContent', 'ruleReview',
+    'mainJs', 'eventListener', 'customButton',
+];
+
+// 本仓库自用、官方不认识、但链路内部依赖的字段：
+//   lastUsableCheck —— filter.js 的老化复测用它算「距上次实测多少天」，
+//   裁掉会让所有源被当成「从没测过」而反复复测，所以必须留。
+const REPO_FIELDS = ['lastUsableCheck'];
+
+const KEEP_FIELDS = new Set([...OFFICIAL_FIELDS, ...REPO_FIELDS]);
+
+// 只保留白名单字段。官方字段为 null/undefined 时**不补默认值**——
+// 官方 Gson 侧本来就有默认值，补上反而多出字节，还可能把 null 语义改成空串。
+function sanitizeSource(s) {
+    const out = {};
+    for (const k of Object.keys(s || {})) if (KEEP_FIELDS.has(k)) out[k] = s[k];
+    return out;
+}
+
 // 最近 N 次结果 → 末尾连续 pass / fail 计数
 const consOf = (recent, tag) => { let n = 0; for (let i = recent.length - 1; i >= 0 && recent[i] === tag; i--) n++; return n; };
 
@@ -56,7 +97,17 @@ try {
 
     // 按权重降序重排（验证过的高分源在前，保护池居中，确认坏沉底）
     list.sort((a, b) => (b.weight || 0) - (a.weight || 0));
-    fs.writeFileSync('legado.json', JSON.stringify(list));
+
+    // 字段白名单裁剪：只留官方 BookSource 认识的字段 + 本仓库自用字段
+    const beforeBytes = Buffer.byteLength(JSON.stringify(list));
+    const kept = list.map(sanitizeSource);
+    const afterBytes = Buffer.byteLength(JSON.stringify(kept));
+    fs.writeFileSync('legado.json', JSON.stringify(kept));
+    if (afterBytes < beforeBytes) {
+        console.log('字段白名单: ' + (beforeBytes / 1048576).toFixed(2) + ' MB → ' +
+            (afterBytes / 1048576).toFixed(2) + ' MB（裁掉 ' +
+            (100 - afterBytes / beforeBytes * 100).toFixed(1) + '% 的上游元数据字段）');
+    }
 
     // 评分明细留档
     const flat = Object.values(layers).flat();
@@ -86,4 +137,4 @@ try {
 } // end require.main === module
 
 // 测试用导出（grade/consOf 不依赖文件 IO，require 时只加载函数不执行主流程）
-module.exports = { grade, consOf };
+module.exports = { grade, consOf, sanitizeSource, OFFICIAL_FIELDS, REPO_FIELDS, KEEP_FIELDS };
