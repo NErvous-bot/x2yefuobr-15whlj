@@ -23,6 +23,13 @@ jobs:
           node-version: '20'
       - name: P0 Smoke（上游拉取+健康+签名三关，exit 非 0 阻断发布）
         run: node smoke-p0.js
+      # 上游自动扒取：ETag 增量 + 源级活跃度过滤 + 三关准入，产物 harvested.json
+      # 由 filter.js 在「本地注入源」阶段并入成品；成人源默认全关（公开仓库不能有）
+      - name: 上游自动扒取（ETag 增量 + 三关准入 + 成人分流）
+        env:
+          ALLOW_ADULT: ${{ secrets.ADULT_ENABLED }}
+          ADULT_SRC_URL: ${{ secrets.ADULT_SRC_URL }}
+        run: node upstream-sync.js
       - run: node filter.js
       # 规则自维护：抓真实正文巡检漏网广告，误伤0段+净化率提升才追加规则；
       # 脚本内部对任何异常 exit 0 跳过写入，失败不影响主流程
@@ -66,7 +73,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # 清理旧命名的签名文件（v3.5首版的 legado.sig/replaceRule.sig）
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
-          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json
+          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json harvested.json upstream-state.json
           git add reports/ 2>/dev/null || true
           # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
           git diff --cached --quiet || (

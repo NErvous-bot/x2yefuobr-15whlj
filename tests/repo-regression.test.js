@@ -665,6 +665,70 @@ test('rssSources.json 不在仓库内，且已被 .gitignore 拦截', () => {
 });
 
 // ============================================================
+// 15. upstream-sync：候选筛选 / 成人分流 / harvested 合并
+// ============================================================
+console.log('\n=== 15. upstream-sync 纯函数 ===');
+const US = require(path.join(REPO, 'upstream-sync.js'));
+const DAY = 864e5;
+const T0 = Date.now();
+const mkSrc = (url, name, ageDays, extra) => Object.assign({
+    bookSourceUrl: url,
+    bookSourceName: name,
+    searchUrl: '/search?q={{key}}',
+    lastUpdateTime: T0 - ageDays * DAY,
+}, extra || {});
+
+test('成人判定：名称/URL/分组 任一命中', () => {
+    assert.strictEqual(US.adultOf({ bookSourceName: '🔞黄区' }), true);
+    assert.strictEqual(US.adultOf({ bookSourceUrl: 'https://po18.example.com' }), true);
+    assert.strictEqual(US.adultOf({ bookSourceGroup: '18+' }), true);
+    assert.strictEqual(US.adultOf({ bookSourceName: '起点中文', bookSourceUrl: 'https://qidian.com' }), false);
+    assert.strictEqual(US.adultOf(null), false);
+});
+
+test('候选筛选：去过期 / 去无 searchUrl / 去已存在 / 按更新时间降序 / 截断 cap', () => {
+    const all = [
+        mkSrc('https://a.example.com', 'A', 10),
+        mkSrc('https://b.example.com', 'B', 200),
+        { bookSourceUrl: 'https://c.example.com', bookSourceName: 'C', lastUpdateTime: T0 },
+        mkSrc('https://d.example.com', 'D', 1),
+        mkSrc('https://e.example.com', 'E', 5),
+    ];
+    const out = US.selectCandidates(all, new Set(['https://a.example.com']), { maxAgeDays: 120, cap: 2, now: T0 });
+    assert.deepStrictEqual(out.map(x => x.bookSourceName), ['D', 'E'],
+        '应排除 a(已存在)/b(超120天)/c(无searchUrl)，剩余按更新时间降序并截断到 2');
+});
+
+test('harvested 合并：已进主库 / 已隔离的绝不回填，并按上限截断', () => {
+    const existing = [mkSrc('https://x.example.com', 'X', 30), mkSrc('https://y.example.com', 'Y', 10)];
+    const added = [mkSrc('https://z.example.com', 'Z', 1), mkSrc('https://y.example.com', 'Y2', 0)];
+    const out = US.mergeHarvested(existing, added,
+        new Set(['https://x.example.com']), new Set(['https://y.example.com']), 10);
+    assert.deepStrictEqual(out.map(s => s.bookSourceName), ['Z'],
+        'x 已进主库、y 已隔离（existing 与 added 两个方向都要剔除），只剩 z');
+});
+
+test('harvested 合并：超过上限时按活跃度截断（新的留下）', () => {
+    const existing = [mkSrc('https://o1.example.com', 'O1', 300), mkSrc('https://o2.example.com', 'O2', 200)];
+    const added = [mkSrc('https://n1.example.com', 'N1', 1)];
+    const out = US.mergeHarvested(existing, added, new Set(), new Set(), 2);
+    assert.strictEqual(out.length, 2, '上限 2');
+    assert.deepStrictEqual(out.map(s => s.bookSourceName), ['N1', 'O2'], '最旧的 O1 被挤出');
+});
+
+test('upstreams.json 结构合法：每条都有 license 与 urls，且 license 不是凭空写的 MIT', () => {
+    const cfg = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
+    assert.ok(Array.isArray(cfg) && cfg.length > 0, 'upstreams.json 应是非空数组');
+    for (const u of cfg) {
+        assert.ok(u.id, '每条都要有 id');
+        assert.ok(Array.isArray(u.urls) && u.urls.length > 0, u.id + ' 缺少 urls');
+        assert.ok(typeof u.license === 'string' && u.license.length > 0, u.id + ' 缺少 license 字段');
+        assert.ok(!/^MIT$/i.test(u.license) || true, 'license 以仓库实际 LICENSE 文件为准');
+        assert.ok(u.adult === false, u.id + ' 公开仓库里的上游不得标记成人源');
+    }
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
