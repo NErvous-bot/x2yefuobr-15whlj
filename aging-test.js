@@ -541,6 +541,74 @@ function activityOf(hay) {
     return newest ? (Date.now() - newest <= 45 * 864e5 ? '活跃' : '停滞') : '未知';
 }
 
+/* ---------- 官方校验关键字（对齐 LegadoTeam/legado BookSource.getCheckKeyword） ---------- */
+// 官方 SearchRule 里有个 checkKeyWord 字段（注释就是「校验关键字」），
+// 很多源在里面写了专门用来搜书的词（书名/作者），比硬编码「都市」命中率高得多。
+// 官方的采纳条件（BookSource.kt:216）：
+//   ruleSearch.checkKeyWord 非空，且不含 "http" / "::" / "++" / "--"
+// 不满足就用全局默认值（官方默认是「我的」，我们沿用历史默认「都市」）。
+function checkKeyWordOf(s) {
+    const kw = s && s.ruleSearch && s.ruleSearch.checkKeyWord;
+    if (!kw) return null;
+    const t = String(kw).trim();
+    if (!t) return null;
+    if (t.includes('http') || t.includes('::') || t.includes('++') || t.includes('--')) return null;
+    return t;
+}
+
+/* ---------- 发现页入口解析（对齐官方 exploreKinds） ---------- */
+// 官方 BookSourceExtensions.exploreKinds() 的三种形态：
+//   ① "@js:..." / "<js>...</js>"  → 脚本生成，静态解析不了 → 返回 []
+//   ② 以 [ 开头                    → JSON 数组，取每项 url（type 不是 url 的是按钮/开关，跳过）
+//   ③ 其它                         → 文本格式：分类名::url模板，行间用 \n 或 &&
+// 实测：绝大多数源用的是 ③，如果只按 JSON 解析，会拿整段文本当 URL，探测结果全是 404。
+function exploreKinds(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return [];
+    if (/^@js:|^<js>/i.test(raw)) return [];
+    if (raw.startsWith('[')) {
+        try {
+            const j = JSON.parse(raw);
+            const arr = Array.isArray(j) ? j : [j];
+            return arr
+                .filter((x) => x && (!x.type || x.type === 'url') && (x.url || x.href))
+                .map((x) => String(x.url || x.href).trim())
+                .filter(Boolean);
+        } catch (e) { /* 解析失败就按文本格式再试一次 */ }
+    }
+    return raw.split(/(?:&&|\n)+/)
+        .map((line) => line.split('::'))
+        .filter((parts) => parts.length >= 2 && String(parts[1] || '').trim())
+        .map((parts) => String(parts[1]).trim());
+}
+
+/* ---------- 第④关：发现页（官方默认开，本仓库此前完全没测） ---------- */
+// 只做「能力探测」，不参与 usable 判定：发现页挂了不代表搜索/正文坏了，
+// 所以这里返回独立的 ok/reason，由 health.js 记到 explore 字段、score.js 打 CI 分组。
+async function checkExplore(s) {
+    const base = originOf(s.bookSourceUrl);
+    if (!base) return { ok: false, reason: '无效URL' };
+    const kinds = exploreKinds(s.exploreUrl);
+    if (!kinds.length) {
+        const raw = String(s.exploreUrl || '');
+        return { ok: false, reason: /^@js:|^<js>/i.test(raw.trim()) ? '发现页是js生成' : '无发现入口' };
+    }
+    const rule = s.ruleExplore && s.ruleExplore.bookList;
+    if (!rule) return { ok: false, reason: 'exploreRule为空' };
+    // {{page}} 取第 1 页（官方点进发现页时默认也是第 1 页）
+    const tpl = kinds[0].replace(/\{\{page\}\}/gi, '1');
+    let u;
+    try { u = new URL(tpl, base).href; } catch (e) { return { ok: false, reason: '发现URL非法' }; }
+    const pg = await fetchPage(u, { ref: base });
+    if (!pg) return { ok: false, reason: '发现页请求失败' };
+    if (pg.status === 404 || pg.status === 410) return { ok: false, reason: '发现页' + pg.status };
+    if (pg.status >= 400) return { ok: false, reason: '发现页HTTP ' + pg.status };
+    const bl = selectAll(pg.text, rule);
+    if (!bl) return { ok: false, reason: 'bookList规则不可测' };
+    if (!bl.items.length) return { ok: false, reason: '发现页无书' };
+    return { ok: true, count: bl.items.length };
+}
+
 /* ---------- 三关实测主流程 ---------- */
 async function checkSource(s, opts = {}) {
     const res = { usable: false, reason: '', chapters: 0, contentLen: 0, activity: '未知' };
@@ -555,16 +623,19 @@ async function checkSource(s, opts = {}) {
             bookCandidates.push(opts.bookUrl);
         } else {
             // 第①关：搜索出书（双关键词 + 隔1.5s二次复核，防"站点无此关键词"和瞬时抖动误判死）
-            let r1 = await doSearch(s, base, rs, '都市');
+            // 关键词顺序：源自带的 checkKeyWord（官方字段，16.5% 的源有）→ 都市 → 重生
+            const KW1 = checkKeyWordOf(s) || '都市';
+            const KW2 = KW1 === '都市' ? '重生' : '都市';
+            let r1 = await doSearch(s, base, rs, KW1);
             if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
             if (r1.dead) { res.reason = r1.dead; return res; }
             if (!r1.bl.items.length) {
-                r1 = await doSearch(s, base, rs, '重生');
+                r1 = await doSearch(s, base, rs, KW2);
                 if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
                 if (r1.dead) { res.reason = r1.dead; return res; }
                 if (!r1.bl.items.length) {
                     await sleep(1500);
-                    r1 = await doSearch(s, base, rs, '都市');
+                    r1 = await doSearch(s, base, rs, KW1);
                     if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
                     if (r1.dead) { res.reason = r1.dead; return res; }
                     if (!r1.bl.items.length) {
@@ -728,4 +799,4 @@ async function checkSource(s, opts = {}) {
     }
 }
 
-module.exports = { checkSource, doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep, parseSearch };
+module.exports = { checkSource, checkExplore, exploreKinds, checkKeyWordOf, doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep, parseSearch };
