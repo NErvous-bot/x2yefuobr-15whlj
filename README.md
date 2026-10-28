@@ -38,9 +38,13 @@ node preflight.js
 
 - [LegadoTeam/legado](https://github.com/LegadoTeam/legado) （阅读App 本体，GPL-3.0）— 本仓库的书源与净化规则均服务于该阅读软件。注：原上游 `gedoor/legado` 仓库已因版权方投诉被清空，本仓库**不包含**该 App 的任何源码，只通过其公开导入接口传递配置文件
 - [shidahuilang/shuyuan-bak](https://github.com/shidahuilang/shuyuan-bak) （大灰狼订阅源，GPL-3.0）— 体量最大的中文小说书源合集
-- [tickmao/Novel](https://github.com/tickmao/Novel) （MIT）— 精而稳的 legado 源，每日验证维护
-- [jiwangyihao/source-j-legado](https://github.com/jiwangyihao/source-j-legado) （MIT）— 轻小说/二次元专项源集
-- [aoaostar/legado](https://github.com/aoaostar/legado) （AGPL-3.0）— 社区共享书源聚合站（每日更新），为扩容池提供长尾候选
+- [tickmao/Novel](https://github.com/tickmao/Novel) （**仓库内无 LICENSE 文件** — 仅作个人使用引用，不主张任何授权）— 精品 legado 源
+- [jiwangyihao/source-j-legado](https://github.com/jiwangyihao/source-j-legado) （**MPL-2.0**）— 轻小说/二次元专项源集
+- [aoaostar/legado](https://github.com/aoaostar/legado) （**仓库内无 LICENSE 文件** — README 标注 AGPL-3.0 但未附许可证，仅作个人使用引用）— 社区共享书源聚合站
+
+> 许可证以各仓库**实际存在的 LICENSE 文件**为准（GitHub API 的 `license` 字段）。
+> 「无 LICENSE 文件」在著作权法上默认是**保留所有权利**，不等于 MIT。
+> 完整声明见 [NOTICE](NOTICE)。本项目为个人自用配置备份，不对外分发上游数据。
 
 ## 许可与免责声明
 

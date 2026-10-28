@@ -216,24 +216,30 @@ function variants(o) {
     //    上游列表之外的自有来源：只补进「当前 legado.json 还没有」的 norm 身份键，
     //    补进来后依靠上面的「已有源保留」语义长期存在，不依赖任何上游继续提供。
     let localAdded = 0;
+    // 本地注入源（两种，语义完全一致：只补进「当前 legado.json 还没有」的 norm 身份键）
+    //   extra-sources.json  人工策展
+    //   harvested.json      upstream-sync.js 自动扒来、且已过三关准入的源
     try {
-        const extraFile = 'extra-sources.json';
-        if (fs.existsSync(extraFile)) {
-            const extra = JSON.parse(fs.readFileSync(extraFile, 'utf8'));
-            if (Array.isArray(extra)) {
-                const have = new Set(list.map(s => norm(s.bookSourceUrl)).filter(Boolean));
-                for (const s of extra) {
-                    const k = norm(s && s.bookSourceUrl);
-                    if (!k || have.has(k)) continue;
-                    list.push(s);
-                    have.add(k);
-                    localAdded++;
-                }
+        const have = new Set(list.map(s => norm(s.bookSourceUrl)).filter(Boolean));
+        for (const extraFile of ['extra-sources.json', 'harvested.json']) {
+            if (!fs.existsSync(extraFile)) continue;
+            let extra;
+            try { extra = JSON.parse(fs.readFileSync(extraFile, 'utf8')); }
+            catch (e2) { console.log('⚠️ ' + extraFile + ' 解析失败，跳过: ' + e2.message); continue; }
+            if (!Array.isArray(extra)) continue;
+            let added = 0;
+            for (const s of extra) {
+                const k = norm(s && s.bookSourceUrl);
+                if (!k || have.has(k)) continue;
+                list.push(s);
+                have.add(k);
+                added++;
             }
-            if (localAdded) console.log('并入本地策展源 ' + localAdded + ' 个（extra-sources.json）');
+            if (added) console.log('并入本地注入源 ' + added + ' 个（' + extraFile + '）');
+            localAdded += added;
         }
     } catch (e) {
-        console.log('⚠️ extra-sources.json 读取失败，跳过本地策展源: ' + e.message);
+        console.log('⚠️ 本地注入源读取失败，跳过: ' + e.message);
     }
 
     // Phase B-1 基线：读 HEAD legado.json 做 diff，供删除清单和 fuse.js 裁决使用
