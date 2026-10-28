@@ -634,8 +634,60 @@ test('通过官方 bookSources/delete 清理仓库已剔除的源', () => {
     assert.ok(code.includes('pending-delete.json'), '删除失败清单应落盘，下次同步重试');
     assert.ok(code.includes('keep.contains(url)'), '重新收录的源不得因旧失败记录被误删');
     // 删除必须在「写入回查通过」之后：避免新数据没落库就把旧源删掉
-    assert.ok(code.indexOf('verifyWritten(authority, finalSources)') < code.indexOf('deleteSources(authority, merged)'),
+    // P0（2026-10-28）后回查对象改成增量集 toWrite（规则未变的源不写也不查），
+    // 但「先回查再删除」的顺序约束不变。
+    assert.ok(code.indexOf('verifyWritten(authority, toWrite)') < code.indexOf('deleteSources(authority, merged)'),
         '删除应在写入回查通过之后执行');
+});
+
+// ============================================================
+// 16. P0：同步器 read-merge-write（保住手机端校验态与本地偏好）
+// ============================================================
+console.log('\n=== 16. 同步器 read-merge-write ===');
+
+test('写入改为增量：先用 last.json 比规则指纹，未变的不查不写', () => {
+    const code = fs.readFileSync(SYNC_WORKER, 'utf8');
+    assert.ok(code.includes('private JSONArray planWrites('), '应有 planWrites 规划增量集');
+    assert.ok(code.includes('private String sourceSignature('), '应有 sourceSignature 规则指纹');
+    assert.ok(code.includes('sourceSignature(incoming).equals(sourceSignature(old))'),
+        '应与 last.json 里的旧对象比对指纹');
+    // 旧的「无条件全量写 finalSources」循环必须消失，否则校验态每天被重置
+    assert.ok(!/for \(int i = 0; i < total; i \+= BATCH\) \{\s*\n\s*JSONArray part = new JSONArray\(\);\s*\n\s*for \(int j = i; j < Math\.min\(i \+ BATCH, total\); j\+\+\) \{\s*\n\s*part\.put\(finalSources\.get\(j\)\)/.test(code),
+        '不得再对 finalSources 做无条件全量写入');
+    assert.ok(code.includes('JSONArray toWrite = planWrites(authority, finalSources, oldArr)'),
+        'writeViaProvider 应只写 planWrites 的结果');
+});
+
+test('合并保留用户本地偏好（LOCAL_KEEP），不含 enabled', () => {
+    const code = fs.readFileSync(SYNC_WORKER, 'utf8');
+    const m = code.match(/private static final String\[\] LOCAL_KEEP = \{([\s\S]*?)\};/);
+    assert.ok(m, '应定义 LOCAL_KEEP');
+    const fields = (m[1].match(/"([A-Za-z]+)"/g) || []).map((s) => s.replace(/"/g, ''));
+    for (const k of ['customOrder', 'enabledExplore', 'bookSourceComment', 'variableComment', 'respondTime', 'eventListener', 'customButton']) {
+        assert.ok(fields.includes(k), 'LOCAL_KEEP 应包含 ' + k);
+    }
+    // enabled 由本地健康层决定，保留旧值会挡住「断网禁用」
+    assert.ok(!fields.includes('enabled'), 'LOCAL_KEEP 不应包含 enabled（该由 applyLocalHealth 决定）');
+    assert.ok(code.includes('private JSONObject mergeSource('), '应有 mergeSource');
+    assert.ok(code.includes('for (String k : LOCAL_KEEP) {'), 'mergeSource 应回填 LOCAL_KEEP');
+});
+
+test('权重按档位比较，避免每天权重微调触发全量重写', () => {
+    const code = fs.readFileSync(SYNC_WORKER, 'utf8');
+    assert.ok(code.includes('private static int weightBucket('), '应有 weightBucket');
+    assert.ok(code.includes('weightBucket(s.optInt("weight", 0))'), 'sourceSignature 应含权重档位');
+    // 签名里绝不能出现 weight 字面量字段（否则等于每天全量写）
+    const sig = code.match(/private static final String\[\] SIG_FIELDS = \{([\s\S]*?)\};/);
+    assert.ok(sig, '应定义 SIG_FIELDS');
+    assert.ok(!/"weight"/.test(sig[1]), 'SIG_FIELDS 不得包含 weight');
+    assert.ok(!/"lastUpdateTime"/.test(sig[1]), 'SIG_FIELDS 不得包含 lastUpdateTime');
+    assert.ok(/"ruleContent"/.test(sig[1]), 'SIG_FIELDS 必须包含 ruleContent（真正的规则体）');
+});
+
+test('单源查询抽出 queryOne，回查复用（避免两套解析逻辑漂移）', () => {
+    const code = fs.readFileSync(SYNC_WORKER, 'utf8');
+    assert.ok(code.includes('private JSONObject queryOne('), '应有 queryOne');
+    assert.ok(code.includes('return queryOne(authority, sample) != null;'), 'verifyOne 应复用 queryOne');
 });
 
 test('App 版本号已递增（APK 可覆盖升级）', () => {
@@ -859,6 +911,54 @@ test('隔离池：重复执行幂等（第二次不重复计数、不重复删�
     assert.strictEqual(b.status, 0, b.stderr);
     assert.strictEqual(b.q.length, 3, '第二次名单不应增长，实际: ' + b.q.length);
     assert.strictEqual(b.out.length, a.out.length, '第二次成品不应再减少');
+});
+
+// ============================================================
+// 17. P0：成品字段白名单（只下发官方 BookSource 认识的字段）
+// ============================================================
+console.log('\n=== 17. 成品字段白名单 ===');
+const { sanitizeSource, OFFICIAL_FIELDS, REPO_FIELDS } = require(path.join(REPO, 'score.js'));
+
+test('白名单固定 33 个官方字段（与 LegadoTeam/legado BookSource.kt 对齐）', () => {
+    assert.strictEqual(OFFICIAL_FIELDS.length, 33, '官方 BookSource 共 33 个字段，实际: ' + OFFICIAL_FIELDS.length);
+    for (const k of ['ruleSearch', 'ruleBookInfo', 'ruleToc', 'ruleContent', 'mainJs', 'header', 'jsLib', 'enabledCookieJar', 'concurrentRate', 'loginUrl', 'loginUi']) {
+        assert.ok(OFFICIAL_FIELDS.includes(k), '白名单应包含官方字段 ' + k);
+    }
+});
+
+test('sanitizeSource 裁掉上游私有元数据', () => {
+    const src = {
+        bookSourceUrl: 'https://a.example.com',
+        bookSourceName: 'A',
+        ruleSearch: { bookList: '.x' },
+        weight: 300,
+        // 上游 shidahuilang / tickmao 塞进来的元数据
+        _validation_status: 'valid',
+        _response_time: 1200,
+        normalizedName: 'a',
+        originalName: 'A',
+        selectionScore: 9,
+        searchRule: { bookList: '.y' },   // 和官方 ruleSearch 长得像，必须裁掉
+        tocRule: '.z',                    // 和官方 ruleToc 长得像，必须裁掉
+        enabledReview: true,
+    };
+    const out = sanitizeSource(src);
+    assert.deepStrictEqual(Object.keys(out).sort(),
+        ['bookSourceName', 'bookSourceUrl', 'ruleSearch', 'weight'],
+        '只应保留白名单字段，实际: ' + Object.keys(out).sort().join(','));
+    assert.ok(!('_validation_status' in out), '_validation_status 属于上游元数据');
+    assert.ok(!('searchRule' in out), 'searchRule 是上游拼写，官方叫 ruleSearch');
+});
+
+test('sanitizeSource 保留本仓库自用的 lastUsableCheck', () => {
+    assert.ok(REPO_FIELDS.includes('lastUsableCheck'), 'filter.js 的老化复测依赖该字段');
+    const out = sanitizeSource({ bookSourceUrl: 'https://a.example.com', lastUsableCheck: 123 });
+    assert.strictEqual(out.lastUsableCheck, 123, '不能被裁掉，否则老化复测会反复重测');
+});
+
+test('sanitizeSource 不补默认值（空对象进 → 空对象出）', () => {
+    assert.deepStrictEqual(sanitizeSource({}), {}, '不应凭空补官方默认值');
+    assert.deepStrictEqual(sanitizeSource(null), {}, 'null 应安全返回空对象');
 });
 
 // ============================================================

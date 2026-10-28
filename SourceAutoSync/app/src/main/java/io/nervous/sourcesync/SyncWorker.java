@@ -69,6 +69,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  *    的 cb 参数；全部线路签名不符时直连 raw 源站重试一次；
  *  - 指纹改为多线路投票（2 票一致才采信），避免 CDN 滞后导致漏更新；
  *  - 每日检查改为一次性任务链，固定在 05:00；错误文案区分网络失败与验签/缓存不符。
+ *
+ * v3.21（P0：不再每天重置手机端校验态）：
+ *  - 官方 DAO 是 @Insert(onConflict=REPLACE) + 事务内 saveCheckStates(BookSourceCheckState(url))，
+ *    等于「整行覆盖 + 校验态打回 NEEDS_CHECK + 换新 revision UUID」。旧实现每天全量写
+ *    近 700 个源，副作用是刚校验通过的源每天集体变回「待校验」，用户手动调的
+ *    customOrder / enabledExplore / 备注 / respondTime 也被 JSON 默认值冲掉。
+ *  - 改为 read-merge-write：先用 last.json 比「规则体 + 权重档位」指纹，没变的源
+ *    一次 provider 调用都不发；变了的先 bookSource/query?url= 取回旧对象，
+ *    合并时保留 LOCAL_KEEP（用户本地偏好），再写回。回查也只查这批增量。
  */
 public class SyncWorker extends Worker {
 
@@ -266,35 +275,52 @@ public class SyncWorker extends Worker {
         return true;
     }
 
-    /** 单源回查：provider 返回 isSuccess=true 且 data 里能找到该 bookSourceUrl */
-    private boolean verifyOne(String authority, String sample) {
-        if (sample.isEmpty()) return true;
+    /**
+     * 单源查询：返回 provider 里那条书源的完整对象，查不到／异常返回 null。
+     *
+     * 必须走单源路由 bookSource/query?url=：复数路由 bookSources/query 会把全部书源
+     * 序列化成一个 cursor 行（700 源约 5MB），超过 Android CursorWindow 2MB 上限会直接抛
+     * 异常。单源路由的 data 是对象，这里兼容数组形态。
+     *
+     * 用途除了回查，还有 read-merge-write：合并时要拿到用户在 App 里改过的
+     * customOrder / enabledExplore / 备注等本地偏好。
+     */
+    private JSONObject queryOne(String authority, String sample) {
+        if (sample == null || sample.isEmpty()) return null;
         android.database.Cursor c = null;
         try {
             Uri uri = Uri.parse("content://" + authority + "/bookSource/query")
                     .buildUpon().appendQueryParameter("url", sample).build();
             c = getApplicationContext().getContentResolver()
                     .query(uri, null, null, null, null);
-            if (c == null || !c.moveToFirst()) return false;
+            if (c == null || !c.moveToFirst()) return null;
             String raw = c.getString(0);
-            if (raw == null || raw.isEmpty()) return false;
+            if (raw == null || raw.isEmpty()) return null;
             JSONObject o = new JSONObject(raw);
-            if (!o.optBoolean("isSuccess", false)) return false;
+            if (!o.optBoolean("isSuccess", false)) return null;
             JSONObject one = o.optJSONObject("data");
-            if (one != null) return sample.equals(one.optString("bookSourceUrl", ""));
+            if (one != null) {
+                return sample.equals(one.optString("bookSourceUrl", "")) ? one : null;
+            }
             JSONArray arr = o.optJSONArray("data");
-            if (arr == null) return false;
+            if (arr == null) return null;
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject s = arr.optJSONObject(i);
-                if (s != null && sample.equals(s.optString("bookSourceUrl", ""))) return true;
+                if (s != null && sample.equals(s.optString("bookSourceUrl", ""))) return s;
             }
-            return false;
+            return null;
         } catch (Exception e) {
-            android.util.Log.w("SyncWorker", "写入回查异常: " + e.getMessage());
-            return false;
+            android.util.Log.w("SyncWorker", "单源查询异常: " + e.getMessage());
+            return null;
         } finally {
             if (c != null) try { c.close(); } catch (Exception ignored) {}
         }
+    }
+
+    /** 单源回查：provider 返回 isSuccess=true 且 data 里能找到该 bookSourceUrl */
+    private boolean verifyOne(String authority, String sample) {
+        if (sample == null || sample.isEmpty()) return true;
+        return queryOne(authority, sample) != null;
     }
 
     /**
@@ -608,28 +634,47 @@ public class SyncWorker extends Worker {
     }
 
     /**
-     * 通过 provider 写入全部书源，并清理仓库已剔除的源。
+     * 通过 provider 增量写入书源，并清理仓库已剔除的源。
+     *
+     * P0（2026-10-28）read-merge-write：官方 DAO 是
+     *   @Insert(onConflict = OnConflictStrategy.REPLACE)
+     *   @Transaction fun insert(vararg s: BookSource) { insertSources(*s); saveCheckStates(*s.map { BookSourceCheckState(it.bookSourceUrl) }) }
+     * 也就是「整行覆盖 + 事务内把校验态重置成 NEEDS_CHECK（还换了个新 revision UUID）」。
+     * 旧实现每天把 700 个源全量写一遍，副作用有两个：
+     *   ① 手机里刚校验通过的源，每天同步完集体变回「待校验」；
+     *   ② 用户手动调过的 customOrder / enabledExplore / 备注 / respondTime 被 JSON 默认值冲掉。
+     * 现在改成：
+     *   ① 规则体 + 权重档位都没变的源 → 不查也不写，校验态原样保留；
+     *   ② 变了或新出现的源 → 先用 bookSource/query?url= 取回旧对象，合并时保留用户本地偏好；
+     *   ③ 只把 ①② 里挑出来的那批交给 provider，回查也只查这批。
      * @return 清理结果文案（没有清理时为空串）；写入/回查失败抛异常，由调用方兜底
      */
     private String writeViaProvider(String authority, JSONArray finalSources, JSONArray oldArr)
             throws Exception {
-        // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
-        Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
+        JSONArray toWrite = planWrites(authority, finalSources, oldArr);
         int total = finalSources.length();
-        for (int i = 0; i < total; i += BATCH) {
-            JSONArray part = new JSONArray();
-            for (int j = i; j < Math.min(i + BATCH, total); j++) {
-                part.put(finalSources.get(j));
+        int writeCount = toWrite.length();
+        if (writeCount > 0) {
+            // 官方路由表（源码实测）：书源批量写入 = bookSources/insert，body 键名 json
+            Uri uri = Uri.parse("content://" + authority + "/bookSources/insert");
+            for (int i = 0; i < writeCount; i += BATCH) {
+                JSONArray part = new JSONArray();
+                for (int j = i; j < Math.min(i + BATCH, writeCount); j++) {
+                    part.put(toWrite.get(j));
+                }
+                ContentValues v = new ContentValues();
+                v.put("json", part.toString());
+                getApplicationContext().getContentResolver().insert(uri, v);
+                prog("正在写入书源 " + Math.min(i + BATCH, writeCount) + "/" + writeCount
+                        + "（其余 " + (total - writeCount) + " 个未变，已跳过）…");
             }
-            ContentValues v = new ContentValues();
-            v.put("json", part.toString());
-            getApplicationContext().getContentResolver().insert(uri, v);
-            prog("正在写入书源 " + Math.min(i + BATCH, total) + "/" + total + "…");
-        }
-        // 官方 Provider 的 insert 无论成败都 return null（源码固定 return null），
-        // 不能靠返回值判断；写完后抽查首/中/尾确认真的落库
-        if (!verifyWritten(authority, finalSources)) {
-            throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
+            // 官方 Provider 的 insert 无论成败都 return null（源码固定 return null），
+            // 不能靠返回值判断；写完后抽查首/中/尾确认真的落库
+            if (!verifyWritten(authority, toWrite)) {
+                throw new IllegalStateException("写入后回查失败：阅读App未保存这批书源");
+            }
+        } else {
+            prog("书源规则全部未变（" + total + " 个），跳过写入以保住校验状态");
         }
         // 清理仓库已剔除的源：provider 的 insert 只增不删，不主动清理会让
         // 已判死/已下架的源永远留在手机里（本地可达性只探测域名存活，
@@ -645,6 +690,110 @@ public class SyncWorker extends Worker {
                 : "，已清理已下架 " + cleaned + " 源"
                 + (stillFailed.length() == 0 ? ""
                 : "（" + stillFailed.length() + " 个失败，下次同步自动重试）");
+    }
+
+    /**
+     * 用户本地偏好：这些字段是「用户在阅读App里自己改的」，同步时必须保留旧值。
+     * 不含 enabled —— 它由本地健康层（applyLocalHealth）决定，保留了会挡住断网禁用。
+     * 不含 bookSourceType / loginCheckJs / coverDecodeJs —— 它们属于源本身的语义，以上游为准。
+     */
+    private static final String[] LOCAL_KEEP = {
+            "customOrder", "enabledExplore", "bookSourceComment", "variableComment",
+            "respondTime", "eventListener", "customButton",
+    };
+
+    /**
+     * 参与「是否需要重写」判定的字段：只放真正影响抓取行为的规则体。
+     * 故意不含 weight / lastUpdateTime / respondTime —— 它们每轮都在变，
+     * 放进签名会让「每天权重微调」变成「每天全量重写」，校验态又全没了。
+     */
+    private static final String[] SIG_FIELDS = {
+            "bookSourceName", "bookSourceGroup", "bookSourceType", "bookUrlPattern",
+            "searchUrl", "exploreUrl", "exploreScreen",
+            "ruleSearch", "ruleBookInfo", "ruleToc", "ruleContent", "ruleExplore", "ruleReview",
+            "mainJs", "header", "jsLib", "loginUrl", "loginUi", "loginCheckJs", "coverDecodeJs",
+            "enabledCookieJar", "concurrentRate", "eventListener", "customButton",
+    };
+
+    /** 权重档位：只有跨档才值得重写；同档内的权重微调不碰，否则天天全量写 */
+    private static int weightBucket(int w) {
+        if (w >= 500) return 5;   // core
+        if (w >= 300) return 4;   // stable
+        if (w >= 150) return 3;   // backup
+        if (w >= 88) return 2;    // untestable(90/120)
+        if (w >= 40) return 1;    // watch
+        return 0;                 // dead
+    }
+
+    /** 源的「是否需要重写」指纹：规则体 + 权重档位 */
+    private String sourceSignature(JSONObject s) {
+        StringBuilder sb = new StringBuilder();
+        for (String k : SIG_FIELDS) {
+            sb.append(k).append('=').append(s.optString(k, "")).append('\u0001');
+        }
+        sb.append("wb=").append(weightBucket(s.optInt("weight", 0)));
+        return md5(sb.toString());
+    }
+
+    /**
+     * 规划本轮要写哪些源：
+     *   - 和 last.json 比，规则体 + 权重档位都没变 → 直接跳过（一次 provider 调用都不发）
+     *   - 变了 / 新出现 → 查回旧对象做合并
+     * oldArr 是上一轮落库的仓库原文（last.json），所以绝大多数日子这里只会有个位数到几十个。
+     */
+    private JSONArray planWrites(String authority, JSONArray finalSources, JSONArray oldArr) {
+        Map<String, JSONObject> oldMap = new HashMap<>();
+        for (int i = 0; i < oldArr.length(); i++) {
+            JSONObject o = oldArr.optJSONObject(i);
+            if (o == null) continue;
+            String u = o.optString("bookSourceUrl", "");
+            if (!u.isEmpty()) oldMap.put(u, o);
+        }
+        JSONArray out = new JSONArray();
+        int kept = 0, mergedCount = 0;
+        for (int i = 0; i < finalSources.length(); i++) {
+            JSONObject incoming = finalSources.optJSONObject(i);
+            if (incoming == null) continue;
+            String url = incoming.optString("bookSourceUrl", "");
+            if (url.isEmpty()) continue;
+            JSONObject old = oldMap.get(url);
+            if (old != null && sourceSignature(incoming).equals(sourceSignature(old))) {
+                kept++;
+                continue;
+            }
+            JSONObject existing = queryOne(authority, url);
+            if (existing == null) {
+                out.put(incoming);          // 新源，或旧源查不到（provider 不可读）
+            } else {
+                try {
+                    out.put(mergeSource(existing, incoming));
+                    mergedCount++;
+                } catch (Exception e) {
+                    out.put(incoming);
+                }
+            }
+        }
+        prog("书源增量：待写 " + out.length() + "，保留本地偏好 " + mergedCount + "，规则未变跳过 " + kept);
+        return out;
+    }
+
+    /** 合并：以旧对象为底 → 上游字段覆盖 → 用户本地偏好回填 */
+    private JSONObject mergeSource(JSONObject existing, JSONObject incoming) throws JSONException {
+        JSONObject out = new JSONObject();
+        java.util.Iterator<String> it = existing.keys();
+        while (it.hasNext()) {
+            String k = it.next();
+            out.put(k, existing.get(k));
+        }
+        java.util.Iterator<String> it2 = incoming.keys();
+        while (it2.hasNext()) {
+            String k = it2.next();
+            out.put(k, incoming.get(k));
+        }
+        for (String k : LOCAL_KEEP) {
+            if (existing.has(k)) out.put(k, existing.get(k));
+        }
+        return out;
     }
 
     /**
