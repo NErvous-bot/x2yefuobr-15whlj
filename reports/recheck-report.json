@@ -1,35 +1,27 @@
 {
- "generatedAt": 1793161496331,
- "runAt": "2026-10-28T04:24:56.331Z",
+ "generatedAt": 1793165839930,
+ "runAt": "2026-10-28T05:37:19.930Z",
  "oldRef": "HEAD",
- "baselineSha": "293bb8012b93d602ecd64f255478e3d9dd6f6a17",
+ "baselineSha": "2b5170a421b9e623eba6fa28b6eae0fbe46093a9",
  "tier1": [
   {
-   "name": "🔖八块小说网",
-   "url": "http://www.8kbook.com",
-   "traits": [
-    "GBK"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "正文不足200字（实得0）",
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
+   "traits": [],
+   "oldNote": "三关全过（第1本正文为空，换书后通过）",
+   "newNote": "目录为空",
    "attempts": [
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CONTENT_EMPTY",
-     "reason": "正文不足200字（实得0）"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
+     "pass": true,
+     "kind": "pass",
+     "stage": "OTHER",
+     "reason": "三关全过（第1本正文为空，换书后通过）"
     },
     {
      "pass": false,
@@ -42,40 +34,28 @@
      "kind": "pass",
      "stage": "PASS",
      "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     }
    ],
    "verdict": "SUSPECT"
   },
   {
-   "name": "芙蓉小说-δ",
-   "url": "http://www.frtxt.com",
+   "name": "轻之文库",
+   "url": "https://www.linovel.net",
    "traits": [
-    "GBK"
+    "js规则"
    ],
-   "oldNote": "三关全过",
+   "oldNote": "三关全过（第1本正文为空，换书后通过）",
    "newNote": "正文不足200字（实得0）；另换 2 本仍失败",
    "attempts": [
     {
      "pass": false,
      "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "搜索请求失败"
-    },
-    {
-     "pass": false,
-     "kind": "skip",
-     "stage": "NETWORK",
-     "reason": "搜索请求失败"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
      "stage": "CHAPTER_EMPTY",
      "reason": "目录为空"
     },
@@ -84,128 +64,142 @@
      "kind": "skip",
      "stage": "NETWORK",
      "reason": "搜索请求失败"
-    }
-   ],
-   "verdict": "NET_UNREACHABLE"
-  },
-  {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
-   "traits": [
-    "GBK"
-   ],
-   "oldNote": "三关全过（第1本正文为空，换书后通过）",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
     },
     {
      "pass": false,
      "kind": "fail",
-     "stage": "CHAPTER_EMPTY",
-     "reason": "目录为空"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）；另换 2 本仍失败"
     },
     {
      "pass": true,
      "kind": "pass",
      "stage": "PASS",
      "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     }
    ],
    "verdict": "SUSPECT"
+  },
+  {
+   "name": "必读居",
+   "url": "http://www.biduju.net/",
+   "traits": [
+    "GBK"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    }
+   ],
+   "verdict": "MIXED_DEATH"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "墨坛文学",
-   "url": "http://www.22mt.net/",
-   "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 97,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 57,
-    "contentLen": 1556,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793161275201
-   }
-  },
-  {
-   "name": "🔰 海棠书屋",
-   "url": "https://www.haitangshufang.com",
-   "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 63,
-    "search": true,
-    "toc": true,
-    "content": false,
-    "chapters": 96,
-    "contentLen": 0,
-    "note": "正文不足200字（实得0）；另换 2 本仍失败",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1793161275201
-   }
-  },
-  {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
+   "name": "🔖八块小说网",
+   "url": "http://www.8kbook.com",
    "tier": 1,
    "prevVerdict": "SUSPECT",
    "state": "RECOVERED",
    "evidence": {
-    "health": 97,
+    "health": 88,
     "search": true,
     "toc": true,
     "content": true,
-    "chapters": 319,
-    "contentLen": 3562,
+    "chapters": 435,
+    "contentLen": 4743,
     "note": "三关全过",
     "flapping": true,
     "recent": [
      "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793165669919
+   }
+  },
+  {
+   "name": "芙蓉小说-δ",
+   "url": "http://www.frtxt.com",
+   "tier": 1,
+   "prevVerdict": "NET_UNREACHABLE",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 33,
+    "search": true,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "目录为空",
+    "flapping": true,
+    "recent": [
      "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1793165669919
+   }
+  },
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 88,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 113,
+    "contentLen": 4995,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "fail",
+     "fail",
      "pass",
      "fail",
      "pass"
     ],
-    "checkedAt": 1793161275201
+    "checkedAt": 1793165669919
    }
   }
  ]

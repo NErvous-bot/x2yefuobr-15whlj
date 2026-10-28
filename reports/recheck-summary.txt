@@ -4,30 +4,30 @@
 ━━ 迁移矩阵 ━━
   111  available->available
     3  available->broken
-    7  available->untestable
-    6  broken->available
-  256  broken->broken
-    4  broken->removed
-    8  broken->untestable
-    2  untestable->available
-   18  untestable->broken
-    2  untestable->removed
-  561  untestable->untestable
-新增源 4
+    5  available->untestable
+    2  broken->available
+  234  broken->broken
+   23  broken->removed
+   20  broken->untestable
+    9  untestable->available
+    6  untestable->broken
+    1  untestable->removed
+  562  untestable->untestable
+新增源 3
 
 ━━ 一级复查：旧可用 → 确认坏 3 ━━
   SUSPECT 2
-  NET_UNREACHABLE 1
-  [SUSPECT 1/5] 🔖八块小说网 | 阶段: CONTENT_EMPTY,CONTENT_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,PASS | 特征: GBK
-  [NET_UNREACHABLE 0/2] 芙蓉小说-δ | 阶段: SEARCH_EMPTY,NETWORK,NETWORK,CHAPTER_EMPTY,NETWORK | 特征: GBK
-  [SUSPECT 1/5] 🎃太子爷小说网🎃 | 阶段: SEARCH_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,PASS | 特征: GBK
+  MIXED_DEATH 1
+  [SUSPECT 2/5] 豆花文学 | 阶段: SEARCH_EMPTY,OTHER,CHAPTER_EMPTY,PASS,CHAPTER_EMPTY
+  [SUSPECT 1/4] 轻之文库 | 阶段: CHAPTER_EMPTY,NETWORK,CONTENT_EMPTY,PASS,CHAPTER_EMPTY | 特征: js规则
+  [MIXED_DEATH 0/5] 必读居 | 阶段: CHAPTER_EMPTY,SEARCH_EMPTY,CHAPTER_EMPTY,SEARCH_EMPTY,CHAPTER_EMPTY | 特征: GBK
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 293bb80） ━━
-  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) 墨坛文学 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原REAL_DEATH_CANDIDATE) 🔰 海棠书屋 h=63 [正文不足200字（实得0）；另换 2 本仍失败] recent=pass/pass/pass/fail/fail flap=true
-  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=97 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+━━ 往轮候选终态 3（基线 2b5170a） ━━
+  [RECOVERED] (T1 原SUSPECT) 🔖八块小说网 h=88 [三关全过] recent=pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原NET_UNREACHABLE) 芙蓉小说-δ h=33 [目录为空] recent=pass/fail/fail flap=true
+  [RECOVERED] (T1 原SUSPECT) 🎃太子爷小说网🎃 h=88 [三关全过] recent=fail/fail/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
 PASS：旧可用 → 确认坏 = 3（均属抖动/疑似误判，禁止删除即可）
