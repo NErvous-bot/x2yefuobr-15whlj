@@ -76,11 +76,28 @@ const consOf = (recent, tag) => { let n = 0; for (let i = recent.length - 1; i >
 // 保证幂等、不会越积越多；用户自己建的分组原样保留。
 const CI_PREFIX = 'CI-';
 
+// 上游脏分组名：从上游合并进来的书源有时带着无意义的分组名（实测成品里
+// 173 个源的分组是 "6666666666666666"，还有 "0206" / "0905校验" 这类批次编号）。
+// 这些名字来自上游某次批量导出的中间产物，对用户没有任何筛选价值：
+// 在阅读 App 的「分组」里它们只表现为一坨同名条目，等于分组功能失效。
+//
+// 判定用保守的形态规则，不做白名单（避免误伤用户自定义的正常分组名）：
+//   · 纯数字且长度 >= 6（"0206" 4 位保留，它像年份/批次，可能是用户有意的）
+//   · 单个字符重复 >= 8 次（"6666666666666666" 命中）
+// 只有命中这两条才丢弃，其它一律原样保留。
+function isJunkGroupName(name) {
+    const s = String(name || '').trim();
+    if (!s) return false;
+    if (/^\d{6,}$/.test(s)) return true;
+    if (s.length >= 8 && new RegExp('^' + s[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '+$').test(s)) return true;
+    return false;
+}
+
 function stripCIGroups(group) {
     return String(group || '')
         .split(',')
         .map((s) => s.trim())
-        .filter((s) => s && !s.startsWith(CI_PREFIX))
+        .filter((s) => s && !s.startsWith(CI_PREFIX) && !isJunkGroupName(s))
         .join(',');
 }
 
@@ -206,4 +223,4 @@ try {
 } // end require.main === module
 
 // 测试用导出（grade/consOf 不依赖文件 IO，require 时只加载函数不执行主流程）
-module.exports = { grade, consOf, sanitizeSource, stripCIGroups, ciTagsOf, OFFICIAL_FIELDS, REPO_FIELDS, KEEP_FIELDS };
+module.exports = { grade, consOf, sanitizeSource, stripCIGroups, isJunkGroupName, ciTagsOf, OFFICIAL_FIELDS, REPO_FIELDS, KEEP_FIELDS };

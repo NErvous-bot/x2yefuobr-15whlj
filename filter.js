@@ -14,28 +14,46 @@ const UAS = [
 ];
 const pickUA = () => UAS[Math.floor(Math.random() * UAS.length)];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-// 上游源清单（按优先级：主→备，自动降级，任一失败不影响其他）
-// 1) tickmao/Novel：MIT 协议，196 源 / 98.5% 验证有效，天天维护（推荐主上游）
-// 2) jiwangyihao/source-j-legado：MIT，655 stars，轻小说/二次元专项，每个网站一个 JSON
-//    （注：fqweb.json 是自建服务器模板，不可直接用，故未加入）
-// 3) shidahuilang/shuyuan-bak：GPL-3.0，3373 源大体量，含番茄镜像（备上游，体量补充）
-const UPSTREAMS = [
-    'https://cdn.jsdelivr.net/gh/tickmao/Novel@master/sources/legado/full.json',
-    // jiwangyihao 源集（轻小说/二次元专项）
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/bilinovel.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/bilinovel-like.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/esjzone.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/fishhawk.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/lk-lightnovel-us.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/masiro.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/rezero.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/wenku.json',
-    'https://cdn.jsdelivr.net/gh/jiwangyihao/source-j-legado@master/zaimanhua.json',  // 漫画→被BAD过滤
-    'https://raw.githubusercontent.com/shidahuilang/shuyuan-bak/main/good.json',
-    // 4) aoaostar/legado：AGPL-3.0 社区共享书源站（6612星，每日更新，3900源/20MB全量）
-    //    与本地重叠约104个，主要价值=给扩容池补 ~3600 个候选长尾源（仍按扩容闸门实测筛选）
-    'https://raw.githubusercontent.com/aoaostar/legado/master/sources/b778fe6b.json'
-];
+
+// ── 上游源清单：唯一真源是 upstreams.json ──────────────────────────────
+// 此前这里有一份硬编码的 UPSTREAMS 数组，与 upstreams.json 各自维护，造成两处漏洞：
+//   1) 硬编码里含 tickmao/Novel 与 aoaostar/legado —— 两者仓库内都没有 LICENSE
+//      文件，upstreams.json 已标 publicPublish:false（禁止并入公开成品）；
+//      但 filter.js 从不读 upstreams.json，于是授权闸门只保护了 upstream-sync.js
+//      这条新路径，旧的 filter 路径照样把它们拉进成品。
+//   2) 两边连 URL 都不一致：aoaostar 在 filter 里是 master 分支，
+//      在 upstreams.json 里是 release 分支 —— 即使把策略接进来也会漏掉入口。
+//
+// 现在统一为：只从 upstreams.json 读，并执行与 upstream-sync.js 同一套闸门。
+// 闸门 = enabled !== false（停用的跳过）且 publicPublish === true（无许可证的跳过）。
+// 任何未来新增的上游只在一处配置，不会再出现第二条绕过路径。
+const upstreamsConfig = require('./upstreams.json');
+
+function buildUpstreams(config) {
+    const list = Array.isArray(config) ? config : [];
+    const urls = [];
+    const blocked = [];
+    for (const u of list) {
+        if (!u || typeof u !== 'object') continue;
+        if (u.enabled === false) {
+            blocked.push({ id: u.id || '(no-id)', why: 'enabled=false' });
+            continue;
+        }
+        if (u.publicPublish !== true) {
+            blocked.push({ id: u.id || '(no-id)', why: 'publicPublish!==true (license=' + u.license + ')' });
+            continue;
+        }
+        if (!Array.isArray(u.urls)) continue;
+        for (const url of u.urls) if (typeof url === 'string' && url) urls.push(url);
+    }
+    return { urls, blocked };
+}
+
+const upstreamSelection = buildUpstreams(upstreamsConfig);
+const UPSTREAMS = upstreamSelection.urls;
+for (const b of upstreamSelection.blocked) {
+    console.log('上游授权闸门：跳过 ' + b.id + '（' + b.why + '）');
+}
 
 const { norm, originOf } = require('./src/source-id');
 

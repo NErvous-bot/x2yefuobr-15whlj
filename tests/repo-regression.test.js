@@ -768,14 +768,23 @@ test('harvested 合并：超过上限时按活跃度截断（新的留下）', (
     assert.deepStrictEqual(out.map(s => s.bookSourceName), ['N1', 'O2'], '最旧的 O1 被挤出');
 });
 
-test('upstreams.json 结构合法：每条都有 license 与 urls，且 license 不是凭空写的 MIT', () => {
+test('upstreams.json 结构合法：每条都有 license 与 urls，且 license 值在已知集合内', () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
     assert.ok(Array.isArray(cfg) && cfg.length > 0, 'upstreams.json 应是非空数组');
+    // 已知的合法 license 声明。'NONE' 表示上游仓库内确实没有 LICENSE 文件，
+    // 由下面的 publicPublish 规则约束其不得并入公开成品。
+    const KNOWN_LICENSES = ['MIT', 'MPL-2.0', 'GPL-3.0', 'AGPL-3.0', 'Apache-2.0', 'BSD-3-Clause', 'NONE'];
     for (const u of cfg) {
         assert.ok(u.id, '每条都要有 id');
         assert.ok(Array.isArray(u.urls) && u.urls.length > 0, u.id + ' 缺少 urls');
         assert.ok(typeof u.license === 'string' && u.license.length > 0, u.id + ' 缺少 license 字段');
-        assert.ok(!/^MIT$/i.test(u.license) || true, 'license 以仓库实际 LICENSE 文件为准');
+        // 原断言为 assert.ok(!/^MIT$/i.test(u.license) || true, ...)：
+        // `|| true` 让它在任何输入下都通过，等于什么都没检查。改为真正的集合校验。
+        assert.ok(
+            KNOWN_LICENSES.includes(u.license),
+            u.id + ' 的 license 不在已知集合内: ' + JSON.stringify(u.license) +
+            '（已知: ' + KNOWN_LICENSES.join('/') + '）'
+        );
         assert.ok(u.adult === false, u.id + ' 公开仓库里的上游不得标记成人源');
     }
 });
@@ -789,6 +798,47 @@ test('upstreams.json：无 LICENSE 的上游必须关闭自动收录（publicPub
         }
     }
     assert.ok(cfg.some(u => u.license === 'NONE'), '本仓库确实存在无 LICENSE 上游，规则必须生效');
+});
+
+// P1 回归：旧采集路径（filter.js）必须与新采集路径（upstream-sync.js）共用同一套授权闸门。
+// 背景：filter.js 曾硬编码一份 UPSTREAMS 数组，内含 tickmao/Novel 与 aoaostar/legado
+// （两者仓库内都没有 LICENSE 文件），而它从不读 upstreams.json —— 于是
+// upstream-sync.js 里的 publicPublish 闸门只保护了新路径，旧路径照样把无授权上游
+// 拉进公开成品。这条测试锁死「filter.js 不得再出现硬编码上游 URL」。
+test('filter.js 不再硬编码上游 URL，授权闸门对新旧路径统一生效', () => {
+    const src = fs.readFileSync(path.join(REPO, 'filter.js'), 'utf8');
+
+    // ① filter.js 必须从 upstreams.json 读取配置（唯一真源）
+    assert.ok(
+        /require\(\s*'\.\/upstreams\.json'\s*\)/.test(src),
+        'filter.js 必须 require(./upstreams.json) 作为上游清单的唯一真源'
+    );
+
+    // ② filter.js 必须检查 publicPublish（与 upstream-sync.js 同一闸门）
+    assert.ok(
+        src.includes('publicPublish'),
+        'filter.js 必须检查 publicPublish，否则无 LICENSE 的上游可从旧路径进入成品'
+    );
+
+    // ③ 不得再出现任何硬编码的上游仓库 URL（tickmao / aoaostar / jiwangyihao / shidahuilang）
+    const hardcodedRepoUrls = src.match(
+        /https?:\/\/[^\s'"]*(?:tickmao|aoaostar|jiwangyihao|shidahuilang)[^\s'"]*/g
+    );
+    assert.strictEqual(
+        hardcodedRepoUrls, null,
+        'filter.js 里不得出现硬编码上游仓库 URL，实际发现: ' + JSON.stringify(hardcodedRepoUrls)
+    );
+});
+
+// 同一上游的所有入口必须被同一闸门覆盖：此前 aoaostar 在 filter.js 用 master 分支、
+// 在 upstreams.json 用 release 分支，两边不一致会导致策略接进来也漏掉一个入口。
+test('upstreams.json 覆盖同一上游的所有已知入口分支', () => {
+    const cfg = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
+    const aoaostar = cfg.find(u => u.id === 'aoaostar');
+    assert.ok(aoaostar, 'aoaostar 上游应登记在 upstreams.json');
+    const joined = aoaostar.urls.join(' ');
+    assert.ok(/\/release\/sources\//.test(joined), 'aoaostar 应覆盖 release 分支入口');
+    assert.ok(/\/master\/sources\//.test(joined), 'aoaostar 应覆盖 master 分支入口（历史 filter.js 曾用它）');
 });
 
 test('上游同步结论：流程成功 ≠ 质量成功（outcome 语义）', () => {
@@ -1006,11 +1056,34 @@ test('发现页判定区分「确定失效」与「测不了」（后者不打 C
         '确定失效→false，测不了→null（js 生成/网络抖动/选择器超出能力）');
 });
 
-test('stripCIGroups 只剥 CI- 前缀，用户自己的分组原样保留', () => {
-    assert.strictEqual(S2.stripCIGroups('6666666666666666,CI-正文失效'), '6666666666666666');
-    assert.strictEqual(S2.stripCIGroups('CI-搜索失效'), '');
+test('stripCIGroups 只剥 CI- 前缀与上游脏分组，用户自己的分组原样保留', () => {
+    // 用户自定义的普通分组必须原样保留
     assert.strictEqual(S2.stripCIGroups('备用, 精品 ,CI-发现失效'), '备用,精品');
+    assert.strictEqual(S2.stripCIGroups('CI-搜索失效'), '');
     assert.strictEqual(S2.stripCIGroups(undefined), '');
+
+    // 上游脏分组名：实测成品里 173 个源的分组是 "6666666666666666"，
+    // 来自上游某次批量导出的中间产物，对 App 里的分组筛选没有任何价值。
+    assert.strictEqual(S2.stripCIGroups('6666666666666666,CI-正文失效'), '');
+    assert.strictEqual(S2.stripCIGroups('6666666666666666'), '');
+    assert.strictEqual(S2.stripCIGroups('aaaaaaaa,备用'), '备用', '单字符重复 8 次以上视为脏名');
+    assert.strictEqual(S2.stripCIGroups('1234567890'), '', '纯数字且长度 >=6 视为脏名');
+
+    // 不能误伤：这些必须保留
+    assert.strictEqual(S2.stripCIGroups('0206'), '0206', '4 位批次号保留（可能是用户有意分组）');
+    assert.strictEqual(S2.stripCIGroups('0905校验'), '0905校验', '带文字的批次号保留');
+    assert.strictEqual(S2.stripCIGroups('星辰整理5.0'), '星辰整理5.0');
+    assert.strictEqual(S2.stripCIGroups('小说 书源'), '小说 书源');
+});
+
+test('isJunkGroupName 的判定边界', () => {
+    assert.strictEqual(S2.isJunkGroupName('6666666666666666'), true);
+    assert.strictEqual(S2.isJunkGroupName('aaaaaaa'), false, '7 个 a 不够 8，保留');
+    assert.strictEqual(S2.isJunkGroupName('aaaaaaaa'), true, '正好 8 个命中');
+    assert.strictEqual(S2.isJunkGroupName('12345'), false, '5 位数字保留');
+    assert.strictEqual(S2.isJunkGroupName('123456'), true, '6 位数字命中');
+    assert.strictEqual(S2.isJunkGroupName(''), false);
+    assert.strictEqual(S2.isJunkGroupName('备用'), false);
 });
 
 test('ciTagsOf：不可测（health=null）不打标，只有真失败才打', () => {
