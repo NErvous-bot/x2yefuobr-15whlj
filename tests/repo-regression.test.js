@@ -540,9 +540,38 @@ test('负向对照：真正无关键词槽位的静态页仍判不可测', () =>
     assert.strictEqual(r.skip, '搜索无{{key}}槽位', '无 key 槽位必须仍判不可测，实际: ' + JSON.stringify(r));
 });
 
-test('负向对照：<js> 动态搜索URL仍判不可测', () => {
+test('负向对照：需要联网的 <js> 搜索URL仍判不可测（不得拼出假地址）', () => {
+    // 原断言为「一律判不可测」。引进离线 JS 求值器后，能求值的脚本应当可实测，
+    // 但这条样本用了 java.ajax（需要联网），仍必须判不可测 —— 且理由要精确到
+    // 「需要联网」，不能退化成含糊的「含js」。真正的红线是：绝不把脚本源码当 URL 拼出去。
     const r = parseSearch('/<js>java.ajax(baseUrl)</js>', BASE, '都市');
-    assert.strictEqual(r.skip, '无搜索URL或含js', '动态搜索URL必须仍判不可测，实际: ' + JSON.stringify(r));
+    assert.ok(r.skip, '需要联网的 JS 必须判不可测，实际: ' + JSON.stringify(r));
+    assert.match(r.skip, /需要联网/, '理由应明确指出需要联网，实际: ' + JSON.stringify(r.skip));
+});
+
+test('离线可求值的 <js> 搜索URL现在能实测（JS 引擎的正面能力）', () => {
+    // 纯本地脚本：只做字符串拼装，应解出带关键词的真实 URL
+    const r = parseSearch(
+        "@js:java.put('url','https://x.example.com/search?wd='+key);",
+        BASE,
+        '都市'
+    );
+    assert.ok(r.opt, '纯本地 JS 应可解出 URL，实际: ' + JSON.stringify(r));
+    assert.ok(
+        r.opt.url.includes(encodeURIComponent('都市')),
+        'URL 应已内联关键词，实际: ' + r.opt.url
+    );
+});
+
+test('JS 求值后丢了关键词 → 判不可测（防假地址）', () => {
+    // 脚本只 java.put('key') 却没把 key 拼进 URL，产出的 URL 不含关键词，
+    // 直接拿去请求会得到假结果 —— 必须判不可测而不是当成可实测。
+    const r = parseSearch(
+        "@js:java.put('url','https://x.example.com/search');",
+        BASE,
+        '都市'
+    );
+    assert.strictEqual(r.skip, 'JS求值后URL未含关键词', '实际: ' + JSON.stringify(r));
 });
 
 test('动态脚本 token（java.connect）不得被拼进 URL，应判不可测', () => {

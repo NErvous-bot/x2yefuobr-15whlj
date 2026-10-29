@@ -15,6 +15,7 @@
 // 不支持（→不可测豁免，绝不判死）：<js>/@js: 动态规则、JSONPath 高级语法（$../?()过滤）等
 // 零依赖，Node 20 直接运行
 const https = require('https');
+const { evaluateSearchJs } = require('./src/legado-js');
 
 const UAS = [
     'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
@@ -447,10 +448,25 @@ const hasCT = h => Object.keys(h).some(k => /^content-type$/i.test(k));
 // 选项支持 method/body/headers/charset（含伪 JSON）；POST/GBK 均可实测
 // kw：测试用搜索关键词（双关键词防误判需要参数化）
 // 返回 {opt} 或 {skip:原因}；POST 表单额外带 altBody（关键词原文备胎，防转义误杀）
+//
+// JS 形态（<js>...</js> / @js:...）：先用 src/legado-js.js 离线求值，得到真正的 URL
+// 再走同一套解析。求值器只实现「纯本地」那一层（java.put/get、JSON、md5/base64/encode
+// 等），需要联网（java.ajax/post）或 Android WebView 的会返回分层 skip 原因，
+// 而不是笼统的「含js」。实测 100 个 JS searchUrl 里 42 个能靠这层救回来。
 function parseSearch(su, base, kw) {
     kw = kw || '都市';
     su = String(su || '').trim();
-    if (!su || /<js>|@js:/i.test(su)) return { skip: '无搜索URL或含js' };
+    if (!su) return { skip: '无搜索URL' };
+    let fromJs = false;
+
+    if (/<js>|@js:/i.test(su)) {
+        const ev = evaluateSearchJs({ su, base, key: kw, page: 1 });
+        if (!ev.ok) return { skip: ev.skip };
+        // 求值成功：用产出的 URL 继续走下面的静态解析（可能带 JSON 选项尾巴）
+        su = String(ev.url).trim();
+        if (!su) return { skip: 'JS求值后URL为空' };
+        fromJs = true;
+    }
     // 逗号切分：选项体以 ",{" 开头。逗号可能落在 {{...}} 里（如 java.encodeURI(key,"gbk")），
     // 也可能只是 URL 参数里的普通逗号，不能直接取第一个逗号——否则会把槽位切断，
     // 误判成"搜索无{{key}}槽位"。先找 ",{"，找不到再退回旧的"第一个逗号"口径。
@@ -543,7 +559,22 @@ function parseSearch(su, base, kw) {
     const isGbk = /gb2312|gbk/i.test(charset);
     if (isGbk && !GBK.has) return { skip: 'GBK编码表初始化失败' };
     const hasKey = u => /\{\{key\}\}|\{key\}/.test(u);
-    if (!javaKey && !hasKey(path) && !(body && hasKey(body))) return { skip: '搜索无{{key}}槽位' };
+    // fromJs 标记：这一段 searchUrl 是 JS 求值后的产物，关键词可能已经被脚本
+    // 内联进 URL（例如脚本自己拼了 `?wd=` + key），此时不该再要求 {{key}} 槽位 ——
+    // 否则求值成功的 25 个源会被这一条检查全部退回「无槽位」。
+    // 但「假地址」防护不能丢：对 JS 产物只要求 URL 里要么带槽位、
+    // 要么已经含本次测试关键词的编码形态之一。
+    if (!fromJs && !javaKey && !hasKey(path) && !(body && hasKey(body))) return { skip: '搜索无{{key}}槽位' };
+    // JS 产物必须能证明关键词真的进去了：要么仍有槽位待替换，要么已经包含
+    // 本次关键词的 UTF-8 或 GBK 百分号编码形态。两者都不满足说明脚本把 key
+    // 丢了（例如只 java.put('key',key) 却没拼进 URL），那会是一个假地址，判不可测。
+    if (fromJs && !hasKey(path)) {
+        const utf8 = encodeURIComponent(kw);
+        const gbkPct = GBK.has ? GBK.pct(kw) : '';
+        const bodyHasKey = body && (hasKey(body) || body.includes(kw) || body.includes(utf8));
+        const pathHasKey = path.includes(kw) || path.includes(utf8) || (gbkPct && path.includes(gbkPct));
+        if (!pathHasKey && !bodyHasKey) return { skip: 'JS求值后URL未含关键词' };
+    }
     // 关键词编码：GBK 站按站点编码做百分号转义，UTF-8 站用标准 encodeURIComponent
     const K = isGbk ? GBK.pct(kw) : encodeURIComponent(kw);
     if (!K) return { skip: 'GBK表缺字' };

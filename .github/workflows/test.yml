@@ -42,6 +42,12 @@ jobs:
       - name: 回归测试（含 URL 主键 + 权重 clamp + Java 语法扫描）
         run: node tests/repo-regression.test.js
 
+      # JS 求值器单元测试：书源 searchUrl 的 <js>/@js: 脚本由 src/legado-js.js 离线求值。
+      # 这组测试同时锁死沙箱安全边界（拿不到 require/process、逃逸被拒、死循环被超时切断），
+      # 因为我们在 CI 里执行的是「别人写的脚本」，边界一旦失守就是任意代码执行。
+      - name: JS 求值器单元测试（含沙箱安全审计）
+        run: node tests/legado-js.test.mjs
+
       # 契约测试：拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt / BookSource.kt 对一遍。
       # 官方删路由或删字段 → FAIL（我们还在用，会静默失败）；官方新增 → WARN（写进 reports/）。
       # 拉不到官方源码（网络抖动）→ SKIP 且 exit 0，不因外部网络挡住发布。
