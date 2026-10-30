@@ -76,6 +76,41 @@ for (const f of fs.readdirSync(WF).filter((x) => x.endsWith('.yml'))) {
 if (fs.existsSync('scripts/export-health-json.js')) ok('scripts/export-health-json.js 存在');
 else bad('export-health-json.js', '缺失');
 
+// ⑥ 三态语义回归：不可测（health=null）不得被判成 broken
+//
+// 背景：health.js 的 gatesOf() 里 content: ok（ok=usable===true），所以一个
+// 「不可测」的源拿到的 content 也是 false。导出器若优先判 content===false→broken，
+// 就会把「测不了」当成「坏了」，导致 score.js 把它降到 dead 层、甚至推进隔离池。
+// 实测一轮里这类源有 104 个（JS需要联网/动态语法等），属于会静默误伤的口径 bug。
+// 这里把导出器的判定函数单独拉出来跑真实用例，锁死三态。
+{
+  // 导出脚本以 CLI 形式运行（main() 在导入时即执行），不能直接 import 内部函数，
+  // 因此这里对判定函数的源码做顺序断言：必须先用 health 判 untestable，再判 content。
+  const src = fs.readFileSync('scripts/export-health-json.js', 'utf8');
+  const fn = /function safeState\(v\)\s*\{([\s\S]*?)\n\}/.exec(src);
+  if (!fn) {
+    bad('safeState 判定函数', '未能解析');
+  } else {
+    const body = fn[1];
+    const healthFirst = body.indexOf('v.health === null') >= 0 || body.indexOf('v.health === undefined') >= 0;
+    const beforeContent = healthFirst &&
+      body.indexOf('v.health') < body.indexOf('v.content === false');
+    if (healthFirst && beforeContent) {
+      ok('safeState 先判 health=null → untestable（不可测不误判成坏了）');
+    } else {
+      bad('safeState 三态顺序', '必须先用 health===null 判 untestable，再判 content');
+    }
+    if (/untestable/.test(body)) ok('safeState 保留 untestable 态'); else bad('safeState', '缺少 untestable 分支');
+  }
+}
+
+// ⑦ 生产侧导入时必须接受 untestable（否则隔离 job 产出的三态会被拒收）
+{
+  const upd = read('update.yml');
+  if (/untestable/.test(upd)) ok('update.yml 导入侧接受 untestable 态');
+  else bad('update.yml 三态', '导入校验必须允许 untestable');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);

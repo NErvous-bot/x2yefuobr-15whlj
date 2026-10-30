@@ -19,8 +19,21 @@ const OUT = 'js-eval-result.json';
 const MAX_URL_LEN = 2048;
 const MAX_ROWS = 2000;
 
+// 三态判定必须以 health 为准，不能看 content。
+//
+// 为什么：health.js 的 gatesOf() 里 content: ok（ok = usable===true），所以
+// 一个「不可测」的源（usable==='skip'，health=null）拿到的 content 也是 false。
+// 若这里优先判 content===false → broken，就会把「测不了」当成「坏了」：
+//   · 这类源多为 JS 规则 / 反爬 / 网络失败，属于「不知道」而不是「确认失效」
+//   · 判成 broken 后 score.js 会给它 dead 层权重，甚至推进 quarantine 隔离池
+//   · 实测本轮 694 个源里有 104 个属此类（JS需要联网/动态语法等），会被误伤
+// 正确语义（与 health.js 自己的 untestable 计数、以及 README 的口径一致）：
+//   health === null        → untestable（不知道）
+//   health 有值且 content  → available
+//   health 有值且 !content → broken（真坏）
 function safeState(v) {
     if (v === null || v === undefined) return 'untestable';
+    if (v.health === null || v.health === undefined) return 'untestable';
     if (v.content === true) return 'available';
     if (v.content === false) return 'broken';
     return 'untestable';
