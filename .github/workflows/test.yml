@@ -54,6 +54,12 @@ jobs:
       - name: CI 权限边界回归（JS 求值隔离 / 凭据持久化）
         run: node tests/ci-boundary.test.mjs
 
+      # 数据契约端到端：health 报告 → export-health-json → 生产端导入 → score.js 评分。
+      # 锁死「导出字段集必须覆盖 score.js 依赖」—— 曾经只导 4 个字段，
+      # 导致 146 个可用源的基础分从 70 塌到 25。单模块测试全绿也发现不了这类断裂。
+      - name: 数据契约端到端（导出 → 导入 → 评分）
+        run: node tests/data-contract.test.mjs
+
       # 契约测试：拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt / BookSource.kt 对一遍。
       # 官方删路由或删字段 → FAIL（我们还在用，会静默失败）；官方新增 → WARN（写进 reports/）。
       # 拉不到官方源码（网络抖动）→ SKIP 且 exit 0，不因外部网络挡住发布。

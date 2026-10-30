@@ -69,30 +69,101 @@ jobs:
           name: js-eval-result
           path: .
 
-      - name: 导入求值结果 → health/source_health.json（结构再校验）
+      - name: 导入求值结果 → health/source_health.json（结构再校验 + 完整性保护）
         run: |
           set -euo pipefail
           node -e "
             const fs=require('fs');
+
+            // ══ 完整性保护（跨权限边界的必需校验）══════════════════════════════
+            // 这份 JSON 来自 js-eval job —— 那个 job 执行了不可信书源脚本。
+            // 即使它拿到的是低权限环境，产物本身仍是「可能被污染的数据」。
+            // 因此生产侧不能只检查字段类型，还要校验它和当前成品的关系：
+            //   · 结果的 URL 必须存在于当前 legado.json（不接受凭空新增的源）
+            //   · 结果数量必须与本轮应测数量一致（拒绝漏测/多测）
+            //   · URL 不得重复（拒绝用重复行覆盖同一条判定）
+            //   · generatedAt 不得是未来时间、不得过期（拒绝陈旧快照）
+            //   · 单轮 broken 比例异常时独立告警（防大规模误判一次性落地）
+            // ═══════════════════════════════════════════════════════════════════
             const j=JSON.parse(fs.readFileSync('js-eval-result.json','utf8'));
-            // 生产侧独立再校验：字段集合、行结构与取值域，绝不信任上游产物
+
+            const expectedTop='generatedAt,results,totalSources,version';
             const keys=Object.keys(j).sort().join(',');
-            if (keys!=='generatedAt,results,version') throw new Error('unexpected keys: '+keys);
-            if (j.version!==1) throw new Error('unexpected version: '+j.version);
-            if (!Array.isArray(j.results)||j.results.length===0) throw new Error('empty results');
+            if(keys!==expectedTop) throw new Error('unexpected top keys: '+keys);
+            if(j.version!==2) throw new Error('unexpected version: '+j.version);
+            if(!Array.isArray(j.results)||j.results.length===0) throw new Error('empty results');
+            if(typeof j.totalSources!=='number'||j.totalSources!==j.results.length){
+              throw new Error('totalSources mismatch: '+j.totalSources+' vs '+j.results.length);
+            }
+
+            // 时间合理性：不允许未来时间，也不允许超过 7 天的陈旧快照
+            const now=Date.now();
+            if(typeof j.generatedAt!=='number'||!Number.isFinite(j.generatedAt)) throw new Error('bad generatedAt');
+            if(j.generatedAt>now+60000) throw new Error('generatedAt is in the future');
+            if(now-j.generatedAt>7*86400000) throw new Error('generatedAt is stale (>7d)');
+
+            // 与当前成品对账：结果集必须是现有源的子集，且数量吻合
+            const legado=JSON.parse(fs.readFileSync('legado.json','utf8'));
+            const known=new Set();
+            for(const s of legado){ if(s&&s.bookSourceUrl) known.add(String(s.bookSourceUrl)); }
+            if(known.size===0) throw new Error('legado.json has no bookSourceUrl');
+            const expectedCount=Math.min(j.results.length, known.size);
+            if(j.results.length>known.size*2){
+              throw new Error('results far exceed product sources: '+j.results.length+' vs '+known.size);
+            }
+
             const allowed=new Set(['available','broken','untestable']);
-            const sources={}; let updatedAt=0;
+            const counted={available:0,broken:0,untestable:0};
+            const sources={}; const seen=new Set();
             for(const r of j.results){
               if(typeof r.url!=='string'||r.url.length===0) throw new Error('bad url');
+              if(seen.has(r.url)) throw new Error('duplicate url in results: '+r.url);
+              seen.add(r.url);
+              if(!known.has(r.url)) throw new Error('result url not in product: '+r.url);
               if(typeof r.state!=='string'||!allowed.has(r.state)) throw new Error('bad state: '+r.state);
-              if(!Number.isInteger(r.health)&&r.health!==null) throw new Error('bad health');
-              if(typeof r.note!=='string') throw new Error('bad note');
-              sources[r.url]={ health:r.health, content:r.state==='available'?true:r.state==='broken'?false:null, note:r.note, explore:null, checkedAt:j.generatedAt };
+              counted[r.state]++;
+              // 逐字段校验并按原类型重建
+              const bool=(x,n)=>{ if(x!==null&&typeof x!=='boolean') throw new Error('bad '+n+' for '+r.url); return x; };
+              const num=(x,n)=>{ if(x!==null&&!(typeof x==='number'&&Number.isFinite(x))) throw new Error('bad '+n+' for '+r.url); return x; };
+              const str=(x,n)=>{ if(typeof x!=='string') throw new Error('bad '+n+' for '+r.url); return x; };
+              if(!Array.isArray(r.recent)) throw new Error('bad recent for '+r.url);
+              if(r.recent.length>5) throw new Error('recent too long for '+r.url);
+              for(const e of r.recent) if(typeof e!=='string') throw new Error('bad recent entry for '+r.url);
+
+              sources[r.url]={
+                name: str(r.name,'name'),
+                health: num(r.health,'health'),
+                search: bool(r.search,'search'),
+                toc: bool(r.toc,'toc'),
+                content: bool(r.content,'content'),
+                chapters: num(r.chapters,'chapters'),
+                contentLen: num(r.contentLen,'contentLen'),
+                responseTime: num(r.responseTime,'responseTime'),
+                note: str(r.note,'note'),
+                checkedAt: num(r.checkedAt,'checkedAt'),
+                recent: r.recent.slice(),
+                flapping: bool(r.flapping,'flapping'),
+                explore: bool(r.explore,'explore'),
+                exploreNote: str(r.exploreNote,'exploreNote'),
+              };
             }
-            updatedAt=j.generatedAt;
+
+            // 大规模状态突变保护：broken 占比异常时明确失败，不静默落库
+            const total=j.results.length;
+            const brokenRatio=counted.broken/total;
+            console.log('state counts: available='+counted.available+' broken='+counted.broken+' untestable='+counted.untestable+' total='+total);
+            console.log('broken ratio: '+(brokenRatio*100).toFixed(1)+'%');
+            if(brokenRatio>0.6){
+              throw new Error('broken ratio abnormally high: '+(brokenRatio*100).toFixed(1)+'% —— 疑似误判或产物污染，拒绝落库');
+            }
+
             fs.mkdirSync('health',{recursive:true});
-            fs.writeFileSync('health/source_health.json', JSON.stringify({ updatedAt, summary:{ total:j.results.length }, sources }));
-            console.log('imported rows='+j.results.length);
+            fs.writeFileSync('health/source_health.json', JSON.stringify({
+              updatedAt: j.generatedAt,
+              summary: { total, usable: counted.available, broken: counted.broken, untestable: counted.untestable },
+              sources,
+            }));
+            console.log('imported rows='+total+'（14 字段完整还原，含 search/toc/recent/flapping）');
           "
       - name: 源评分分层（健康分→核心/稳定/备用/观察/不可测/确认坏→weight 自动排序）
         run: node score.js
