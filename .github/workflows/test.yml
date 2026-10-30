@@ -48,6 +48,12 @@ jobs:
       - name: JS 求值器单元测试（含沙箱安全审计）
         run: node tests/legado-js.test.mjs
 
+      # CI 权限边界回归：锁死「执行外部书源 JS」与「持有写权限 + 签名私钥」
+      # 不落在同一个 workflow 里。任何把 JS 求值挪回写权限 job、
+      # 或给 checkout 重新打开凭据持久化的改动，都会在这里红灯。
+      - name: CI 权限边界回归（JS 求值隔离 / 凭据持久化）
+        run: node tests/ci-boundary.test.mjs
+
       # 契约测试：拉 LegadoTeam/legado 的 ReaderProviderRoutes.kt / BookSource.kt 对一遍。
       # 官方删路由或删字段 → FAIL（我们还在用，会静默失败）；官方新增 → WARN（写进 reports/）。
       # 拉不到官方源码（网络抖动）→ SKIP 且 exit 0，不因外部网络挡住发布。

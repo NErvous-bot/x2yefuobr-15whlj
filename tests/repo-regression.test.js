@@ -540,16 +540,46 @@ test('负向对照：真正无关键词槽位的静态页仍判不可测', () =>
     assert.strictEqual(r.skip, '搜索无{{key}}槽位', '无 key 槽位必须仍判不可测，实际: ' + JSON.stringify(r));
 });
 
-test('负向对照：需要联网的 <js> 搜索URL仍判不可测（不得拼出假地址）', () => {
-    // 原断言为「一律判不可测」。引进离线 JS 求值器后，能求值的脚本应当可实测，
-    // 但这条样本用了 java.ajax（需要联网），仍必须判不可测 —— 且理由要精确到
-    // 「需要联网」，不能退化成含糊的「含js」。真正的红线是：绝不把脚本源码当 URL 拼出去。
+// ── JS 求值权限闸门的回归测试 ──────────────────────────────────────────────
+// 执行书源 <js> 脚本需要显式授权（HEALTH_JS_SCOPE=1），生产 job 默认禁止。
+// 这组测试先验证「闸门本身」，再在授权状态下验证求值能力。
+
+test('未授权时 <js> 一律不执行（生产 job 的 fail-closed 行为）', () => {
+    const saved = process.env.HEALTH_JS_SCOPE;
+    delete process.env.HEALTH_JS_SCOPE;
+    try {
+        const r = parseSearch('<js>java.put("url","https://x.example.com/s?wd="+key)</js>', BASE, '都市');
+        assert.ok(r.skip, '未授权必须 skip，实际: ' + JSON.stringify(r));
+        assert.match(r.skip, /JS求值已禁用/, '理由应说明禁用原因，实际: ' + JSON.stringify(r.skip));
+        // 关键：绝不能因为禁用就把脚本源码当 URL 拼出去
+        assert.ok(!r.opt, '未授权不得产出任何 URL');
+    } finally {
+        if (saved !== undefined) process.env.HEALTH_JS_SCOPE = saved;
+    }
+});
+
+// 以下三条需要授权才能跑：临时打开 HEALTH_JS_SCOPE，结束后恢复
+function withJsScope(fn) {
+    const saved = process.env.HEALTH_JS_SCOPE;
+    process.env.HEALTH_JS_SCOPE = '1';
+    try {
+        return fn();
+    } finally {
+        if (saved === undefined) delete process.env.HEALTH_JS_SCOPE;
+        else process.env.HEALTH_JS_SCOPE = saved;
+    }
+}
+
+test('负向对照：需要联网的 <js> 搜索URL仍判不可测（不得拼出假地址）', () => withJsScope(() => {
+    // 能求值的脚本应当可实测，但这条样本用了 java.ajax（需要联网），
+    // 仍必须判不可测 —— 且理由要精确到「需要联网」，不能退化成含糊的「含js」。
+    // 真正的红线是：绝不把脚本源码当 URL 拼出去。
     const r = parseSearch('/<js>java.ajax(baseUrl)</js>', BASE, '都市');
     assert.ok(r.skip, '需要联网的 JS 必须判不可测，实际: ' + JSON.stringify(r));
     assert.match(r.skip, /需要联网/, '理由应明确指出需要联网，实际: ' + JSON.stringify(r.skip));
-});
+}));
 
-test('离线可求值的 <js> 搜索URL现在能实测（JS 引擎的正面能力）', () => {
+test('离线可求值的 <js> 搜索URL现在能实测（JS 引擎的正面能力）', () => withJsScope(() => {
     // 纯本地脚本：只做字符串拼装，应解出带关键词的真实 URL
     const r = parseSearch(
         "@js:java.put('url','https://x.example.com/search?wd='+key);",
@@ -561,9 +591,9 @@ test('离线可求值的 <js> 搜索URL现在能实测（JS 引擎的正面能�
         r.opt.url.includes(encodeURIComponent('都市')),
         'URL 应已内联关键词，实际: ' + r.opt.url
     );
-});
+}));
 
-test('JS 求值后丢了关键词 → 判不可测（防假地址）', () => {
+test('JS 求值后丢了关键词 → 判不可测（防假地址）', () => withJsScope(() => {
     // 脚本只 java.put('key') 却没把 key 拼进 URL，产出的 URL 不含关键词，
     // 直接拿去请求会得到假结果 —— 必须判不可测而不是当成可实测。
     const r = parseSearch(
@@ -572,7 +602,7 @@ test('JS 求值后丢了关键词 → 判不可测（防假地址）', () => {
         '都市'
     );
     assert.strictEqual(r.skip, 'JS求值后URL未含关键词', '实际: ' + JSON.stringify(r));
-});
+}));
 
 test('动态脚本 token（java.connect）不得被拼进 URL，应判不可测', () => {
     const r = parseSearch('{{String(java.connect("https://x.example.com").raw().request().url())}}search.html', BASE, '都市');

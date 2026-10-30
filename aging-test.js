@@ -17,6 +17,20 @@
 const https = require('https');
 const { evaluateSearchJs } = require('./src/legado-js');
 
+/**
+ * 是否允许在本进程内执行书源 <js>/@js: 脚本。
+ *
+ * 默认禁止（fail-closed）。只有显式设置 HEALTH_JS_SCOPE=1 的环境才允许 ——
+ * 那对应 js-eval.yml 那个 contents:read、零 Secrets、persist-credentials:false
+ * 的独立低权限 job。持有 contents:write 与签名私钥的生产 job 永远不该执行
+ * 外部代码，因此它们不设这个变量。
+ *
+ * @returns {boolean}
+ */
+function jsEvalAllowed() {
+    return String(process.env.HEALTH_JS_SCOPE || '').trim() === '1';
+}
+
 const UAS = [
     'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
     'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
@@ -460,6 +474,16 @@ function parseSearch(su, base, kw) {
     let fromJs = false;
 
     if (/<js>|@js:/i.test(su)) {
+        // ── 安全开关：是否允许在本进程里执行书源 JS ──────────────────────────
+        // node:vm 不是安全沙箱，执行不可信代码本身就是风险面。因此执行权限
+        // 由环境变量显式授予，默认**禁止**：
+        //   · update.yml（contents:write + ED25519_KEY）不设该变量 → 不执行，判不可测
+        //   · js-eval.yml（contents:read + 零 Secrets + 独立工作区）设 HEALTH_JS_SCOPE=1
+        //     → 在这里执行，结果以纯 JSON 交回生产 job
+        // 这样「执行外部代码」与「持有写权限/签名私钥」永远不会落在同一个工作区。
+        if (!jsEvalAllowed()) {
+            return { skip: 'JS求值已禁用(该 job 无执行权限)' };
+        }
         const ev = evaluateSearchJs({ su, base, key: kw, page: 1 });
         if (!ev.ok) return { skip: ev.skip };
         // 求值成功：用产出的 URL 继续走下面的静态解析（可能带 JSON 选项尾巴）

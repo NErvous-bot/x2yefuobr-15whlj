@@ -22,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 与 update.yml 一致：默认 checkout 会把 GITHUB_TOKEN 留在 .git/config。
+          # 本 job 只写审计报告，不执行书源 JS，但仍按最小暴露面关闭；
+          # 推送阶段再单独恢复凭据（见 commit 步骤）。
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -36,9 +41,14 @@ jobs:
           git pull --rebase --autostash origin main
 
       - name: commit（仅允许审计报告入库）
+        env:
+          # checkout 关闭了 persist-credentials；推送前单独注入，避免 token
+          # 在整个 job 生命周期里都留在工作区的 git 配置中。
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           # 白名单暂存：只放审计报告；任何成品文件变更一律不得进入本工作流的提交
           git add reports/source-audit.json
           # 硬断言：工作树中的成品必须与 HEAD 逐字节一致（脚本越权写成品即红灯）
@@ -65,6 +75,9 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 同 audit job：不把 token 留在工作区
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -81,9 +94,12 @@ jobs:
         run: |
           git pull --rebase --autostash origin main
       - name: commit（仅题库与追更报告入库）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           git add books.json reports/freshness-summary.json reports/freshness-details.csv
           # 硬断言：诊断不得改动成品/评分/健康证据
           for f in legado.json replaceRule.json version.txt legado.json.sig replaceRule.json.sig health/source_health.json reports/source_scores.json; do

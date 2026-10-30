@@ -1,0 +1,97 @@
+name: JS 求值（低权限隔离）
+
+# ══════════════════════════════════════════════════════════════════════════
+# 为什么要单独一个 workflow
+#
+# 书源允许 searchUrl 写成 <js>/@js: 脚本，CI 必须执行它们才能判断源是否可用。
+# 但 node:vm 不是安全沙箱（Node 官方文档明确如此），执行不信任代码本身就是
+# 一个风险面。历史上 update.yml 里 `node health.js` 会触发这个求值，而那个
+# job 持有 `contents: write` 并在后续步骤注入 `ED25519_KEY` 签名私钥 ——
+# 等于「外部脚本 + 仓库写权限 + 签名私钥」挤在同一个工作区。
+#
+# 本 workflow 把这些外部脚本挪进一个**没有写权限、没有 Secrets、
+# 不持久化 checkout 凭据**的独立 job，只产出纯 JSON 结果。
+# 生产 job（update.yml）只读那份 JSON，自己不执行任何书源代码。
+#
+# 边界清单（本文件里逐条落实）：
+#   permissions: contents: read          ← 不给写权限
+#   persist-credentials: false           ← 不把 GITHUB_TOKEN 留在 .git/config
+#   不注入任何 secrets                    ← 脚本拿不到签名私钥/成人源
+#   不与生产 job 共用工作区               ← 独立 runner、独立 checkout
+#   产物只允许 JSON + 大小上限             ← 生产 job 消费前还会再校验结构
+# ══════════════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: '要检查的 git ref'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: js-eval-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 关键：默认 checkout 会把认证凭据写进 .git/config，
+          # 恶意脚本逃逸后可以直接 git push。这里彻底关掉。
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 求值器单元测试：先确认沙箱改动没有回退（含逃逸回归）
+      - name: 求值器自检（含逃逸回归）
+        run: node tests/legado-js.test.mjs
+
+      # 无 Secrets、无写权限地跑完整健康检查。
+      # health.js 会经 aging-test.js 的 parseSearch 触发 <js> 求值。
+      - name: 源健康检查（HEALTH_JS_SCOPE=1，仅求值，不落成品）
+        env:
+          HEALTH_JS_SCOPE: '1'
+        run: node health.js
+
+      # 产物收口：只导出一份纯 JSON 快照，附带大小与结构校验。
+      # 生产 job 只认这个文件，绝不 checkout 本 job 的任何中间态。
+      - name: 导出求值结果（纯 JSON）
+        run: node scripts/export-health-json.js
+
+      - name: 产物边界校验
+        run: |
+          set -euo pipefail
+          f=js-eval-result.json
+          test -f "$f" || { echo "missing $f"; exit 1; }
+          bytes=$(stat -c%s "$f")
+          echo "size: $bytes bytes"
+          # 上限 8 MiB：足够容纳 700 个源的判定，超出说明产物被异常膨胀
+          if [ "$bytes" -gt 8388608 ]; then echo "artifact too large"; exit 1; fi
+          node -e "
+            const fs=require('fs');
+            const j=JSON.parse(fs.readFileSync('$f','utf8'));
+            const keys=Object.keys(j).sort().join(',');
+            if (keys!=='generatedAt,results,version') throw new Error('unexpected keys: '+keys);
+            if (!Array.isArray(j.results)) throw new Error('results must be array');
+            const bad=j.results.filter(r=>typeof r.url!=='string'||typeof r.state!=='string');
+            if (bad.length) throw new Error('malformed rows: '+bad.length);
+            console.log('ok rows='+j.results.length);
+          "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: js-eval-result
+          path: js-eval-result.json
+          retention-days: 3
+          if-no-files-found: error

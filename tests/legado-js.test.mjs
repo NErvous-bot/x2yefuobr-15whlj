@@ -87,28 +87,72 @@ test('无返回值且无后缀 → 不可测', () => {
 });
 
 console.log('\n=== 4. 安全（沙箱不得逃逸）===');
-test('拿不到 require', () => {
-  const r = evaluateSearchJs({ su: "@js:java.put('url', typeof require);", base: BASE, key: 'k' });
-  eq(r.ok, true); eq(r.url, 'undefined');
+// 说明：node:vm 本身不是安全沙箱（Node 官方文档明确如此）。
+// 这一组的职责是「防回归」：确认我们把宿主函数挡在沙箱外之后，
+// 那些已知的低成本逃逸表达式仍然拿不到宿主对象。
+// 真正的隔离边界在 CI 的独立低权限 job（见 .github/workflows/js-eval.yml）。
+
+test('拿不到 require / process / Buffer（typeof 均为 undefined）', () => {
+  for (const name of ['require', 'process', 'Buffer', 'global']) {
+    const r = evaluateSearchJs({ su: `@js:java.put('url', typeof ${name});`, base: BASE, key: 'k' });
+    eq(r.ok, true, name + ' 应求值成功');
+    eq(r.url, 'undefined', name + ' 在沙箱内必须不存在');
+  }
 });
-test('拿不到 process', () => {
-  const r = evaluateSearchJs({ su: "@js:java.put('url', typeof process);", base: BASE, key: 'k' });
-  eq(r.ok, true); eq(r.url, 'undefined');
+
+// 评审指出的核心逃逸面：从「宿主传入的函数」上取 constructor。
+// 修复前 java.put.constructor('return process')().version 能返回真实版本号。
+const HOST_FN_TARGETS = [
+  'java.put', 'java.get', 'java.log', 'java.ajax', 'java.post',
+  'source.getKey', 'source.getVariable', 'cookie.getKey', 'cookie.removeCookie',
+  'md5Encode', 'base64Encode',
+];
+test('宿主/工具函数的 constructor 逃逸全部被拒', () => {
+  for (const target of HOST_FN_TARGETS) {
+    const r = evaluateSearchJs({
+      su: `@js:java.put('url', String(${target}.constructor('return process')().version));`,
+      base: BASE,
+      key: 'k',
+    });
+    eq(r.ok, false, target + ' 逃逸必须失败，实际: ' + JSON.stringify(r));
+    if (!/越界被拒|求值失败|沙箱/.test(r.skip)) {
+      throw new Error(target + ' 的拒绝理由不明确: ' + r.skip);
+    }
+  }
 });
-test('constructor 逃逸被拒', () => {
-  const r = evaluateSearchJs({ su: "@js:java.put('url', String(this.constructor.constructor('return process')()));", base: BASE, key: 'k' });
-  eq(r.ok, false); if (!/沙箱拒绝/.test(r.skip)) throw new Error('理由不符: ' + r.skip);
+
+test('this.constructor.constructor 逃逸被拒', () => {
+  const r = evaluateSearchJs({
+    su: "@js:java.put('url', String(this.constructor.constructor('return process')()));",
+    base: BASE,
+    key: 'k',
+  });
+  eq(r.ok, false);
+  if (!/越界被拒|求值失败|沙箱/.test(r.skip)) throw new Error('理由不符: ' + r.skip);
 });
+
+test('Object / JSON 构造器逃逸被拒', () => {
+  for (const expr of [
+    "Object.constructor('return process')().version",
+    "JSON.stringify.constructor('return process')().version",
+  ]) {
+    const r = evaluateSearchJs({ su: `@js:java.put('url', String(${expr}));`, base: BASE, key: 'k' });
+    eq(r.ok, false, expr);
+  }
+});
+
 test('死循环被超时切断', () => {
   const t0 = Date.now();
   const r = evaluateSearchJs({ su: '@js:while(true){}', base: BASE, key: 'k' });
   eq(r.ok, false); if (!/超时/.test(r.skip)) throw new Error('理由不符: ' + r.skip);
   if (Date.now() - t0 > 3000) throw new Error('超时保护失效，耗时 ' + (Date.now() - t0) + 'ms');
 });
+
 test('网络能力一律拒绝（ajax/post/get/connect）', () => {
   for (const api of ['ajax', 'post', 'get', 'connect']) {
     const r = evaluateSearchJs({ su: '@js:java.' + api + "('https://evil.example.com')", base: BASE, key: 'k' });
     eq(r.ok, false, 'java.' + api);
+    if (!/需要联网/.test(r.skip)) throw new Error('java.' + api + ' 理由不符: ' + r.skip);
   }
 });
 

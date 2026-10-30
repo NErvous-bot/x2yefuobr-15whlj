@@ -19,6 +19,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # 发布步骤要 rebase/push，必须全量历史
+          # 与其它写权限 workflow 一致：不把 GITHUB_TOKEN 留在 .git/config，
+          # 推送前在发布步骤里单独注入。减少 token 在工作区的暴露面。
+          persist-credentials: false
       - name: 还原签名密钥
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > SourceAutoSync/keystore.jks
@@ -59,9 +62,14 @@ jobs:
           path: SourceAutoSync/app/build/outputs/apk/release/app-release.apk
       - name: 发布APK到仓库（国内绕过Azure下载页，直接走镜像线路）
         if: success() && github.ref == 'refs/heads/main'
+        env:
+          # checkout 关闭了 persist-credentials，推送前单独注入凭据。
+          # 本 job 只编译 Android APK 并提交产物，不执行任何书源脚本。
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           cp SourceAutoSync/app/build/outputs/apk/release/app-release.apk sync-app.apk
           git add sync-app.apk
           git diff --cached --quiet && echo "APK未变化，跳过发布" && exit 0
