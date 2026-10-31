@@ -14,7 +14,21 @@ permissions:
   contents: write
 
 concurrency:
-  group: repo-main-writer
+  # ⚠️ 2026-11-01 修正：此前本 workflow 与 update.yml / build-sync.yml 共用
+  # `repo-main-writer` 锁。本意是避免两个写 main 的工作流 rebase/push 竞争，
+  # 但实测后果是：**纯审计**的 freshness（跨源追更诊断，逐源抓书页，
+  # timeout 设到 180 分钟）长时间占锁，把生产发布 update.yml 卡在 pending，
+  # 一卡就是 40 分钟以上 —— 审计成了发布的阻塞点，与本文件开头
+  # 「审计与生产解耦」的设计目标完全相反。
+  #
+  # 是否必须共用同一把锁？不必：
+  #   · audit     只写 reports/source-audit.json
+  #   · freshness 只写 books.json + reports/freshness-*
+  #   · update/build-sync 写成品（legado/sig/version/replaceRule…）
+  # 写入文件集合不相交，push 冲突只发生在同一文件上。
+  # 所以审计侧改用独立组，与生产并行；剩下唯一可能撞的「同一报告」
+  # 也只有本 workflow 会写，本 workflow 自身已被这个组串行化。
+  group: source-audit-writer
   cancel-in-progress: false
 
 jobs:
