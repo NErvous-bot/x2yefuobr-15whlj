@@ -2,24 +2,28 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  154  available->available
-    3  available->untestable
-    1  broken->available
-   10  broken->broken
-    4  broken->removed
-    6  untestable->available
+  150  available->available
+    3  available->broken
+    8  available->untestable
+    2  broken->broken
+   11  broken->removed
+    1  untestable->available
     2  untestable->broken
-  518  untestable->untestable
-新增源 4
+  521  untestable->untestable
+新增源 1
 
-━━ 一级复查：旧可用 → 确认坏 0 ━━
+━━ 一级复查：旧可用 → 确认坏 3 ━━
+  SUSPECT 1
+  REAL_DEATH_CANDIDATE 1
+  RECOVERED 1
+  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
+  [RECOVERED 5/5] 御宅屋 | 阶段: PASS,PASS,PASS,PASS,PASS | 特征: GBK+js规则
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 2（基线 5cdc81f） ━━
-  [RECOVERED] (T1 原RECOVERED) 御宅屋 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [STILL_BROKEN] (T1 原RECOVERED) ncode_syosetu(成为小说家吧 h=3 [搜索无结果] recent=pass/pass/pass/fail/fail flap=true
+━━ 往轮候选终态 0（基线 133ee6e） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 0
+BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

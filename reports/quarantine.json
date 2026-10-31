@@ -1,55 +1,10 @@
 {
- "generatedAt": 1793454914973,
- "totalBefore": 700,
+ "generatedAt": 1793456342295,
+ "totalBefore": 689,
  "totalAfter": 689,
- "newThisRound": [
-  {
-   "url": "https://www.shacg.com",
-   "name": "页书小说"
-  },
-  {
-   "url": "https://reader.browser.miui.com",
-   "name": "小米书城"
-  },
-  {
-   "url": "http://www.h528.com",
-   "name": "風月文學網"
-  },
-  {
-   "url": "http://app.jjwxc.org#🎃",
-   "name": "晋江文学城"
-  },
-  {
-   "url": "http://www.txtdown.cc#🎃",
-   "name": "下书网"
-  },
-  {
-   "url": "https://qq.idejian.com/",
-   "name": "得间小说[apiq]"
-  },
-  {
-   "url": "https://www.899zw.com/",
-   "name": "二二中文"
-  },
-  {
-   "url": "https://www.c66c.com/",
-   "name": "🎉笔趣库②"
-  },
-  {
-   "url": "http://www.taijizhidian.com#🎃",
-   "name": "周易易学"
-  },
-  {
-   "url": "https://s30001.zhongyue001.com",
-   "name": "🎉 灯读文学"
-  },
-  {
-   "url": "http://syosetu.com",
-   "name": "小説家になろう！(Wolken)"
-  }
- ],
+ "newThisRound": [],
  "releasedThisRound": [],
  "quarantineSize": 298,
- "stripped": 11,
- "changed": true
+ "stripped": 0,
+ "changed": false
 }
