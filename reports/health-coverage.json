@@ -1,0 +1,12 @@
+{
+ "generatedAt": 1793467421354,
+ "product": 690,
+ "covered": 689,
+ "coverageRatio": 0.9986,
+ "uncovered": [
+  "http://www.epshu.com"
+ ],
+ "orphan": [],
+ "droppedRows": 0,
+ "note": "eval 在 filter 之前运行；uncovered 为本轮 filter 新并入、尚未测过的源。下一轮会被正常覆盖。"
+}

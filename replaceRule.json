@@ -33,5 +33,6 @@
   {"name":"自动·站点推广「方便阅读」","group":"净化-自动","pattern":"方便阅读","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":38,"sortNo":1},
   {"name":"自动·站点推广「更多精彩」","group":"净化-自动","pattern":"更多精彩","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":39,"sortNo":2},
   {"name":"自动·站点推广「笔趣阁」","group":"净化-自动","pattern":"笔趣阁","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":40,"sortNo":3},
-  {"name":"自动·引流域名 bbs.fmx.cn","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*bbs\\.fmx\\.cn(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":41,"sortNo":4}
+  {"name":"自动·引流域名 bbs.fmx.cn","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*bbs\\.fmx\\.cn(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":41,"sortNo":4},
+  {"name":"自动·引流域名 o55.com","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*o55\\.com(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":42,"sortNo":5}
 ]

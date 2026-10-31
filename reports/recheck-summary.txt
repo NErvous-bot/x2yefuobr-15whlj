@@ -2,20 +2,22 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  145  available->available
+  147  available->available
+    1  available->broken
     8  available->untestable
     1  broken->removed
    11  untestable->available
-    1  untestable->broken
-  522  untestable->untestable
-新增源 0
+  519  untestable->untestable
+新增源 3
 
-━━ 一级复查：旧可用 → 确认坏 0 ━━
+━━ 一级复查：旧可用 → 确认坏 1 ━━
+  SUSPECT 1
+  [SUSPECT 2/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,PASS,SEARCH_EMPTY | 特征: POST
 
-━━ 二级复查：旧BL不可测 → 确认坏 1（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 0（基线 5d80ce6） ━━
+━━ 往轮候选终态 0（基线 9fb5241） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 0
+PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

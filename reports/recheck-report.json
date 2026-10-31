@@ -1,9 +1,52 @@
 {
- "generatedAt": 1793463292856,
- "runAt": "2026-10-31T16:14:52.856Z",
+ "generatedAt": 1793468126003,
+ "runAt": "2026-10-31T17:35:26.003Z",
  "oldRef": "HEAD",
- "baselineSha": "5d80ce6c16431725a717bad2a54de2e058d5da53",
- "tier1": [],
+ "baselineSha": "9fb5241f0b1915530e9f85a53c4c6b7ca741e5c7",
+ "tier1": [
+  {
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
+   "traits": [
+    "POST"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    }
+   ],
+   "verdict": "SUSPECT"
+  }
+ ],
  "tier2": [],
  "resolved": []
 }

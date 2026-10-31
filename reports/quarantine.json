@@ -1,15 +1,10 @@
 {
- "generatedAt": 1793463292903,
+ "generatedAt": 1793468126059,
  "totalBefore": 690,
- "totalAfter": 689,
- "newThisRound": [
-  {
-   "url": "https://www.99duxiaoshuo.com#🎃",
-   "name": "九九读小说"
-  }
- ],
+ "totalAfter": 690,
+ "newThisRound": [],
  "releasedThisRound": [],
  "quarantineSize": 300,
- "stripped": 1,
- "changed": true
+ "stripped": 0,
+ "changed": false
 }

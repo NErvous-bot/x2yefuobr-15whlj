@@ -1,13 +1,13 @@
 {
- "generatedAt": 1793463292856,
+ "generatedAt": 1793468126002,
  "oldRef": "HEAD",
  "matrix": {
-  "available->available": 145,
+  "available->available": 147,
   "available->untestable": 8,
   "untestable->available": 11,
-  "untestable->untestable": 522,
-  "untestable->broken": 1,
+  "untestable->untestable": 519,
+  "available->broken": 1,
   "broken->removed": 1
  },
- "addedSources": 0
+ "addedSources": 3
 }
