@@ -1,10 +1,47 @@
 {
- "generatedAt": 1793444988079,
- "totalBefore": 694,
- "totalAfter": 694,
- "newThisRound": [],
+ "generatedAt": 1793447303717,
+ "totalBefore": 709,
+ "totalAfter": 700,
+ "newThisRound": [
+  {
+   "url": "https://58g.top",
+   "name": "五八"
+  },
+  {
+   "url": "http://www.sgwaa.com/",
+   "name": "书馆中文"
+  },
+  {
+   "url": "https://www.manmanapp.com#♤Haxc",
+   "name": "🎨漫漫漫画"
+  },
+  {
+   "url": "https://www.zrfsxs.com",
+   "name": "🎉 择日小说"
+  },
+  {
+   "url": "https://www.242xs.info/",
+   "name": "242小说"
+  },
+  {
+   "url": "https://www.bixiange.top",
+   "name": "笔仙阁子（魔法）"
+  },
+  {
+   "url": "http://www.16kbook.net",
+   "name": "商店小说"
+  },
+  {
+   "url": "https://www.xn--7dv141d.com/",
+   "name": "肉文小说"
+  },
+  {
+   "url": "https://m.yushuwu.club",
+   "name": "新御书屋"
+  }
+ ],
  "releasedThisRound": [],
- "quarantineSize": 274,
- "stripped": 0,
- "changed": false
+ "quarantineSize": 283,
+ "stripped": 9,
+ "changed": true
 }

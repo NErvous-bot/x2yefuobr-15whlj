@@ -2,34 +2,25 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  134  available->available
-    3  available->broken
+  141  available->available
     9  available->untestable
-    4  broken->available
-    9  broken->broken
-    2  broken->removed
-    2  broken->untestable
-   12  untestable->available
-    6  untestable->broken
-    1  untestable->removed
-  514  untestable->untestable
-新增源 0
+    1  broken->available
+   11  broken->broken
+    6  broken->untestable
+    4  untestable->available
+    3  untestable->broken
+  518  untestable->untestable
+新增源 1
 
-━━ 一级复查：旧可用 → 确认坏 3 ━━
-  REAL_DEATH_CANDIDATE 1
-  MIXED_DEATH 1
-  SUSPECT 1
-  [REAL_DEATH_CANDIDATE 0/5] 品书楼 | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY | 特征: js规则
-  [MIXED_DEATH 0/5] 🎃太子爷小说网🎃 | 阶段: CHAPTER_EMPTY,CHAPTER_EMPTY,CONTENT_EMPTY,SEARCH_EMPTY,CHAPTER_EMPTY | 特征: GBK
-  [SUSPECT 1/5] 豆花文学 | 阶段: CONTENT_EMPTY,PASS,CHAPTER_EMPTY,CHAPTER_EMPTY,CHAPTER_EMPTY
+━━ 一级复查：旧可用 → 确认坏 0 ━━
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 4f7bdd3） ━━
-  [RECOVERED] (T1 原RECOVERED) 色友小说 h=88 [三关全过（第1本正文为空，换书后通过）] recent=pass/pass/pass/fail/pass flap=true
-  [RECOVERED] (T1 原RECOVERED) 书法小说 h=88 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [RECOVERED] (T1 原UNTESTABLE_RULE) 墨坛文学 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+━━ 往轮候选终态 3（基线 864706e） ━━
+  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) 品书楼 h=100 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原MIXED_DEATH) 🎃太子爷小说网🎃 h=3 [搜索无结果] recent=fail/pass/pass/fail/fail flap=true
+  [STILL_BROKEN] (T1 原SUSPECT) 豆花文学 h=3 [搜索无结果] recent=fail/fail/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
