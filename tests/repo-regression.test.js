@@ -1468,14 +1468,111 @@ test('score.js：ipBlocked 档高于普通 untestable，但低于 stable 下界'
 test('score.js：deepLimited（试读墙）降一档但不判死', () => {
     const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
     const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
-    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] === k) n++; else break; } return n; };
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0 && arr[i] === k; i--) n++; return n; };
     const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
-    const base = { health: 92, search: true, toc: true, content: true, recent: ['pass', 'pass', 'pass'] };
+    // ⚠️ 这里必须给满 5 轮 recent：2026-11-01 加了「可信度闸门」，
+    //   轮数不足会先被闸门降到 stable（460），与 deepLimited 的降权叠在一起就测不准。
+    const base = { health: 92, search: true, toc: true, content: true, recent: ['pass', 'pass', 'pass', 'pass', 'pass'] };
     const normal = grade(Object.assign({}, base, { deepLimited: false }));
     const limited = grade(Object.assign({}, base, { deepLimited: true }));
     assert.equal(normal.weight, 700, '正常满来源 → 700');
     assert.equal(limited.weight, 460, '后段受限 → 降一档到 460');
     assert.equal(limited.layer, 'core', '但仍在核心层，不判死');
+});
+
+// ── 可信度闸门（2026-11-01，评审 P1）──────────────────────────────────────
+//
+// 背景：eval job 执行的是不可信书源脚本，健康报告是「未经独立验证的数据」。
+// 生产侧校验全是结构与一致性（key 集/去重/URL 归属/时间/比例），
+// 没有一条在验证「这个判定是真的」。
+// 而此前一个源只要连续 2 次 pass 就能拿 score=97 → 直接进核心层 500~700。
+// 也就是「两轮可能被污染的判定就能把一个源顶到最前排」。
+console.log('\n=== 26. 可信度闸门（轮数不足不得推核心层） ===');
+
+test('可信度闸门：1/2/3/4 轮都进不了核心层，满 5 轮才 core', () => {
+    const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0 && arr[i] === k; i--) n++; return n; };
+    const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
+    const mk = (n) => ({ health: 95, search: true, toc: true, content: true, recent: Array(n).fill('pass') });
+
+    const g1 = grade(mk(1));
+    assert.equal(g1.layer, 'backup', '1 轮只能到备用层');
+    assert.ok(g1.weight <= 276, '1 轮权重不超过备用层上界');
+
+    const g2 = grade(mk(2));
+    assert.equal(g2.layer, 'stable', '2 轮最多到稳定层（这是本次修补的关键：此前会进 core）');
+    assert.ok(g2.weight <= 460, '2 轮权重被封顶在 460');
+
+    const g3 = grade(mk(3));
+    assert.equal(g3.layer, 'stable', '3 轮仍不得进 core');
+    const g4 = grade(mk(4));
+    assert.equal(g4.layer, 'stable', '4 轮仍不得进 core');
+
+    const g5 = grade(mk(5));
+    assert.equal(g5.layer, 'core', '满 5 轮才允许进 core');
+    assert.equal(g5.weight, 700, '满窗口满分源 → 700');
+});
+
+test('可信度闸门只降不判死：判死仍要连续失败≥3', () => {
+    const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0 && arr[i] === k; i--) n++; return n; };
+    const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
+    const base = { health: 30, search: true, toc: false, content: false };
+    // 单轮失败：不判死
+    const one = grade(Object.assign({}, base, { recent: ['fail'] }));
+    assert.notEqual(one.layer, 'dead', '单轮失败不得判死');
+    // 连续 3 轮失败：判死（口径不变）
+    const three = grade(Object.assign({}, base, { recent: ['fail', 'fail', 'fail'] }));
+    assert.equal(three.layer, 'dead', '连续 3 次失败仍判死');
+    assert.equal(three.weight, 5, '判死权重仍为 5');
+});
+
+test('可信度闸门不得误伤满窗口源（现有生产数据行为不变）', () => {
+    // 实测：156 个 available 源里 152 个已有 5 轮历史，闸门对它们必须是零影响
+    const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0 && arr[i] === k; i--) n++; return n; };
+    const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
+    const full = grade({ health: 100, search: true, toc: true, content: true, recent: ['pass', 'pass', 'pass', 'pass', 'pass'] });
+    assert.ok(!full.cappedBy, '满窗口源不应带 cappedBy 标记');
+    assert.equal(full.layer, 'core');
+});
+
+// ── 来源授权治理（2026-11-01，评审 P3）────────────────────────────────────
+//
+// 背景：仓库是 Public，成品是公开分发的书源合集。部分上游没有 LICENSE
+// （tickmao/Novel、aoaostar/legado），「个人自用」不等于获得再分发授权。
+// filter.js 已有 publicPublish 闸门，这条把它钉成断言，防止以后被改松。
+console.log('\n=== 27. 来源授权治理（无许可证上游不得进公开成品） ===');
+
+test('upstreams.json：无许可证上游必须标 publicPublish:false', () => {
+    const up = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
+    const noLicense = up.filter((u) => String(u.license || 'NONE').toUpperCase() === 'NONE');
+    assert.ok(noLicense.length > 0, '应至少有一个无许可证上游（用于验证闸门真的在起作用）');
+    for (const u of noLicense) {
+        assert.equal(u.publicPublish, false,
+            '无许可证上游必须 publicPublish:false，实际: ' + u.id + '=' + u.publicPublish);
+    }
+});
+
+test('filter.js 读 upstreams.json 并据此拒绝无许可证上游', () => {
+    const code = fs.readFileSync(path.join(REPO, 'filter.js'), 'utf8');
+    assert.ok(/upstreams\.json/.test(code), 'filter.js 必须读 upstreams.json');
+    assert.ok(/publicPublish\s*!==\s*true/.test(code),
+        'filter.js 必须按 publicPublish !== true 拒绝（不是按 license 字段名猜）');
+    assert.ok(/授权闸门/.test(code), '应有可读的闸门日志');
+});
+
+test('成品里不得出现无许可证上游的专有分组标签', () => {
+    // 这两个上游当前 publicPublish:false，若 filter 闸门失效，它们的分组会漏进成品
+    const up = JSON.parse(fs.readFileSync(path.join(REPO, 'upstreams.json'), 'utf8'));
+    const blocked = up.filter((u) => u.publicPublish !== true).map((u) => u.id);
+    if (!blocked.length) return; // 没有受限上游就无需检查
+    const legado = JSON.parse(fs.readFileSync(path.join(REPO, 'legado.json'), 'utf8'));
+    const hits = legado.filter((s) => blocked.some((b) => String(s.bookSourceGroup || '').includes(b)));
+    assert.equal(hits.length, 0, '成品里出现了受限上游的分组标签: ' + hits.map((s) => s.bookSourceName).join(', '));
 });
 
 test('aging-test 第③关会做后段抽样（80% 处一章）并标注，不判死', () => {

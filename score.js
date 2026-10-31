@@ -154,6 +154,40 @@ function grade(v) {
     const streak = consPass >= 3 ? 10 : consPass === 2 ? 7 : consPass === 1 ? 4 : 0;
     const score = Math.max(0, Math.min(100, base + stab + streak));
     if (consFail >= 3) return { score, layer: 'watch', weight: 30 };
+
+    // ── 可信度闸门（2026-11-01，评审 P1）──────────────────────────────────────
+    //
+    // 问题：eval job 执行的是**不可信书源脚本**，它产出的 health 报告只是
+    // 「未经独立验证的数据」。而此前 score.js 里，一个源只要连续 2 次 pass
+    // 就能拿到 score=97 → 直接进**核心层**、权重 500~700。
+    // 也就是说：**两轮可能被污染的判定，就能把一个源顶到最前排**。
+    // （实测 156 个 available 源里已有 4 个只连续 2 次 pass，正好卡在这个口径上。）
+    //
+    // 生产侧的完整性校验（key 集 / 去重 / URL 归属 / 时间 / broken 比例）
+    // 全是**结构与一致性**检查，没有一条在验证「这个判定是真的」。
+    //
+    // 处置：按累计实测轮数分权，**只降不判死**。
+    //   · 5 次及以上（满窗口）：行为完全不变（实测 152/156 属这一档）
+    //   · 3~4 次：不给核心层，上限 stable（460）
+    //   · 1~2 次：只到备用层（276）
+    // 与 fuse.js 的「三振判死」同向：结论需要多轮才能升降，
+    // 不允许单轮/双轮把源推到核心层。判死仍维持「连续失败≥3」不变。
+    {
+        const rounds = recent.length;
+        let g;
+        if (score >= 90) g = { score, layer: 'core', weight: Math.round(500 + (score - 90) * 20) };
+        else if (score >= 75) g = { score, layer: 'stable', weight: Math.round(300 + (score - 75) * 12) };
+        else if (score >= 60) g = { score, layer: 'backup', weight: Math.round(150 + (score - 60) * 9) };
+        else g = { score, layer: 'watch', weight: 50 };
+        if (rounds < 5 && g.layer === 'core') {
+            return { score, layer: 'stable', weight: 460, cappedBy: 'rounds-' + rounds };
+        }
+        if (rounds < 3 && g.layer === 'stable') {
+            return { score, layer: 'backup', weight: 276, cappedBy: 'rounds-' + rounds };
+        }
+        // 满窗口或未触发降权 → 继续走下面的既有分支（deepLimited 等）
+    }
+
     // 后段受限（试读墙 / 深页收费）：三关名义上过了，但用户读到后面会撞墙。
     // 不判死（手机上可能仍能读，App 有 nextContentUrl 续页能力），
     // 但降一档权重，让它排在「全文可读」的源后面 —— 实测占可用源的 ~10%。

@@ -198,7 +198,55 @@ jobs:
               throw new Error('broken ratio abnormally high: '+(brokenRatio*100).toFixed(1)+'% —— 疑似误判或产物污染，拒绝落库');
             }
 
+            // ── 未覆盖源显式诊断（2026-11-01，评审 P2）──────────────────────────
+            // 结构性时序问题：eval job 在 filter.js **之前**跑，于是本轮 filter
+            // 新并入的源根本没被测过 —— 成品里有、health 报告里没有。
+            // 实测：legado 689 个源、health 只覆盖 687 个，3 个源静默丢失评分依据
+            //   （搜书网 / 优步小说网 / 菠萝网），它们只能拿到保护池默认权重 90。
+            //
+            // 这不是能靠补数据解决的（下一轮它们会被正常测到），但**必须可见**：
+            // 之前是彻底静默，评审只能靠人工比对数字才发现。
+            // 这里把差集写进诊断文件并打日志；比例异常时告警但不阻断
+            // （阻断会因一个新增源卡死整轮发布，代价不对等）。
+            const productKeys=new Set();
+            for(const s of legado){
+              if(!s||!s.bookSourceUrl) continue;
+              const k=norm(String(s.bookSourceUrl));
+              if(k) productKeys.add(k);
+            }
+            const uncovered=[...productKeys].filter(k=>!Object.prototype.hasOwnProperty.call(sources,k));
+            const orphanInHealth=[...Object.keys(sources)].filter(k=>!productKeys.has(k));
+            const coverageRatio=productKeys.size>0?(productKeys.size-uncovered.length)/productKeys.size:1;
+            console.log('coverage: product='+productKeys.size+' covered='+(productKeys.size-uncovered.length)
+              +' uncovered='+uncovered.length+' ('+((1-coverageRatio)*100).toFixed(1)+'% 未覆盖)'
+              +' orphan='+orphanInHealth.length);
+            if(uncovered.length){
+              console.log('uncovered urls (本轮 filter 新并入 / 未被 eval 测到，本轮无评分依据):');
+              for(const k of uncovered.slice(0,20)) console.log('  - '+k);
+              if(uncovered.length>20) console.log('  ... 共 '+uncovered.length+' 个');
+            }
+            if(orphanInHealth.length){
+              console.log('orphan urls (health 有但成品已剔除，本轮丢弃):');
+              for(const k of orphanInHealth.slice(0,10)) console.log('  - '+k);
+            }
+            if(coverageRatio<0.9){
+              console.log('::warning::本轮测量覆盖率仅 '+(coverageRatio*100).toFixed(1)+'%（<90%）—— 大量源无评分依据，请检查 eval/filter 时序');
+            }
+
             fs.mkdirSync('health',{recursive:true});
+            fs.mkdirSync('reports',{recursive:true});
+            // 诊断件：让「未覆盖」成为可追溯的产物，而不是只在日志里一闪而过
+            fs.writeFileSync('reports/health-coverage.json', JSON.stringify({
+              generatedAt: j.generatedAt,
+              product: productKeys.size,
+              covered: productKeys.size - uncovered.length,
+              coverageRatio: Number(coverageRatio.toFixed(4)),
+              uncovered,
+              orphan: orphanInHealth,
+              droppedRows: dropped,
+              note: 'eval 在 filter 之前运行；uncovered 为本轮 filter 新并入、尚未测过的源。下一轮会被正常覆盖。',
+            }, null, 1));
+
             fs.writeFileSync('health/source_health.json', JSON.stringify({
               updatedAt: j.generatedAt,
               summary: { total, usable: counted.available, broken: counted.broken, untestable: counted.untestable },
