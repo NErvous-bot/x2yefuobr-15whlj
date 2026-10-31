@@ -1433,6 +1433,20 @@ test('doSearch 把 401/403/429/503 标成 ipBlocked（而不是笼统 untestable
     assert.ok(/ipBlocked: true/.test(code), '应返回 ipBlocked 标记');
 });
 
+test('ipBlocked 必须从 doSearch 一路传到 checkSource 的返回值', () => {
+    // run 72 实测踩到的坑：doSearch 返回了 ipBlocked，
+    // 但 checkSource 的 `if (r1.skip) { res.reason = r1.skip; return res; }`
+    // 只复制了 reason，把 ipBlocked 丢了 —— 于是 94 个源 note 显示「IP受限」
+    // 而 health 报告里 ipBlocked 全是 0，分档权重完全没生效。
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    const skipLines = [...code.matchAll(/if \(r1\.skip\) \{[^}]*\}/g)].map((m) => m[0]);
+    assert.ok(skipLines.length >= 3, '应有 3 处 r1.skip 分支（三关键词重试）');
+    for (const line of skipLines) {
+        assert.ok(/res\.ipBlocked = true/.test(line),
+            '每处 skip 分支都必须透传 ipBlocked，少一处就会有源漏掉分档：' + line.slice(0, 80));
+    }
+});
+
 test('score.js：ipBlocked 档高于普通 untestable，但低于 stable 下界', () => {
     const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
     const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);

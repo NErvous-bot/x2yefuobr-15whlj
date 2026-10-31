@@ -1194,16 +1194,16 @@ async function checkSource(s, opts = {}) {
             const KW1 = checkKeyWordOf(s) || '都市';
             const KW2 = KW1 === '都市' ? '重生' : '都市';
             let r1 = await doSearch(s, base, rs, KW1);
-            if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+            if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; if (r1.ipBlocked) res.ipBlocked = true; return res; }
             if (r1.dead) { res.reason = r1.dead; return res; }
             if (!r1.bl.items.length) {
                 r1 = await doSearch(s, base, rs, KW2);
-                if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+                if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; if (r1.ipBlocked) res.ipBlocked = true; return res; }
                 if (r1.dead) { res.reason = r1.dead; return res; }
                 if (!r1.bl.items.length) {
                     await sleep(1500);
                     r1 = await doSearch(s, base, rs, KW1);
-                    if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; return res; }
+                    if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; if (r1.ipBlocked) res.ipBlocked = true; return res; }
                     if (r1.dead) { res.reason = r1.dead; return res; }
                     if (!r1.bl.items.length) {
                         if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
