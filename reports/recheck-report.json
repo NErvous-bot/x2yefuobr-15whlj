@@ -1,92 +1,12 @@
 {
- "generatedAt": 1793203750140,
- "runAt": "2026-10-28T16:09:10.140Z",
+ "generatedAt": 1793444987876,
+ "runAt": "2026-10-31T11:09:47.876Z",
  "oldRef": "HEAD",
- "baselineSha": "3159869eaf381f8b32178c10ecaae12c10574cd9",
+ "baselineSha": "4f7bdd38e03f64e13b55006f2019948f3de5923f",
  "tier1": [
   {
-   "name": "色友小说",
-   "url": "https://seyouxiaoshuo.com",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "OTHER",
-     "reason": "三关全过（第1本正文为空，换书后通过）"
-    }
-   ],
-   "verdict": "RECOVERED"
-  },
-  {
-   "name": "书法小说",
-   "url": "http://www.sfwx.com/",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "目录为空",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "正文页HTTP 502"
-    },
-    {
-     "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "正文页HTTP 502"
-    },
-    {
-     "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "正文页HTTP 502"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    }
-   ],
-   "verdict": "RECOVERED"
-  },
-  {
-   "name": "墨坛文学",
-   "url": "http://www.22mt.net/",
+   "name": "品书楼",
+   "url": "http://www.pinshulou.com",
    "traits": [
     "js规则"
    ],
@@ -95,63 +15,195 @@
    "attempts": [
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "书籍页HTTP 502"
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "书籍页HTTP 502"
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "书籍页HTTP 502"
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "书籍页HTTP 502"
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     },
     {
      "pass": false,
-     "kind": "skip",
-     "stage": "HTTP_502",
-     "reason": "书籍页HTTP 502"
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
     }
    ],
-   "verdict": "UNTESTABLE_RULE"
+   "verdict": "REAL_DEATH_CANDIDATE"
+  },
+  {
+   "name": "🎃太子爷小说网🎃",
+   "url": "http://www.tzy2.com#🎃",
+   "traits": [
+    "GBK"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）；另换 2 本仍失败"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    }
+   ],
+   "verdict": "MIXED_DEATH"
+  },
+  {
+   "name": "豆花文学",
+   "url": "https://www.douhuawenxue.com/",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "目录为空",
+   "attempts": [
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得0）；另换 2 本仍失败"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CHAPTER_EMPTY",
+     "reason": "目录为空"
+    }
+   ],
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "ncode_syosetu(成为小说家吧)",
-   "url": "https://ncode.syosetu.com/",
+   "name": "色友小说",
+   "url": "https://seyouxiaoshuo.com",
    "tier": 1,
-   "prevVerdict": "SUSPECT",
+   "prevVerdict": "RECOVERED",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 88,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 56,
+    "contentLen": 7186,
+    "note": "三关全过（第1本正文为空，换书后通过）",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793444508734
+   }
+  },
+  {
+   "name": "书法小说",
+   "url": "http://www.sfwx.com/",
+   "tier": 1,
+   "prevVerdict": "RECOVERED",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 88,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 100,
+    "contentLen": 972,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793444508734
+   }
+  },
+  {
+   "name": "墨坛文学",
+   "url": "http://www.22mt.net/",
+   "tier": 1,
+   "prevVerdict": "UNTESTABLE_RULE",
    "state": "RECOVERED",
    "evidence": {
     "health": 93,
     "search": true,
     "toc": true,
     "content": true,
-    "chapters": 1,
-    "contentLen": 7309,
+    "chapters": 99,
+    "contentLen": 1114,
     "note": "三关全过",
     "flapping": true,
     "recent": [
      "pass",
-     "fail",
+     "pass",
      "pass",
      "fail",
      "pass"
     ],
-    "checkedAt": 1793203733303
+    "checkedAt": 1793444508734
    }
   }
  ]

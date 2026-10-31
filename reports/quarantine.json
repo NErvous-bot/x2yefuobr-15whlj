@@ -1,19 +1,10 @@
 {
- "generatedAt": 1793203750183,
- "totalBefore": 696,
+ "generatedAt": 1793444988079,
+ "totalBefore": 694,
  "totalAfter": 694,
- "newThisRound": [
-  {
-   "url": "https://m.idejian.com#",
-   "name": "得间小说"
-  },
-  {
-   "url": "http://www.998ds.net",
-   "name": "998读书"
-  }
- ],
+ "newThisRound": [],
  "releasedThisRound": [],
  "quarantineSize": 274,
- "stripped": 2,
- "changed": true
+ "stripped": 0,
+ "changed": false
 }

@@ -1,4 +1,9 @@
 {
+ "https://newsmiss.lofter.com": {
+  "name": "乐乎文章",
+  "reason": "probe-dead",
+  "evidence": "domain dead: https://newsmiss.lofter.com"
+ },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
@@ -37,12 +42,7 @@
  "https://www.soshuw.net": {
   "name": "搜书网",
   "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
- "https://s30001.zhongyue001.com": {
-  "name": "灯读文学",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
+  "evidence": "目录为空"
  },
  "https://www.shellbook.cc": {
   "name": "贝壳读书",
@@ -73,6 +73,11 @@
   "name": "逆鳞小说",
   "reason": "aging-failed",
   "evidence": "目录无章节链接"
+ },
+ "http://www.6yxs.com": {
+  "name": "六月小说",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
  },
  "https://www.3004ss.com": {
   "name": "快乐图书",
@@ -118,6 +123,11 @@
   "name": "笔趣阁",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "http://www.utexs.com": {
+  "name": "优特",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "https://www.qishuzw.com": {
   "name": "奇书中文",
@@ -166,11 +176,6 @@
  },
  "http://www.qkzw.cc": {
   "name": "奇快中文",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
- "https://www.fengyu.cc": {
-  "name": "风雨小说",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
@@ -254,11 +259,6 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://www.piaotian.org": {
-  "name": "飘天文学②",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
  "https://readnovelfull.com": {
   "name": "🔖博览群书",
   "reason": "aging-failed",
@@ -273,6 +273,11 @@
   "name": "88小说网",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
+ },
+ "http://www.xiaoshuobuluo.com": {
+  "name": "小说部落",
+  "reason": "aging-failed",
+  "evidence": "搜索接口410"
  },
  "https://m.xdybz.com": {
   "name": "⚠️第一版主～",
@@ -294,25 +299,20 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
- "http://www.utexs.com": {
-  "name": "🔞 优特",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "http://www.kptxt.com": {
-  "name": "🔞 靠谱小说 🪜",
-  "reason": "aging-failed",
-  "evidence": "目录为空"
- },
  "https://m.lrxs.org": {
   "name": "🔞 懒人小说 🪜",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "http://www.38xs.net": {
+  "name": "🔖三八小说网",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
+ },
  "http://www.8kbook.com": {
   "name": "🔖八块小说网",
   "reason": "aging-failed",
-  "evidence": "搜索无结果"
+  "evidence": "目录为空"
  },
  "http://www.balingtxt.com": {
   "name": "🔖八零电子书",
@@ -323,5 +323,15 @@
   "name": "维基阅读",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
+ },
+ "https://bestlightnovel.com": {
+  "name": "🔤 BestLightNovel",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.zhongyi6.com": {
+  "name": "中意文学",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
  }
 }
