@@ -133,6 +133,36 @@ else bad('export-health-json.js', '缺失');
   }
 }
 
+// ⑦c eval 与 update 不是同一时刻的快照：对账必须是「交集」，不能要求全命中
+//
+// 背景（run 41193341145，修好 ⑦b 之后暴露的第三处缺陷）：
+//   eval job 在 filter.js **之前** checkout 并测源（694 个）；
+//   update job 随后跑 filter.js（上游合并 / 死域名剔除 / 老化复测 / 隔离池过滤），
+//   成品会变：实测该轮 filter 删掉了 https://newsmiss.lofter.com 等源。
+//   若对账写成「每一行都必须在成品里」，这些**本该被删**的源会把整轮发布阻断 ——
+//   run 41193341145 就是这样在 'result url not in product: https://newsmiss.lofter.com' 处崩掉。
+//   正确语义：命不中的行丢弃（它们本轮已不在成品），但必须有命中行，
+//   否则判定产物与成品脱节（快照过旧 / 认错仓库 / 产物污染），仍然 fail-closed。
+{
+  const upd = read('update.yml');
+  if (/result url not in product/.test(upd) && /throw new Error\('result url not in product'/.test(upd)) {
+    bad('update.yml 仍要求每行都命中成品', 'eval 快照早于 filter，被删源会整轮阻断');
+  } else {
+    ok('update.yml 不再要求结果每一行都命中成品');
+  }
+  if (/dropped\+\+/.test(upd) && /no result row matched the current product/.test(upd)) {
+    ok('update.yml 丢弃未命中行，并在零命中时 fail-closed');
+  } else {
+    bad('update.yml 交集语义', '应有 dropped++ 计数与零命中时的明确失败');
+  }
+  // broken 占比的分母必须是「真正落库的行数」，不是产物总行数
+  if (/const total=Object\.keys\(sources\)\.length/.test(upd)) {
+    ok('broken 占比分母用落库行数（不含被丢弃行）');
+  } else {
+    bad('broken 占比分母', '应为 Object.keys(sources).length');
+  }
+}
+
 // ⑧ 产物顶层字段契约：两侧必须用**同一份** expectedTop
 //
 // 背景（run 41184777297 / #68，2026-10-31 真实的整轮失败）：

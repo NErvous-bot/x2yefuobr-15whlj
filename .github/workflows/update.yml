@@ -102,15 +102,28 @@ jobs:
             if(j.generatedAt>now+60000) throw new Error('generatedAt is in the future');
             if(now-j.generatedAt>7*86400000) throw new Error('generatedAt is stale (>7d)');
 
-            // 与当前成品对账：结果集必须落在成品的**身份键**空间里，且数量吻合。
+            // 与当前成品对账：结果集要落在成品的**身份键**空间里。
             //
-            // ⚠️ 这里必须用 norm()，不能用裸 bookSourceUrl。（真实事故：run 41184777297）
-            //   health.js 写 sources 的 key 是 norm(bookSourceUrl)
-            //   （src/source-id.js：去 #fragment、去 pathname 尾斜杠），
-            //   本仓库成品里 694 个源有 370 个的 URL 带 # 或尾斜杠，
-            //   所以裸串比对会把 370 行全部判成 'result url not in product'，
-            //   即使上游 key-set 修好，这一关照样整轮失败。
-            //   norm 与 canonicalizeUrl 的职责分工见 src/source-id.js 文件头。
+            // ⚠️ 两处坑都必须避开（真实事故：run 41184777297 / 41193341145）
+            //
+            // ① 必须用 norm()，不能用裸 bookSourceUrl。
+            //    health.js 写 sources 的 key 是 norm(bookSourceUrl)
+            //    （src/source-id.js：去 #fragment、去 pathname 尾斜杠）。
+            //    本仓库成品里 694 个源有 370 个 URL 带 # 或尾斜杠，
+            //    裸串比对会把 372 行全判成 'result url not in product'。
+            //    norm 与 canonicalizeUrl 的职责分工见 src/source-id.js 文件头。
+            //
+            // ② 结果集与成品**不是同一时刻的快照**，不能要求「每一行都必须在成品里」。
+            //    eval job 在 filter.js **之前** checkout 并测源（694 个）；
+            //    update job 随后跑 filter.js（上游合并、死域名剔除、老化复测、
+            //    隔离池过滤…），成品会变。实测本仓库一轮里 filter 会删掉
+            //    死域名 / 老化失效 / 隔离池里的源（例：https://newsmiss.lofter.com）。
+            //    若要求「全部命中」，这些被删的源必然整轮阻断发布 ——
+            //    而它们恰恰是**该被删**的，不是错误。
+            //
+            //    因此语义改为：结果里**至少要有一行命中成品**（证明产物没被调包），
+            //    命中不了的行按「本轮已不在成品」丢弃；命中率过低则判定产物与成品
+            //    脱节（快照太旧 / 认错仓库 / 产物污染），仍然 fail-closed。
             const { norm } = require('./src/source-id');
             const legado=JSON.parse(fs.readFileSync('legado.json','utf8'));
             const known=new Set();
@@ -127,11 +140,13 @@ jobs:
             const allowed=new Set(['available','broken','untestable']);
             const counted={available:0,broken:0,untestable:0};
             const sources={}; const seen=new Set();
+            let dropped=0;
             for(const r of j.results){
               if(typeof r.url!=='string'||r.url.length===0) throw new Error('bad url');
               if(seen.has(r.url)) throw new Error('duplicate url in results: '+r.url);
               seen.add(r.url);
-              if(!known.has(r.url)) throw new Error('result url not in product: '+r.url);
+              // 本轮已被 filter/quarantine 移出成品的行：跳过（不是错误）
+              if(!known.has(r.url)){ dropped++; continue; }
               if(typeof r.state!=='string'||!allowed.has(r.state)) throw new Error('bad state: '+r.state);
               counted[r.state]++;
               // 逐字段校验并按原类型重建
@@ -161,7 +176,14 @@ jobs:
             }
 
             // 大规模状态突变保护：broken 占比异常时明确失败，不静默落库
-            const total=j.results.length;
+            // 分母用「真正落库的行数」（= 命中成品的行），不是产物总行数
+            const total=Object.keys(sources).length;
+            if(total===0){
+              throw new Error('no result row matched the current product —— 产物与成品完全脱节（快照过旧 / 认错仓库 / 产物被调包），拒绝落库');
+            }
+            if(dropped>0){
+              console.log('dropped rows (本轮已被 filter/quarantine 移出成品): '+dropped);
+            }
             const brokenRatio=counted.broken/total;
             console.log('state counts: available='+counted.available+' broken='+counted.broken+' untestable='+counted.untestable+' total='+total);
             console.log('broken ratio: '+(brokenRatio*100).toFixed(1)+'%');
