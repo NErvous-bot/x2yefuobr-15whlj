@@ -2,23 +2,19 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  142  available->available
-    9  available->untestable
-    4  broken->available
-    1  broken->broken
-    3  broken->untestable
-    7  untestable->available
+  145  available->available
+    8  available->untestable
+    1  broken->removed
+   11  untestable->available
+    1  untestable->broken
   522  untestable->untestable
 新增源 0
 
 ━━ 一级复查：旧可用 → 确认坏 0 ━━
 
-━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 1（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 3（基线 36b459c） ━━
-  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=100 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) ⭕️PO文学 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
-  [RECOVERED] (T1 原RECOVERED) 御宅屋 h=93 [三关全过] recent=pass/fail/pass/fail/pass flap=true
+━━ 往轮候选终态 0（基线 5d80ce6） ━━
 
 ━━ 保险丝判定 ━━
 PASS：旧可用 → 确认坏 = 0

@@ -1,85 +1,9 @@
 {
- "generatedAt": 1793459139764,
- "runAt": "2026-10-31T15:05:39.764Z",
+ "generatedAt": 1793463292856,
+ "runAt": "2026-10-31T16:14:52.856Z",
  "oldRef": "HEAD",
- "baselineSha": "36b459c4aee3deadd2fed7c38fb20b259d94a527",
+ "baselineSha": "5d80ce6c16431725a717bad2a54de2e058d5da53",
  "tier1": [],
  "tier2": [],
- "resolved": [
-  {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 100,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 300,
-    "contentLen": 1343,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793458594222
-   }
-  },
-  {
-   "name": "⭕️PO文学",
-   "url": "https://www.po18to.com",
-   "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 93,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 18,
-    "contentLen": 1911,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793458594222
-   }
-  },
-  {
-   "name": "御宅屋",
-   "url": "https://www.hyuzhaiwu.com",
-   "tier": 1,
-   "prevVerdict": "RECOVERED",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 93,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 275,
-    "contentLen": 6705,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "fail",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793458594222
-   }
-  }
- ]
+ "resolved": []
 }

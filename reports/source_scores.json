@@ -1,5 +1,5 @@
 {
- "generatedAt": 1793459139400,
+ "generatedAt": 1793463292418,
  "layers": {
   "core": [
    {
@@ -31,13 +31,6 @@
     "url": "http://www.rulianshi.org"
    },
    {
-    "name": "烈火中文 ",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.liehuozw.com"
-   },
-   {
     "name": "🎃第一版主🎃#10",
     "score": 100,
     "layer": "core",
@@ -59,13 +52,6 @@
     "url": "https://www.7shuwu.org"
    },
    {
-    "name": "bl书阁🎃",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.blshuge.com"
-   },
-   {
     "name": "海棠文学",
     "score": 100,
     "layer": "core",
@@ -73,32 +59,11 @@
     "url": "https://m.haitangwx.com"
    },
    {
-    "name": "🎃飞卢小说🎃#2",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://b.faloo.com"
-   },
-   {
     "name": "笔趣阁🪜",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "http://www.downcg.org"
-   },
-   {
-    "name": "精华书阁",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.jhsssd.com"
-   },
-   {
-    "name": "望书阁",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://wap.wangshugu.info"
    },
    {
     "name": "奇异网",
@@ -136,13 +101,6 @@
     "url": "http://m.x2552.com"
    },
    {
-    "name": "🎃梧桐中文🎃",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.wtzw.com"
-   },
-   {
     "name": "伪版主",
     "score": 100,
     "layer": "core",
@@ -171,13 +129,6 @@
     "url": "https://wap.po18.work"
    },
    {
-    "name": "📖版主123",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.dybz123.com"
-   },
-   {
     "name": "PO18文学⑩",
     "score": 100,
     "layer": "core",
@@ -190,27 +141,6 @@
     "layer": "core",
     "weight": 700,
     "url": "https://www.yeduji.com"
-   },
-   {
-    "name": "🎃精华书阁🎃#3",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://wap.jhssd.com"
-   },
-   {
-    "name": "PO18文学#4",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.po18.asia"
-   },
-   {
-    "name": "第一版主⑦🌹",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.xiaobanzhu.com"
    },
    {
     "name": "得奇小说",
@@ -227,13 +157,6 @@
     "url": "http://m.lulushuwu.com"
    },
    {
-    "name": "入殓师",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.rulianshi.la"
-   },
-   {
     "name": "九九藏书网",
     "score": 100,
     "layer": "core",
@@ -241,24 +164,10 @@
     "url": "https://www.sangshixs.com"
    },
    {
-    "name": "抖音小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.douxsw.com"
-   },
-   {
-    "name": "抖音小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.douxsw.com"
-   },
-   {
     "name": "笔迷读",
     "score": 100,
     "layer": "core",
-    "weight": 700,
+    "weight": 460,
     "url": "https://www.bimidu.com"
    },
    {
@@ -318,20 +227,6 @@
     "url": "http://www.kk169.net"
    },
    {
-    "name": "🎃一起看看🎃",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.17kankan.org"
-   },
-   {
-    "name": "⭕️PO文学",
-    "score": 90,
-    "layer": "core",
-    "weight": 500,
-    "url": "https://www.po18to.com"
-   },
-   {
     "name": "中华典藏",
     "score": 100,
     "layer": "core",
@@ -344,13 +239,6 @@
     "layer": "core",
     "weight": 700,
     "url": "https://www.xiangtxsw.com"
-   },
-   {
-    "name": "飞卢小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://wap.faloo.com"
    },
    {
     "name": "飞卢小说",
@@ -386,13 +274,6 @@
     "layer": "core",
     "weight": 700,
     "url": "http://www.swsk.org"
-   },
-   {
-    "name": "🎃笔趣阁🎃#27",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.biquge345.com"
    },
    {
     "name": "五六中文",
@@ -437,13 +318,6 @@
     "url": "https://www.yeshuyuan.com"
    },
    {
-    "name": "🔞📖龙腾小说城",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.longtengxiaoshuo.org"
-   },
-   {
     "name": "🚬 肉书屋",
     "score": 100,
     "layer": "core",
@@ -472,25 +346,11 @@
     "url": "https://m.yuwangshe.one"
    },
    {
-    "name": "💰小说阅读网",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.readnovel.com"
-   },
-   {
     "name": "何以笙箫默小说电脑",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "http://www.yetianlian.net"
-   },
-   {
-    "name": "6",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://wap.shukuge.com"
    },
    {
     "name": "渣女小说",
@@ -542,25 +402,11 @@
     "url": "https://wap.po18.in"
    },
    {
-    "name": "肉文NP②",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.rouwennp.org"
-   },
-   {
     "name": "🎃PO18文学🎃#18",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "https://m.po18vip.me"
-   },
-   {
-    "name": "⭕️PO18site",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.po18site.com"
    },
    {
     "name": "肉肉屋②",
@@ -575,13 +421,6 @@
     "layer": "core",
     "weight": 700,
     "url": "https://kuuai.com"
-   },
-   {
-    "name": "小说ABC",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.xsabc.com"
    },
    {
     "name": "PO18全本🎃#2",
@@ -617,13 +456,6 @@
     "layer": "core",
     "weight": 700,
     "url": "https://m.qingrenyouxi.com"
-   },
-   {
-    "name": "🔰 新御宅屋",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://m.nprouwen.net"
    },
    {
     "name": "奇怪小说",
@@ -675,20 +507,6 @@
     "url": "http://www.azycjd.com"
    },
    {
-    "name": "🎃零点看书🎃",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://23.225.143.232"
-   },
-   {
-    "name": "免费h小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.langrenxiaoshuo.com"
-   },
-   {
     "name": "格格党吧",
     "score": 100,
     "layer": "core",
@@ -699,7 +517,7 @@
     "name": "星星小说🎃",
     "score": 100,
     "layer": "core",
-    "weight": 700,
+    "weight": 460,
     "url": "http://www.xxtxt.com"
    },
    {
@@ -708,13 +526,6 @@
     "layer": "core",
     "weight": 700,
     "url": "https://www.daowenge.com"
-   },
-   {
-    "name": "何以笙箫",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://m.yetianlian.la"
    },
    {
     "name": "manga18fx(生肉)",
@@ -738,13 +549,6 @@
     "url": "https://www.xiaoshuouu.com"
    },
    {
-    "name": "森林文学",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://23.224.242.55"
-   },
-   {
     "name": "潇湘书院",
     "score": 100,
     "layer": "core",
@@ -752,25 +556,11 @@
     "url": "https://m.xxsy.net"
    },
    {
-    "name": "梧桐中文",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.wtzw.com"
-   },
-   {
     "name": "老包输站",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "https://www.8kana.com"
-   },
-   {
-    "name": "桔纸书屋",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.juzhishuwu.com"
    },
    {
     "name": "禁漫大王",
@@ -871,13 +661,6 @@
     "url": "https://m.eyushuwu.com"
    },
    {
-    "name": "笔尚小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.bsxiaoshuo.com"
-   },
-   {
     "name": "滋滋读书",
     "score": 100,
     "layer": "core",
@@ -892,25 +675,11 @@
     "url": "https://www.shenhuazhihou.com"
    },
    {
-    "name": "🎃去看小说网🎃",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.7kbook.com"
-   },
-   {
     "name": "妙笔阁",
     "score": 100,
     "layer": "core",
-    "weight": 700,
-    "url": "https://miaobige.cc"
-   },
-   {
-    "name": "阳光中文网",
-    "score": 100,
-    "layer": "core",
     "weight": 460,
-    "url": "http://www.ygzww.com"
+    "url": "https://miaobige.cc"
    },
    {
     "name": "言情库",
@@ -920,32 +689,11 @@
     "url": "http://www.yqk.net"
    },
    {
-    "name": "🎃顶点小说🎃#8",
-    "score": 90,
-    "layer": "core",
-    "weight": 500,
-    "url": "https://www.dingdian888.com"
-   },
-   {
     "name": "全本窝",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "https://m.quanbenwo.com"
-   },
-   {
-    "name": "笔趣阁H-夜明空",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.biqugehxs.com"
-   },
-   {
-    "name": "酷书阁小说网",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.kushuge.com"
    },
    {
     "name": "🎃笔趣阁🎃#84",
@@ -955,25 +703,11 @@
     "url": "https://m.yuzhaiwuone.com"
    },
    {
-    "name": "大唐小说（优+）",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.dtxsw.com"
-   },
-   {
     "name": "UU看书",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "https://uukanshu.cc"
-   },
-   {
-    "name": "露露书",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://m.lulushu123.net"
    },
    {
     "name": "红人小说",
@@ -990,53 +724,11 @@
     "url": "https://seyouxiaoshuo.com"
    },
    {
-    "name": "书法小说",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.sfwx.com"
-   },
-   {
     "name": "墨坛文学",
     "score": 100,
     "layer": "core",
     "weight": 700,
     "url": "http://www.22mt.net"
-   },
-   {
-    "name": "夜伴书屋",
-    "score": 100,
-    "layer": "core",
-    "weight": 700,
-    "url": "https://www.ybswa.com"
-   },
-   {
-    "name": "品书楼",
-    "score": 96,
-    "layer": "core",
-    "weight": 460,
-    "url": "http://www.pinshulou.com"
-   },
-   {
-    "name": "吾看书",
-    "score": 100,
-    "layer": "core",
-    "weight": 460,
-    "url": "https://www.wukanshu.cc"
-   },
-   {
-    "name": "古龙武侠",
-    "score": 96,
-    "layer": "core",
-    "weight": 620,
-    "url": "https://m.gulongbbs.com/wuxia"
-   },
-   {
-    "name": "古龙武侠",
-    "score": 96,
-    "layer": "core",
-    "weight": 620,
-    "url": "http://m.gulongbbs.com/wuxia"
    },
    {
     "name": "🎃天书小说网🎃",
@@ -1053,26 +745,355 @@
     "url": "https://www.dbxsd.com"
    },
    {
-    "name": "万相书城",
+    "name": "古龙武侠",
     "score": 100,
     "layer": "core",
     "weight": 700,
-    "url": "https://www.wxsck.com"
+    "url": "https://m.gulongbbs.com/wuxia"
+   },
+   {
+    "name": "古龙武侠",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "http://m.gulongbbs.com/wuxia"
+   },
+   {
+    "name": "⭕️PO文学",
+    "score": 93,
+    "layer": "core",
+    "weight": 560,
+    "url": "https://www.po18to.com"
+   },
+   {
+    "name": "🎃顶点小说🎃#8",
+    "score": 93,
+    "layer": "core",
+    "weight": 560,
+    "url": "https://www.dingdian888.com"
+   },
+   {
+    "name": "烈火中文 ",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.liehuozw.com"
+   },
+   {
+    "name": "🎃飞卢小说🎃#2",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://b.faloo.com"
+   },
+   {
+    "name": "精华书阁",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.jhsssd.com"
+   },
+   {
+    "name": "望书阁",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://wap.wangshugu.info"
+   },
+   {
+    "name": "🎃梧桐中文🎃",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.wtzw.com"
+   },
+   {
+    "name": "📖版主123",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.dybz123.com"
+   },
+   {
+    "name": "🎃精华书阁🎃#3",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://wap.jhssd.com"
+   },
+   {
+    "name": "第一版主⑦🌹",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.xiaobanzhu.com"
+   },
+   {
+    "name": "入殓师",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.rulianshi.la"
+   },
+   {
+    "name": "抖音小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.douxsw.com"
+   },
+   {
+    "name": "抖音小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.douxsw.com"
+   },
+   {
+    "name": "🎃一起看看🎃",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.17kankan.org"
+   },
+   {
+    "name": "飞卢小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://wap.faloo.com"
+   },
+   {
+    "name": "🎃笔趣阁🎃#27",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.biquge345.com"
+   },
+   {
+    "name": "🔞📖龙腾小说城",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.longtengxiaoshuo.org"
+   },
+   {
+    "name": "💰小说阅读网",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.readnovel.com"
+   },
+   {
+    "name": "6",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://wap.shukuge.com"
+   },
+   {
+    "name": "小说ABC",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.xsabc.com"
+   },
+   {
+    "name": "🎃零点看书🎃",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://23.225.143.232"
+   },
+   {
+    "name": "免费h小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.langrenxiaoshuo.com"
+   },
+   {
+    "name": "何以笙箫",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://m.yetianlian.la"
+   },
+   {
+    "name": "森林文学",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://23.224.242.55"
+   },
+   {
+    "name": "梧桐中文",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.wtzw.com"
+   },
+   {
+    "name": "桔纸书屋",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.juzhishuwu.com"
+   },
+   {
+    "name": "笔尚小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.bsxiaoshuo.com"
+   },
+   {
+    "name": "🎃去看小说网🎃",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.7kbook.com"
+   },
+   {
+    "name": "阳光中文网",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.ygzww.com"
+   },
+   {
+    "name": "笔趣阁H-夜明空",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.biqugehxs.com"
+   },
+   {
+    "name": "大唐小说（优+）",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.dtxsw.com"
+   },
+   {
+    "name": "露露书",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.lulushu123.net"
+   },
+   {
+    "name": "书法小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.sfwx.com"
+   },
+   {
+    "name": "品书楼",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "http://www.pinshulou.com"
+   },
+   {
+    "name": "吾看书",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.wukanshu.cc"
+   },
+   {
+    "name": "玩文学",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://www.wanwx.com"
+   },
+   {
+    "name": "笔趣阁⁷⁸",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://www.biquge78.cc"
+   },
+   {
+    "name": "笔趣阁②",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://m.xbiqige.cc"
+   },
+   {
+    "name": "PO18文学🎃#9",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://www.po18e.vip"
+   },
+   {
+    "name": "肉肉屋🎃#5",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://m.rourouwu10.com"
+   },
+   {
+    "name": "辣妹小说",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://m.lamei2.com"
+   },
+   {
+    "name": "四月天",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://www.4yt.net"
+   },
+   {
+    "name": "🚬 肉文屋",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://m.rouwenwu14.com"
+   },
+   {
+    "name": "久久小说网🈲",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://w7w.23fgh.com"
+   },
+   {
+    "name": "笔趣阁",
+    "score": 100,
+    "layer": "core",
+    "weight": 700,
+    "url": "https://www.xyuzhaiwu2.com"
+   },
+   {
+    "name": "旧钢笔",
+    "score": 100,
+    "layer": "core",
+    "weight": 460,
+    "url": "https://p.jiugangbi.com"
    }
   ],
   "stable": [
    {
     "name": "御宅屋",
-    "score": 86,
+    "score": 89,
     "layer": "stable",
-    "weight": 432,
+    "weight": 468,
     "url": "https://www.hyuzhaiwu.com"
    },
    {
     "name": "ncode_syosetu(成为",
-    "score": 82,
+    "score": 85,
     "layer": "stable",
-    "weight": 384,
+    "weight": 420,
     "url": "https://ncode.syosetu.com"
    }
   ],
@@ -1080,60 +1101,732 @@
   "watch": [],
   "untestable": [
    {
-    "name": "玩文学",
+    "name": "bl书阁🎃",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://www.wanwx.com"
+    "url": "https://www.blshuge.com"
    },
    {
-    "name": "笔趣阁⁷⁸",
+    "name": "PO18文学#4",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://www.biquge78.cc"
+    "url": "https://www.po18.asia"
    },
    {
-    "name": "笔趣阁②",
+    "name": "肉文NP②",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://m.xbiqige.cc"
+    "url": "https://www.rouwennp.org"
    },
    {
-    "name": "PO18文学🎃#9",
+    "name": "⭕️PO18site",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://www.po18e.vip"
+    "url": "https://www.po18site.com"
    },
    {
-    "name": "肉肉屋🎃#5",
+    "name": "🔰 新御宅屋",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://m.rourouwu10.com"
+    "url": "https://m.nprouwen.net"
    },
    {
-    "name": "辣妹小说",
+    "name": "酷书阁小说网",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://m.lamei2.com"
+    "url": "https://www.kushuge.com"
    },
    {
-    "name": "四月天",
+    "name": "夜伴书屋",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://www.4yt.net"
+    "url": "https://www.ybswa.com"
    },
    {
-    "name": "🚬 肉文屋",
+    "name": "万相书城",
     "score": null,
     "layer": "untestable",
     "weight": 120,
-    "url": "https://m.rouwenwu14.com"
+    "url": "https://www.wxsck.com"
+   },
+   {
+    "name": "📖 耽美小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 160,
+    "url": "https://www.dmxs.org"
+   },
+   {
+    "name": "168小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.168txt.org"
+   },
+   {
+    "name": "落霞读书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://luoxiadushu.com"
+   },
+   {
+    "name": "集书阁",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://xn--yu725ajisgecom-2z4y408c0i8ffa6452kztvb.jishuge-vip.com"
+   },
+   {
+    "name": "笔趣阁⓪",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.yuzhai.info"
+   },
+   {
+    "name": "成人小说🪜",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://crxs.me"
+   },
+   {
+    "name": "盐选文库（优+）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.yanxuanwk.com"
+   },
+   {
+    "name": "三叠书阁-简",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.noveltri.com/zh-cn"
+   },
+   {
+    "name": "第八小说-夜明空",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.8xiaoshuo.com"
+   },
+   {
+    "name": "腐小说🎃",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fuxsb.cc"
+   },
+   {
+    "name": "十八书屋🎗",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.shibashuwu.net"
+   },
+   {
+    "name": "A小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.aaawz.cc"
+   },
+   {
+    "name": "🙈小黄书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://xchina.ink"
+   },
+   {
+    "name": "📥 奇书网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.qishu99.cc"
+   },
+   {
+    "name": "腐小说网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fxsw.cc"
+   },
+   {
+    "name": "同人小说网🪜",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://trxs.cc"
+   },
+   {
+    "name": "矮贼吧网（优）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.zei8.me"
+   },
+   {
+    "name": "请看小说（导）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.qinkan.net"
+   },
+   {
+    "name": "奇书网吧（导）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.qishu99.cc"
+   },
+   {
+    "name": "真白萌",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://masiro.me"
+   },
+   {
+    "name": "情豆书坊",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.qdsf.net"
+   },
+   {
+    "name": "千凡小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.qfxs123.com"
+   },
+   {
+    "name": "笔下文学",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.bxsw7.com"
+   },
+   {
+    "name": "二三小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.x23us.cc"
+   },
+   {
+    "name": "茶马小说 ",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.chamabooks.net"
+   },
+   {
+    "name": "甜梦文库",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.tmwk.cc"
+   },
+   {
+    "name": "男人小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.41nr.com"
+   },
+   {
+    "name": "book18🪜",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.book18.org"
+   },
+   {
+    "name": "辣小说网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.txt520.org"
+   },
+   {
+    "name": "🍒书旗小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 90,
+    "url": "https://www.shuqi.com"
+   },
+   {
+    "name": "搜搜小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.soeo.net"
+   },
+   {
+    "name": "小说虎",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://xshbook.com"
+   },
+   {
+    "name": "小说虎",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.xshbook.com"
+   },
+   {
+    "name": "X小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://xn--x-ny6ap04bvzfcy2d.com"
+   },
+   {
+    "name": "二次元小说网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.erciyan.com"
+   },
+   {
+    "name": "二零二三电子书小说网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.2023txt.com"
+   },
+   {
+    "name": "古诗词网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.gushici.net"
+   },
+   {
+    "name": "繁星四月",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fuxs.top"
+   },
+   {
+    "name": "幻想姬",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.huanxiangji.net"
+   },
+   {
+    "name": "请看",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.qinkan.net"
+   },
+   {
+    "name": "阅读电子",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://book.vik.im"
+   },
+   {
+    "name": "读书阁",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.lianjianxsw.com"
+   },
+   {
+    "name": "当阅读网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.dangyuedu.com"
+   },
+   {
+    "name": "神凑轻小说文库",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.shencou.com"
+   },
+   {
+    "name": "安和图书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.hetushu.com"
+   },
+   {
+    "name": "提莫书屋",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.timotxt.com"
+   },
+   {
+    "name": "读古文学",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.dugujin.com"
+   },
+   {
+    "name": "求书帮",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.xqiushubang.com"
+   },
+   {
+    "name": "🌐 爱阅吧网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://iyueba.net"
+   },
+   {
+    "name": "二八看书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 90,
+    "url": "https://www.28lu.net"
+   },
+   {
+    "name": "完整书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wzsxs.com"
+   },
+   {
+    "name": "顶点小说🪜",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wanglisong.com"
+   },
+   {
+    "name": "无错小说①",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wucuoxs.com"
+   },
+   {
+    "name": "燃文小说②",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.ranwena.com"
+   },
+   {
+    "name": "燃文小说③",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wzxywj.com"
+   },
+   {
+    "name": "燃文小说④",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.ranwen.net"
+   },
+   {
+    "name": "思路客②",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.isiluke.net"
+   },
+   {
+    "name": "思路客③",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.rucedu.net"
+   },
+   {
+    "name": "全本小说④",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.heenee.com"
+   },
+   {
+    "name": "笔趣阁⑱",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.ydxrf.com"
+   },
+   {
+    "name": "笔趣阁⑳",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.sypvm.com"
+   },
+   {
+    "name": "笔趣阁㉑",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.shqxjx.com"
+   },
+   {
+    "name": "笔趣阁㉕",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.dnmcn.com"
+   },
+   {
+    "name": "趣书吧",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.39shuwu.com"
+   },
+   {
+    "name": "乐文小说①",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.syhzzf.com"
+   },
+   {
+    "name": "顶点小说④",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.skynan.com"
+   },
+   {
+    "name": "笔趣阁㉗",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.zzxx.org"
+   },
+   {
+    "name": "🌸夜伴书屋",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.yeban360.com"
+   },
+   {
+    "name": "🎈腐小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.jiqinw.com"
+   },
+   {
+    "name": "坤坤书库（魔法）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.52shuku.vip"
+   },
+   {
+    "name": "📖海棠文学",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.htlvbooks.com"
+   },
+   {
+    "name": "🎉 手机小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.shoujixs.net"
+   },
+   {
+    "name": "贼吧小说（导入）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.zei8.vip"
+   },
+   {
+    "name": "爱寻书",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://ixunshu.net"
+   },
+   {
+    "name": "爱看小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://m.ixsw.cc"
+   },
+   {
+    "name": "👍 奇书网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.uidzhx.com"
+   },
+   {
+    "name": "📚 名著阅读",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.tanmenba.com"
+   },
+   {
+    "name": "🎉 奇书网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.xqishuta.com"
+   },
+   {
+    "name": "🔥 腐小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fuxsb.com"
+   },
+   {
+    "name": "广安中文",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.tianshuwx.com"
+   },
+   {
+    "name": "🌐 鬼书集网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.guishuji.com"
+   },
+   {
+    "name": "笔趣阁㉒",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.xinbqg.com"
+   },
+   {
+    "name": "📚 参考期刊",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.fx361.com"
+   },
+   {
+    "name": "掌阅小说💯",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://m.zhangyue.com"
+   },
+   {
+    "name": "笔趣阁[3ren]",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://m.3renwx.com"
+   },
+   {
+    "name": "炫书网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.ibiquta.info"
+   },
+   {
+    "name": "顶点中文❶",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://wap.dingdiansk.com"
+   },
+   {
+    "name": "奇奇小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.qq717.com"
+   },
+   {
+    "name": "七百小说（优+）",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://m.x700txt.com"
+   },
+   {
+    "name": "66小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.66story.com"
+   },
+   {
+    "name": "腐小说🎃#2",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fxshu.top"
+   },
+   {
+    "name": "腐小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.fuxiaoshu.com"
+   },
+   {
+    "name": "ESJ轻小说.cc(科学)",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "http://www.esjzone.cc"
+   },
+   {
+    "name": "轻小说文库cc",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wenku8.cc/index.php"
+   },
+   {
+    "name": "轻小说文库net",
+    "score": null,
+    "layer": "untestable",
+    "weight": 130,
+    "url": "https://www.wenku8.net/index.php"
+   },
+   {
+    "name": "免费小说",
+    "score": null,
+    "layer": "untestable",
+    "weight": 90,
+    "url": "https://www.quanwenyuedu.io"
    },
    {
     "name": "稻草书屋",
@@ -1141,13 +1834,6 @@
     "layer": "untestable",
     "weight": 120,
     "url": "https://www.dcrbk.com"
-   },
-   {
-    "name": "久久小说网🈲",
-    "score": null,
-    "layer": "untestable",
-    "weight": 120,
-    "url": "https://w7w.23fgh.com"
    },
    {
     "name": "🎃海棠书屋🎃#3",
@@ -1164,13 +1850,6 @@
     "url": "http://www.jingzhi5.com"
    },
    {
-    "name": "笔趣阁",
-    "score": null,
-    "layer": "untestable",
-    "weight": 120,
-    "url": "https://www.xyuzhaiwu2.com"
-   },
-   {
     "name": "万象书城",
     "score": null,
     "layer": "untestable",
@@ -1183,13 +1862,6 @@
     "layer": "untestable",
     "weight": 120,
     "url": "https://www.gb84.com"
-   },
-   {
-    "name": "旧钢笔",
-    "score": null,
-    "layer": "untestable",
-    "weight": 120,
-    "url": "https://p.jiugangbi.com"
    },
    {
     "name": "爱下书小说网",
@@ -1211,13 +1883,6 @@
     "layer": "untestable",
     "weight": 120,
     "url": "https://www.win10city.com"
-   },
-   {
-    "name": "📖 耽美小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 160,
-    "url": "https://www.dmxs.org"
    },
    {
     "name": "PO18文学🎃#3",
@@ -1246,13 +1911,6 @@
     "layer": "untestable",
     "weight": 120,
     "url": "http://www.tzy2.com"
-   },
-   {
-    "name": "168小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.168txt.org"
    },
    {
     "name": "快眼看书",
@@ -1304,13 +1962,6 @@
     "url": "https://20xs.org"
    },
    {
-    "name": "落霞读书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://luoxiadushu.com"
-   },
-   {
     "name": "角角者",
     "score": null,
     "layer": "untestable",
@@ -1360,13 +2011,6 @@
     "url": "https://fiction.fengduxiaoshuo.com"
    },
    {
-    "name": "集书阁",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://xn--yu725ajisgecom-2z4y408c0i8ffa6452kztvb.jishuge-vip.com"
-   },
-   {
     "name": "找书神器",
     "score": null,
     "layer": "untestable",
@@ -1381,13 +2025,6 @@
     "url": "https://xn--vcsx64d.alicesw12.xyz"
    },
    {
-    "name": "笔趣阁⓪",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.yuzhai.info"
-   },
-   {
     "name": "情色小说🪜",
     "score": null,
     "layer": "untestable",
@@ -1400,13 +2037,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.jile1.com"
-   },
-   {
-    "name": "成人小说🪜",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://crxs.me"
    },
    {
     "name": "疯情阅读🚀",
@@ -1428,13 +2058,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.yingyuxiaoshuo.com"
-   },
-   {
-    "name": "盐选文库（优+）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.yanxuanwk.com"
    },
    {
     "name": "🎃黑岩小说🎃",
@@ -1472,13 +2095,6 @@
     "url": "http://yz4.chaoxing.com"
    },
    {
-    "name": "三叠书阁-简",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.noveltri.com/zh-cn"
-   },
-   {
     "name": "🎃爪机书屋🎃",
     "score": null,
     "layer": "untestable",
@@ -1491,13 +2107,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://m.91banzhu.com"
-   },
-   {
-    "name": "第八小说-夜明空",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.8xiaoshuo.com"
    },
    {
     "name": "言情小说吧🎃",
@@ -1533,13 +2142,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.jiuhuaiwenxue.com"
-   },
-   {
-    "name": "腐小说🎃",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fuxsb.cc"
    },
    {
     "name": "🔞西瓜书屋",
@@ -1584,13 +2186,6 @@
     "url": "http://api.anwaben.com"
    },
    {
-    "name": "十八书屋🎗",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.shibashuwu.net"
-   },
-   {
     "name": "阅友小说（优+）",
     "score": null,
     "layer": "untestable",
@@ -1617,13 +2212,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://m.yuzhai.life"
-   },
-   {
-    "name": "A小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.aaawz.cc"
    },
    {
     "name": "完本阁🎃",
@@ -1899,13 +2487,6 @@
     "url": "http://120.25.175.92"
    },
    {
-    "name": "🙈小黄书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://xchina.ink"
-   },
-   {
     "name": "📥伪书香",
     "score": null,
     "layer": "untestable",
@@ -1918,13 +2499,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.80qishu.com"
-   },
-   {
-    "name": "📥 奇书网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.qishu99.cc"
    },
    {
     "name": "📥 爱去小说",
@@ -1948,32 +2522,11 @@
     "url": "https://www.sudugu.org"
    },
    {
-    "name": "腐小说网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fxsw.cc"
-   },
-   {
-    "name": "同人小说网🪜",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://trxs.cc"
-   },
-   {
     "name": "可阅文学",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://m.kepub.net"
-   },
-   {
-    "name": "矮贼吧网（优）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.zei8.me"
    },
    {
     "name": "陶越文华（优++）",
@@ -1995,13 +2548,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://ttshu8.net"
-   },
-   {
-    "name": "请看小说（导）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.qinkan.net"
    },
    {
     "name": "全免小说（优++）",
@@ -2039,13 +2585,6 @@
     "url": "https://so.html5.qq.com"
    },
    {
-    "name": "奇书网吧（导）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.qishu99.cc"
-   },
-   {
     "name": "轻小说文库",
     "score": null,
     "layer": "untestable",
@@ -2079,13 +2618,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://re0zero.top"
-   },
-   {
-    "name": "真白萌",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://masiro.me"
    },
    {
     "name": "lk轻之国度",
@@ -2151,32 +2683,11 @@
     "url": "https://www.zongheng.com"
    },
    {
-    "name": "情豆书坊",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.qdsf.net"
-   },
-   {
     "name": "河马剧场",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://freevideo.zqqds.cn"
-   },
-   {
-    "name": "千凡小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.qfxs123.com"
-   },
-   {
-    "name": "笔下文学",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.bxsw7.com"
    },
    {
     "name": "面包聆听🎧",
@@ -2291,13 +2802,6 @@
     "url": "https://www.qunxs.com"
    },
    {
-    "name": "二三小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.x23us.cc"
-   },
-   {
     "name": "星空小说",
     "score": null,
     "layer": "untestable",
@@ -2396,34 +2900,6 @@
     "url": "http://api.huaya.cc"
    },
    {
-    "name": "茶马小说 ",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.chamabooks.net"
-   },
-   {
-    "name": "甜梦文库",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.tmwk.cc"
-   },
-   {
-    "name": "男人小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.41nr.com"
-   },
-   {
-    "name": "book18🪜",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.book18.org"
-   },
-   {
     "name": "猫九小说",
     "score": null,
     "layer": "untestable",
@@ -2459,41 +2935,6 @@
     "url": "http://appi.kuwo.cn"
    },
    {
-    "name": "辣小说网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.txt520.org"
-   },
-   {
-    "name": "🍒书旗小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.shuqi.com"
-   },
-   {
-    "name": "搜搜小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.soeo.net"
-   },
-   {
-    "name": "小说虎",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://xshbook.com"
-   },
-   {
-    "name": "小说虎",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.xshbook.com"
-   },
-   {
     "name": "全本同人（优）",
     "score": null,
     "layer": "untestable",
@@ -2513,13 +2954,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.mopbook.com"
-   },
-   {
-    "name": "X小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://xn--x-ny6ap04bvzfcy2d.com"
    },
    {
     "name": "废文网",
@@ -2562,20 +2996,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.20xs.org"
-   },
-   {
-    "name": "二次元小说网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.erciyan.com"
-   },
-   {
-    "name": "二零二三电子书小说网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.2023txt.com"
    },
    {
     "name": "二四二网",
@@ -2760,13 +3180,6 @@
     "url": "http://www.qudushu.com"
    },
    {
-    "name": "古诗词网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.gushici.net"
-   },
-   {
     "name": "同人小说",
     "score": null,
     "layer": "untestable",
@@ -2816,13 +3229,6 @@
     "url": "http://www.bjcan8.com"
    },
    {
-    "name": "繁星四月",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fuxs.top"
-   },
-   {
     "name": "繁星小说",
     "score": null,
     "layer": "untestable",
@@ -2870,13 +3276,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://moetu.club"
-   },
-   {
-    "name": "幻想姬",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.huanxiangji.net"
    },
    {
     "name": "笔书阁子",
@@ -2977,25 +3376,11 @@
     "url": "http://www.uu.net"
    },
    {
-    "name": "请看",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.qinkan.net"
-   },
-   {
     "name": "读读看",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://m.duduaa.com"
-   },
-   {
-    "name": "阅读电子",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://book.vik.im"
    },
    {
     "name": "飞翔中文",
@@ -3026,13 +3411,6 @@
     "url": "https://www.i25zw.com"
    },
    {
-    "name": "读书阁",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.lianjianxsw.com"
-   },
-   {
     "name": "啦啦小说网",
     "score": null,
     "layer": "untestable",
@@ -3040,25 +3418,11 @@
     "url": "http://www.txt55.net"
    },
    {
-    "name": "当阅读网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.dangyuedu.com"
-   },
-   {
     "name": "笔趣阁",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.fd80s.com"
-   },
-   {
-    "name": "神凑轻小说文库",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.shencou.com"
    },
    {
     "name": "笔趣阁",
@@ -3124,13 +3488,6 @@
     "url": "https://www.tianyabooks.com"
    },
    {
-    "name": "安和图书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.hetushu.com"
-   },
-   {
     "name": "宠物言情",
     "score": null,
     "layer": "untestable",
@@ -3150,13 +3507,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://api.ibreader.com"
-   },
-   {
-    "name": "提莫书屋",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.timotxt.com"
    },
    {
     "name": "汉典古籍",
@@ -3243,13 +3593,6 @@
     "url": "https://www.htxsw.com"
    },
    {
-    "name": "读古文学",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.dugujin.com"
-   },
-   {
     "name": "全本小说",
     "score": null,
     "layer": "untestable",
@@ -3262,13 +3605,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "http://m.43kanshu.com"
-   },
-   {
-    "name": "求书帮",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.xqiushubang.com"
    },
    {
     "name": "多读读书",
@@ -3355,13 +3691,6 @@
     "url": "https://www.wenxue88.com"
    },
    {
-    "name": "🌐 爱阅吧网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://iyueba.net"
-   },
-   {
     "name": "环安小说网",
     "score": null,
     "layer": "untestable",
@@ -3379,7 +3708,7 @@
     "name": "繁體小說网",
     "score": null,
     "layer": "untestable",
-    "weight": 90,
+    "weight": 130,
     "url": "https://www.xiaoshuo.com.tw"
    },
    {
@@ -3439,32 +3768,11 @@
     "url": "https://www.bxwxco.com"
    },
    {
-    "name": "二八看书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.28lu.net"
-   },
-   {
     "name": "二小说网",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.kkxsz.com"
-   },
-   {
-    "name": "完整书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wzsxs.com"
-   },
-   {
-    "name": "顶点小说🪜",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wanglisong.com"
    },
    {
     "name": "笔趣阁小说网",
@@ -3614,95 +3922,11 @@
     "url": "https://www.88ttv.com"
    },
    {
-    "name": "无错小说①",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wucuoxs.com"
-   },
-   {
-    "name": "燃文小说②",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.ranwena.com"
-   },
-   {
-    "name": "燃文小说③",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wzxywj.com"
-   },
-   {
-    "name": "燃文小说④",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.ranwen.net"
-   },
-   {
-    "name": "思路客②",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.isiluke.net"
-   },
-   {
-    "name": "思路客③",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.rucedu.net"
-   },
-   {
-    "name": "全本小说④",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.heenee.com"
-   },
-   {
     "name": "笔趣阁⑰",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.zgbnt.com"
-   },
-   {
-    "name": "笔趣阁⑱",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.ydxrf.com"
-   },
-   {
-    "name": "笔趣阁⑳",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.sypvm.com"
-   },
-   {
-    "name": "笔趣阁㉑",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.shqxjx.com"
-   },
-   {
-    "name": "笔趣阁㉕",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.dnmcn.com"
-   },
-   {
-    "name": "趣书吧",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.39shuwu.com"
    },
    {
     "name": "阅友小说",
@@ -3726,25 +3950,11 @@
     "url": "http://www.uuxs.info"
    },
    {
-    "name": "乐文小说①",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.syhzzf.com"
-   },
-   {
     "name": "乐文小说②",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.jwzhn.com"
-   },
-   {
-    "name": "顶点小说④",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.skynan.com"
    },
    {
     "name": "顶点小说⑤",
@@ -3754,25 +3964,11 @@
     "url": "https://www.yjcard.com"
    },
    {
-    "name": "笔趣阁㉗",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.zzxx.org"
-   },
-   {
     "name": "🔰长佩文学",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://webapi.gongzicp.com"
-   },
-   {
-    "name": "🌸夜伴书屋",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.yeban360.com"
    },
    {
     "name": "七猫小说",
@@ -3782,25 +3978,11 @@
     "url": "https://api-bc.wtzw.com"
    },
    {
-    "name": "🎈腐小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.jiqinw.com"
-   },
-   {
     "name": "🎈心跳书城",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.gaohbook.net"
-   },
-   {
-    "name": "坤坤书库（魔法）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.52shuku.vip"
    },
    {
     "name": "📖POPO✈️",
@@ -3822,13 +4004,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://allcp.net"
-   },
-   {
-    "name": "📖海棠文学",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.htlvbooks.com"
    },
    {
     "name": "📖米国度",
@@ -3866,13 +4041,6 @@
     "url": "https://image.baidu.com"
    },
    {
-    "name": "🎉 手机小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.shoujixs.net"
-   },
-   {
     "name": "大悟读书网",
     "score": null,
     "layer": "untestable",
@@ -3887,13 +4055,6 @@
     "url": "http://www.bequgew.com"
    },
    {
-    "name": "贼吧小说（导入）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.zei8.vip"
-   },
-   {
     "name": "乐文小说②",
     "score": null,
     "layer": "untestable",
@@ -3906,20 +4067,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.iqb8.cc"
-   },
-   {
-    "name": "爱寻书",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://ixunshu.net"
-   },
-   {
-    "name": "爱看小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://m.ixsw.cc"
    },
    {
     "name": "黑暗小说网",
@@ -4027,25 +4174,11 @@
     "url": "http://new-qk.lifves.com"
    },
    {
-    "name": "👍 奇书网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.uidzhx.com"
-   },
-   {
     "name": "🍺 txt小说j",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.aixiatxt.com"
-   },
-   {
-    "name": "📚 名著阅读",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.tanmenba.com"
    },
    {
     "name": "📝 书仓网🔖",
@@ -4069,13 +4202,6 @@
     "url": "https://m.bqg225.com"
    },
    {
-    "name": "🎉 奇书网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.xqishuta.com"
-   },
-   {
     "name": "九二文学",
     "score": null,
     "layer": "untestable",
@@ -4083,32 +4209,11 @@
     "url": "http://www.92wx.la"
    },
    {
-    "name": "🔥 腐小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fuxsb.com"
-   },
-   {
     "name": "奇热小说",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.qirebook.com"
-   },
-   {
-    "name": "广安中文",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.tianshuwx.com"
-   },
-   {
-    "name": "🌐 鬼书集网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.guishuji.com"
    },
    {
     "name": "全本小说",
@@ -4130,13 +4235,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.17k.com"
-   },
-   {
-    "name": "笔趣阁㉒",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.xinbqg.com"
    },
    {
     "name": "米读小说",
@@ -4174,13 +4272,6 @@
     "url": "http://www.weilaitianwang.com"
    },
    {
-    "name": "📚 参考期刊",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.fx361.com"
-   },
-   {
     "name": "💡 武侠小说",
     "score": null,
     "layer": "untestable",
@@ -4200,13 +4291,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://s.fjwhcbsh.com"
-   },
-   {
-    "name": "掌阅小说💯",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://m.zhangyue.com"
    },
    {
     "name": "豆腐app",
@@ -4314,13 +4398,6 @@
     "url": "https://ruarourou.top"
    },
    {
-    "name": "笔趣阁[3ren]",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://m.3renwx.com"
-   },
-   {
     "name": "人人小说",
     "score": null,
     "layer": "untestable",
@@ -4333,20 +4410,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.liudatxt.org"
-   },
-   {
-    "name": "炫书网",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.ibiquta.info"
-   },
-   {
-    "name": "顶点中文❶",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://wap.dingdiansk.com"
    },
    {
     "name": "晋江[wap]",
@@ -4382,13 +4445,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "http://www.kongfz.com"
-   },
-   {
-    "name": "奇奇小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.qq717.com"
    },
    {
     "name": "笔趣阁[365]",
@@ -4447,13 +4503,6 @@
     "url": "https://www.limaogushi.com"
    },
    {
-    "name": "七百小说（优+）",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://m.x700txt.com"
-   },
-   {
     "name": "万通蜡笔（优）",
     "score": null,
     "layer": "untestable",
@@ -4489,13 +4538,6 @@
     "url": "https://m.ibbxs.com"
    },
    {
-    "name": "66小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.66story.com"
-   },
-   {
     "name": "漫小肆韩漫",
     "score": null,
     "layer": "untestable",
@@ -4517,25 +4559,11 @@
     "url": "https://m.xyuzhaiwu5.com"
    },
    {
-    "name": "腐小说🎃#2",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fxshu.top"
-   },
-   {
     "name": "闲看小说",
     "score": null,
     "layer": "untestable",
     "weight": 90,
     "url": "http://nav.jijia-co.com"
-   },
-   {
-    "name": "腐小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.fuxiaoshu.com"
    },
    {
     "name": "💵 火星小说 ",
@@ -4615,27 +4643,6 @@
     "url": "https://www.xiguaks.com"
    },
    {
-    "name": "ESJ轻小说.cc(科学)",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "http://www.esjzone.cc"
-   },
-   {
-    "name": "轻小说文库cc",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wenku8.cc/index.php"
-   },
-   {
-    "name": "轻小说文库net",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.wenku8.net/index.php"
-   },
-   {
     "name": "Xnxx",
     "score": null,
     "layer": "untestable",
@@ -4704,13 +4711,6 @@
     "layer": "untestable",
     "weight": 90,
     "url": "https://www.360lele.cc"
-   },
-   {
-    "name": "免费小说",
-    "score": null,
-    "layer": "untestable",
-    "weight": 130,
-    "url": "https://www.quanwenyuedu.io"
    },
    {
     "name": "贝壳读书",
@@ -4811,22 +4811,36 @@
     "url": "http://www.daizhige.org"
    },
    {
-    "name": "九九读小说",
+    "name": "搜书网",
     "score": null,
     "layer": "untestable",
     "weight": 90,
-    "url": "https://www.99duxiaoshuo.com"
+    "url": "https://www.soshuw.net"
+   },
+   {
+    "name": "优步小说网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 90,
+    "url": "http://m.ubuxs.com"
+   },
+   {
+    "name": "菠萝网",
+    "score": null,
+    "layer": "untestable",
+    "weight": 90,
+    "url": "http://www.podlook.com"
    }
   ],
   "dead": [
    {
-    "name": "笔趣阁",
-    "score": 3,
+    "name": "九九读小说",
+    "score": 15,
     "layer": "dead",
     "weight": 5,
-    "url": "https://www.xyuzhaiwu8.com"
+    "url": "https://www.99duxiaoshuo.com"
    }
   ]
  },
- "total": 688
+ "total": 690
 }
