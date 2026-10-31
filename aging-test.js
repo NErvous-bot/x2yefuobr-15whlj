@@ -825,8 +825,33 @@ async function checkSource(s, opts = {}) {
             if (clR && clR.items.length) {
                 cl = clR; // 复核有结果 → 抖动，继续
             } else {
-                if (isChallenge(tp.text)) { res.usable = 'skip'; res.reason = '目录触发反爬验证'; }
-                else res.reason = '目录为空';
+                if (isChallenge(tp.text)) { res.usable = 'skip'; res.reason = '目录触发反爬验证'; return res; }
+                // 换书重试（与第③关正文重试同口径）：
+                //   单本书出现 502 / 被删书 / 目录页临时挂掉，不代表整个源坏了。
+                //   历史事故（run 41193341145 的 品书楼 http://www.pinshulou.com）：
+                //   测试窗口内该书目录页返回 502（实测该 URL 现在直接 502），
+                //   第②关只测这一本就直接判「目录为空」→ 稳定死亡。
+                //   但本地复测同一源连续 3 次都是「三关全过 chapters=100」，
+                //   说明源本身是活的，是单本书/单次请求的问题。
+                //   正文关早就有「搜索阶段收集最多 3 个候选，依次换书实测」的机制，
+                //   目录关却没有 —— 这种不对称才是误判根源。
+                const triedToc = [];
+                for (const alt of bookCandidates.slice(1)) {
+                    const r2 = await checkSource(s, { bookUrl: alt });
+                    if (r2.usable === true) {
+                        r2.reason = '三关全过（第1本目录为空，换书后通过）';
+                        return r2;
+                    }
+                    triedToc.push(r2.reason);
+                }
+                if (triedToc.length) {
+                    res.reason = '目录为空（另换 ' + triedToc.length + ' 本仍失败）';
+                    // 连换多本都目录为空 → 更像站点/规则真的坏了，但仍非"确定坏"
+                    // （规则超出测试器能力也走这条），维持 skip 不判死。
+                    res.usable = 'skip';
+                    return res;
+                }
+                res.reason = '目录为空';
                 return res;
             }
         }

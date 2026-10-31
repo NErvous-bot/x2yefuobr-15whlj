@@ -1303,6 +1303,32 @@ test('回归：老写法行为不变（.class 取不到仍是空数组）', () =
 });
 
 // ============================================================
+// 22. 第②关（目录）必须与第③关（正文）一样支持换书重试
+// ============================================================
+console.log('\n=== 22. 第②关换书重试（目录关与正文关口径对齐） ===');
+
+test('第②关在目录为空时会换书重试，而不是直接判死', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    const a = code.indexOf('// 第②关：目录 ≥1 章');
+    const b = code.indexOf('// 第②关补充：分页链接轻量验证');
+    assert.ok(a >= 0 && b > a, '应能定位到第②关代码块');
+    const tocBlock = code.slice(a, b);
+    assert.ok(/for \(const alt of bookCandidates\.slice\(1\)\)/.test(tocBlock),
+        '目录关必须遍历候选书换书重试（与正文关同形）');
+    assert.ok(/换书后通过/.test(tocBlock), '换书通过应有明确 reason 文案');
+});
+
+test('第②关换书后仍失败 → skip（不判死），不是 usable=false', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    const a = code.indexOf('// 第②关：目录 ≥1 章');
+    const b = code.indexOf('// 第②关补充：分页链接轻量验证');
+    const tocBlock = code.slice(a, b);
+    assert.ok(/triedToc\.length/.test(tocBlock), '应记录换书尝试');
+    assert.ok(/res\.usable = 'skip'/.test(tocBlock),
+        '连换多本都目录为空时保持 skip（规则超纲或站点抖动都可能，不能判死）');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);
