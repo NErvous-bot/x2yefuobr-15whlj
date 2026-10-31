@@ -1,85 +1,93 @@
 {
- "generatedAt": 1793447303669,
- "runAt": "2026-10-31T11:48:23.669Z",
+ "generatedAt": 1793453300945,
+ "runAt": "2026-10-31T13:28:20.945Z",
  "oldRef": "HEAD",
- "baselineSha": "864706e206f7f0155923636496cb5350083178a7",
- "tier1": [],
- "tier2": [],
- "resolved": [
+ "baselineSha": "f09ab38855c56d4d986dd7ba02742b51144cbdda",
+ "tier1": [
   {
-   "name": "品书楼",
-   "url": "http://www.pinshulou.com",
-   "tier": 1,
-   "prevVerdict": "REAL_DEATH_CANDIDATE",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 100,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 100,
-    "contentLen": 1376,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "pass",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793446647872
-   }
+   "name": "御宅屋",
+   "url": "https://www.hyuzhaiwu.com",
+   "traits": [
+    "GBK",
+    "js规则"
+   ],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    }
+   ],
+   "verdict": "RECOVERED"
   },
   {
-   "name": "🎃太子爷小说网🎃",
-   "url": "http://www.tzy2.com#🎃",
-   "tier": 1,
-   "prevVerdict": "MIXED_DEATH",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 3,
-    "search": false,
-    "toc": false,
-    "content": false,
-    "chapters": 0,
-    "contentLen": 0,
-    "note": "搜索无结果",
-    "flapping": true,
-    "recent": [
-     "fail",
-     "pass",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1793446647872
-   }
-  },
-  {
-   "name": "豆花文学",
-   "url": "https://www.douhuawenxue.com/",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "STILL_BROKEN",
-   "evidence": {
-    "health": 3,
-    "search": false,
-    "toc": false,
-    "content": false,
-    "chapters": 0,
-    "contentLen": 0,
-    "note": "搜索无结果",
-    "flapping": true,
-    "recent": [
-     "fail",
-     "fail",
-     "pass",
-     "fail",
-     "fail"
-    ],
-    "checkedAt": 1793446647872
-   }
+   "name": "ncode_syosetu(成为小说家吧)",
+   "url": "https://ncode.syosetu.com/",
+   "traits": [],
+   "oldNote": "三关全过",
+   "newNote": "搜索无结果",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    }
+   ],
+   "verdict": "RECOVERED"
   }
- ]
+ ],
+ "tier2": [],
+ "resolved": []
 }

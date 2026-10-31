@@ -1,4 +1,14 @@
 {
+ "https://newsmiss.lofter.com": {
+  "name": "乐乎文章",
+  "reason": "probe-dead",
+  "evidence": "domain dead: https://newsmiss.lofter.com"
+ },
+ "https://soshuw.net": {
+  "name": "搜书网",
+  "reason": "probe-dead",
+  "evidence": "domain dead: https://soshuw.net"
+ },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
@@ -14,8 +24,8 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://www.99duxiaoshuo.com": {
-  "name": "九九读小说",
+ "https://www.soshuw.net": {
+  "name": "搜书网",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
@@ -104,6 +114,11 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "https://m.yushuwu.club": {
+  "name": "新御书屋",
+  "reason": "aging-failed",
+  "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
+ },
  "https://m.powenxue2.com": {
   "name": "PO文学",
   "reason": "aging-failed",
@@ -111,11 +126,6 @@
  },
  "http://www.87shuwu.cc": {
   "name": "霸气书屋",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "http://www.mengbige.com": {
-  "name": "梦笔阁小说网",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
@@ -139,16 +149,6 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "http://www.daizhige.org": {
-  "name": "殆知阁",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "http://m.fushuzhai.cc": {
-  "name": "腐书宅",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
  "http://www.xiaoshuo588.com": {
   "name": "小说屋",
   "reason": "aging-failed",
@@ -168,6 +168,11 @@
   "name": "一品小说",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "https://www.tmwk9.com": {
+  "name": "🔥 甜梦文库①",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "http://m.uuxsw8.cc": {
   "name": "☘️UU小说☘️",
@@ -214,8 +219,8 @@
   "reason": "aging-failed",
   "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
  },
- "http://m.yuzhaiwu520.org": {
-  "name": "🚬 御宅屋③",
+ "http://www.daomubiji.org": {
+  "name": "盗墓笔记全集",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
@@ -254,11 +259,6 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
- "http://www.8kbook.com": {
-  "name": "🔖八块小说网",
-  "reason": "aging-failed",
-  "evidence": "正文不足200字（实得0）"
- },
  "http://www.wikiyuedu.com": {
   "name": "维基阅读",
   "reason": "aging-failed",
@@ -274,9 +274,29 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "http://www.fbook.net": {
-  "name": "书盟小说",
-  "reason": "canon-merged",
-  "evidence": "merged into http://www.fbook.net/ basis=lastUpdateTime"
+ "http://www.mxz.cc/qb": {
+  "name": "梦想者",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.xs7.com": {
+  "name": "小说旗2",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "http://www.ttshu8.org": {
+  "name": "天天书吧",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://wap.cmread.com": {
+  "name": "💰 咪咕阅读",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "http://www.sgxiaoshuo.com": {
+  "name": "搜狗小说",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
  }
 }
