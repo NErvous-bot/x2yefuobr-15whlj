@@ -1489,6 +1489,62 @@ test('aging-test 第③关会做后段抽样（80% 处一章）并标注，不�
 });
 
 // ============================================================
+// 25. 搜索无结果 ≠ 源坏了：多关键词兜底 + 参数失配探测
+// ============================================================
+// 背景（run 74 的真实误判链）：
+//   发布保险丝以「⭕️PO文学 (po18to.com) 稳定死亡·硬回归」BLOCKED，回滚了成品。
+//   复查 5/5 全是「搜索无结果」。但实测发现：
+//     searchkey=都市  → 0 条
+//     searchkey=重生  → 100 条
+//   站点没变、参数名没变，只是**这个站没有「都市」这个分类**。
+//   测试器只试 2 个关键词（checkKeyWord 或 都市/重生），覆盖面太窄 ⇒ 误判成坏源。
+//   这类误判会升级成硬回归，把整轮发布冻结 —— 代价极高。
+console.log('\n=== 25. 搜索无结果的多关键词兜底 ===');
+
+test('搜索全空时会再试一批常用关键词，而不是直接判死', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    const seg = code.slice(code.indexOf('if (!r1.bl.items.length) {'), code.indexOf('const buRule'));
+    assert.ok(/FALLBACK_KWS/.test(code), '应有关键词兜底列表');
+    assert.ok(seg.indexOf('FALLBACK_KWS') >= 0, '兜底必须发生在「搜索无结果」分支里');
+    const kws = /const FALLBACK_KWS = \[([^\]]*)\]/.exec(code);
+    assert.ok(kws, '应能解析关键词列表');
+    const list = kws[1].split(',').map((x) => x.trim().replace(/['"]/g, '')).filter(Boolean);
+    assert.ok(list.length >= 6, '关键词至少 6 个（当前 ' + list.length + '），太少了覆盖不够');
+});
+
+test('关键词兜底命中后要记下有效词（searchKeyWord）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    assert.ok(/res\.searchKeyWord = usedKw/.test(code),
+        '命中时应记录哪个关键词有效，便于后续把 checkKeyWord 写回源');
+});
+
+test('关键词全失败后才进入参数探测（顺序不能反）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    const seg = code.slice(code.indexOf('if (!r1.bl.items.length) {'), code.indexOf('const buRule'));
+    const kwIdx = seg.indexOf('FALLBACK_KWS');
+    const probeIdx = seg.indexOf('probeKeywordParams');
+    assert.ok(kwIdx >= 0 && probeIdx > kwIdx,
+        '参数探测必须排在关键词兜底之后（关键词更常见，参数名变更更少见）');
+});
+
+test('src/search-probe.js 提供参数探测与改写（单一实现）', () => {
+    const p = path.join(REPO, 'src', 'search-probe.js');
+    assert.ok(fs.existsSync(p), 'search-probe.js 应存在');
+    const probe = require(p);
+    for (const fn of ['parseSearchUrl', 'currentParamName', 'probeKeywordParams', 'rewriteParam']) {
+        assert.equal(typeof probe[fn], 'function', '应导出 ' + fn);
+    }
+    // parseSearchUrl 要能容忍伪 JSON（单引号）—— 实测源里全是这种写法
+    const { path: pth, opt } = probe.parseSearchUrl("/modules/article/search.php,{\n'charset':'utf-8',\n'method':'POST',\n'body':'searchkey={{key}}'\n}");
+    assert.equal(pth, '/modules/article/search.php', 'path 应被正确切开');
+    assert.equal(opt.method, 'POST', '伪JSON 选项应被解析');
+    assert.equal(probe.currentParamName(pth, opt), 'searchkey', '应识别出当前参数名');
+    // rewriteParam 只换参数名，不动其它内容
+    const rw = probe.rewriteParam("/search.php?searchkey={{key}}", 'keyword');
+    assert.equal(rw, '/search.php?keyword={{key}}', '改写应只替换参数名');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);

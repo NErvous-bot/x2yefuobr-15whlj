@@ -1206,9 +1206,49 @@ async function checkSource(s, opts = {}) {
                     if (r1.skip) { res.usable = 'skip'; res.reason = r1.skip; if (r1.ipBlocked) res.ipBlocked = true; return res; }
                     if (r1.dead) { res.reason = r1.dead; return res; }
                     if (!r1.bl.items.length) {
-                        if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; }
-                        else res.reason = '搜索无结果';
-                        return res;
+                        if (isChallenge(r1.sp.text)) { res.usable = 'skip'; res.reason = '搜索触发反爬验证'; return res; }
+
+                        // ── ① 多关键词兜底（2026-10-31，优先级高于参数探测）─────────────
+                        // 实测：⭕️PO文学(po18to.com) 用「都市」搜索 0 条、用「重生」搜索 100 条。
+                        // 也就是说「搜索无结果」经常不是源坏了、也不是参数名变了，
+                        // 而是**这个站没有「都市」这个分类/关键词**。
+                        // 之前只试 2 个关键词（checkKeyWord 或 都市/重生），覆盖面太窄。
+                        // 这里再补一轮常用网文关键词，命中即认为源可用（并记下哪个词有效）。
+                        // 关键词全部失败后，才进入参数探测（那是更少见的情形）。
+                        const FALLBACK_KWS = ['重生', '穿越', '系统', '都市', '玄幻', '总裁', '修仙', '无限流'];
+                        let usedKw = null;
+                        for (const kw of FALLBACK_KWS) {
+                            const tryRes = await doSearch(s, base, rs, kw);
+                            if (tryRes.skip || tryRes.dead) break;
+                            if (tryRes.bl && tryRes.bl.items.length) {
+                                r1 = tryRes;
+                                usedKw = kw;
+                                break;
+                            }
+                        }
+                        if (!usedKw) {
+                            // ── ② 搜索参数失配探测 ────────────────────────────────
+                            // 站点改版时参数名可能变（searchkey → keyword / key → q）。
+                            // 规则本身正确，只是提交的参数对不上 —— 这类不该判死。
+                            try {
+                                const probe = require('./src/search-probe');
+                                const ps = probe.parseSearchUrl(s.searchUrl);
+                                const cur = probe.currentParamName(ps.path, ps.opt);
+                                if (cur) {
+                                    const found = await probe.probeKeywordParams(s, { fetchPage, selectAll, sleep, originOf });
+                                    if (found) {
+                                        res.usable = 'skip';
+                                        res.reason = '搜索参数失配(应为' + found.param + ')';
+                                        res.suggestParam = found.param;
+                                        return res;
+                                    }
+                                }
+                            } catch (e) { /* 探测失败不影响原有判定 */ }
+
+                            res.reason = '搜索无结果';
+                            return res;
+                        }
+                        res.searchKeyWord = usedKw;
                     }
                 }
             }
