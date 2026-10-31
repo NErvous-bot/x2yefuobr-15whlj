@@ -2,28 +2,24 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  150  available->available
-    3  available->broken
-    8  available->untestable
-    2  broken->broken
-   11  broken->removed
-    1  untestable->available
-    2  untestable->broken
-  521  untestable->untestable
-新增源 1
+  142  available->available
+    9  available->untestable
+    4  broken->available
+    1  broken->broken
+    3  broken->untestable
+    7  untestable->available
+  522  untestable->untestable
+新增源 0
 
-━━ 一级复查：旧可用 → 确认坏 3 ━━
-  SUSPECT 1
-  REAL_DEATH_CANDIDATE 1
-  RECOVERED 1
-  [SUSPECT 1/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
-  [REAL_DEATH_CANDIDATE 0/5] ⭕️PO文学 | 阶段: SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY,SEARCH_EMPTY | 特征: POST
-  [RECOVERED 5/5] 御宅屋 | 阶段: PASS,PASS,PASS,PASS,PASS | 特征: GBK+js规则
+━━ 一级复查：旧可用 → 确认坏 0 ━━
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 0（基线 133ee6e） ━━
+━━ 往轮候选终态 3（基线 36b459c） ━━
+  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=100 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [RECOVERED] (T1 原REAL_DEATH_CANDIDATE) ⭕️PO文学 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [RECOVERED] (T1 原RECOVERED) 御宅屋 h=93 [三关全过] recent=pass/fail/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
-BLOCKED：存在 1 个旧可用→稳定死亡，须人工定位 aging-test.js 或确认站点真死
+PASS：旧可用 → 确认坏 = 0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

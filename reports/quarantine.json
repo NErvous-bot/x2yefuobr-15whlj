@@ -1,10 +1,15 @@
 {
- "generatedAt": 1793456342295,
- "totalBefore": 689,
- "totalAfter": 689,
- "newThisRound": [],
+ "generatedAt": 1793459139807,
+ "totalBefore": 688,
+ "totalAfter": 687,
+ "newThisRound": [
+  {
+   "url": "https://www.xyuzhaiwu8.com#🎃",
+   "name": "笔趣阁"
+  }
+ ],
  "releasedThisRound": [],
- "quarantineSize": 298,
- "stripped": 0,
- "changed": false
+ "quarantineSize": 299,
+ "stripped": 1,
+ "changed": true
 }

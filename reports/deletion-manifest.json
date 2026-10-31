@@ -4,6 +4,11 @@
   "reason": "probe-dead",
   "evidence": "domain dead: https://newsmiss.lofter.com"
  },
+ "https://www.soshuw.net": {
+  "name": "搜书网",
+  "reason": "probe-dead",
+  "evidence": "domain dead: https://www.soshuw.net"
+ },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
@@ -18,6 +23,11 @@
   "name": "一百零一",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "https://www.qimao.com": {
+  "name": "七猫小说",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "http://app.jjwxc.org": {
   "name": "晋江文学城",
@@ -159,6 +169,11 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "https://www.liyuxiang.cc": {
+  "name": "🔥 鲤鱼乡①",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "http://www.duanqiufeng.com": {
   "name": "断秋风",
   "reason": "aging-failed",
@@ -191,11 +206,6 @@
  },
  "https://mnlt.syosetu.com/top/top": {
   "name": "ムーンライトノベルズ",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "http://syosetu.com": {
-  "name": "小説家になろう！(Wolken)",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
@@ -234,6 +244,11 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
+ "http://www.88xiaoshuo.com": {
+  "name": "88小说网",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "http://www.xiaoshuobuluo.com": {
   "name": "小说部落",
   "reason": "aging-failed",
@@ -267,7 +282,7 @@
  "http://www.8kbook.com": {
   "name": "🔖八块小说网",
   "reason": "aging-failed",
-  "evidence": "目录为空"
+  "evidence": "正文不足200字（实得0）"
  },
  "http://www.wikiyuedu.com": {
   "name": "维基阅读",
@@ -294,6 +309,11 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
+ "https://www.xs7.com": {
+  "name": "小说旗2",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "http://www.ttshu8.org": {
   "name": "天天书吧",
   "reason": "aging-failed",
@@ -303,11 +323,6 @@
   "name": "💰 咪咕阅读",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
- },
- "http://www.sgxiaoshuo.com": {
-  "name": "搜狗小说",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
  },
  "https://mirrorfiction.com": {
   "name": "📖镜文学🛫",

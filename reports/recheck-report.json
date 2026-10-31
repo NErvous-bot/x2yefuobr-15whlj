@@ -1,137 +1,85 @@
 {
- "generatedAt": 1793456342048,
- "runAt": "2026-10-31T14:19:02.048Z",
+ "generatedAt": 1793459139764,
+ "runAt": "2026-10-31T15:05:39.764Z",
  "oldRef": "HEAD",
- "baselineSha": "133ee6efdebe058a9f252a906c882d654848242a",
- "tier1": [
+ "baselineSha": "36b459c4aee3deadd2fed7c38fb20b259d94a527",
+ "tier1": [],
+ "tier2": [],
+ "resolved": [
   {
    "name": "🎃顶点小说🎃#8",
    "url": "https://www.dingdian888.com#🎃",
-   "traits": [
-    "POST"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "SUSPECT"
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 100,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 300,
+    "contentLen": 1343,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793458594222
+   }
   },
   {
    "name": "⭕️PO文学",
    "url": "https://www.po18to.com",
-   "traits": [
-    "POST"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "REAL_DEATH_CANDIDATE"
+   "tier": 1,
+   "prevVerdict": "REAL_DEATH_CANDIDATE",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 93,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 18,
+    "contentLen": 1911,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793458594222
+   }
   },
   {
    "name": "御宅屋",
    "url": "https://www.hyuzhaiwu.com",
-   "traits": [
-    "GBK",
-    "js规则"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    }
-   ],
-   "verdict": "RECOVERED"
+   "tier": 1,
+   "prevVerdict": "RECOVERED",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 93,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 275,
+    "contentLen": 6705,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "fail",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793458594222
+   }
   }
- ],
- "tier2": [],
- "resolved": []
+ ]
 }
