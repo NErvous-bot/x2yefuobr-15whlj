@@ -65,6 +65,53 @@ function safeRecent(x) {
     return x.slice(-MAX_RECENT).map((e) => safeString(e, 24));
 }
 
+// ── 按当前成品裁剪孤儿键（2026-10-31，run 41184777297 之后补）──────────────
+//
+// 背景：health 报告的 sources 键是 norm(bookSourceUrl)，而成品 legado.json 每个
+// 轮次都会被 quarantine/filter 删掉一部分源。若报告是旧的（本地跑、或上一轮留下的），
+// 里面就会残留「成品已剔除」的孤儿键。这些行导出去之后，update.yml 的对账会以
+// 'result url not in product' 整轮拒收 —— 在 CI 里不会发生（health.js 每轮从
+// legado.json 现读列表），但本地复跑会和 CI 行为不一致，属于必须消掉的隐性差异。
+//
+// 取舍：
+//   · legado.json 不存在（例如只喂一份构造的 health 报告做单测）→ 不裁剪，保持旧行为
+//   · legado.json 存在但解析不出任何身份键 → 同样不裁剪，并把原因打到 stderr
+//     （宁可原样导出让下游对账明确失败，也不静默丢行）
+//   · 裁剪结果为空 → 走已有的「sources 为空就拒绝产出」分支，fail-closed
+function pruneToProduct(sources, keys) {
+    const legadoPath = 'legado.json';
+    if (!fs.existsSync(legadoPath)) {
+        return { keys, pruned: 0, reason: 'legado.json 不存在，跳过裁剪' };
+    }
+    let lib;
+    try {
+        lib = JSON.parse(fs.readFileSync(legadoPath, 'utf8'));
+    } catch (e) {
+        return { keys, pruned: 0, reason: 'legado.json 解析失败，跳过裁剪: ' + e.message };
+    }
+    if (!Array.isArray(lib)) {
+        return { keys, pruned: 0, reason: 'legado.json 不是数组，跳过裁剪' };
+    }
+    // 身份键定义必须与 health.js / update.yml 共用同一份（src/source-id.js）
+    let norm;
+    try {
+        norm = require('../src/source-id').norm;
+    } catch (e) {
+        return { keys, pruned: 0, reason: 'src/source-id.js 不可用，跳过裁剪: ' + e.message };
+    }
+    const inLib = new Set();
+    for (const s of lib) {
+        if (!s || typeof s.bookSourceUrl !== 'string') continue;
+        const k = norm(s.bookSourceUrl);
+        if (k) inLib.add(k);
+    }
+    if (inLib.size === 0) {
+        return { keys, pruned: 0, reason: 'legado.json 无可用 bookSourceUrl，跳过裁剪' };
+    }
+    const kept = keys.filter((k) => inLib.has(k));
+    return { keys: kept, pruned: keys.length - kept.length, reason: '按 legado.json 身份键裁剪' };
+}
+
 function main() {
     if (!fs.existsSync(HEALTH)) {
         console.error('export: ' + HEALTH + ' 不存在，拒绝产出空壳结果');
@@ -78,9 +125,21 @@ function main() {
         process.exit(1);
     }
     const sources = report && report.sources ? report.sources : {};
-    const keys = Object.keys(sources);
-    if (keys.length === 0) {
+    const rawKeys = Object.keys(sources);
+    if (rawKeys.length === 0) {
         console.error('export: sources 为空，拒绝产出空壳结果');
+        process.exit(1);
+    }
+
+    const pruned = pruneToProduct(sources, rawKeys);
+    if (pruned.pruned > 0) {
+        console.log('export: 裁掉 ' + pruned.pruned + ' 个成品已剔除的孤儿键（' + pruned.reason + '）');
+    } else if (pruned.reason.indexOf('跳过') >= 0) {
+        console.log('export: ' + pruned.reason);
+    }
+    const keys = pruned.keys;
+    if (keys.length === 0) {
+        console.error('export: 裁剪后 sources 为空（全部键都不在成品里），拒绝产出空壳结果');
         process.exit(1);
     }
 

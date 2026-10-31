@@ -102,12 +102,24 @@ jobs:
             if(j.generatedAt>now+60000) throw new Error('generatedAt is in the future');
             if(now-j.generatedAt>7*86400000) throw new Error('generatedAt is stale (>7d)');
 
-            // 与当前成品对账：结果集必须是现有源的子集，且数量吻合
+            // 与当前成品对账：结果集必须落在成品的**身份键**空间里，且数量吻合。
+            //
+            // ⚠️ 这里必须用 norm()，不能用裸 bookSourceUrl。（真实事故：run 41184777297）
+            //   health.js 写 sources 的 key 是 norm(bookSourceUrl)
+            //   （src/source-id.js：去 #fragment、去 pathname 尾斜杠），
+            //   本仓库成品里 694 个源有 370 个的 URL 带 # 或尾斜杠，
+            //   所以裸串比对会把 370 行全部判成 'result url not in product'，
+            //   即使上游 key-set 修好，这一关照样整轮失败。
+            //   norm 与 canonicalizeUrl 的职责分工见 src/source-id.js 文件头。
+            const { norm } = require('./src/source-id');
             const legado=JSON.parse(fs.readFileSync('legado.json','utf8'));
             const known=new Set();
-            for(const s of legado){ if(s&&s.bookSourceUrl) known.add(String(s.bookSourceUrl)); }
+            for(const s of legado){
+              if(!s||!s.bookSourceUrl) continue;
+              const k=norm(String(s.bookSourceUrl));
+              if(k) known.add(k);
+            }
             if(known.size===0) throw new Error('legado.json has no bookSourceUrl');
-            const expectedCount=Math.min(j.results.length, known.size);
             if(j.results.length>known.size*2){
               throw new Error('results far exceed product sources: '+j.results.length+' vs '+known.size);
             }

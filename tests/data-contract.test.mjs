@@ -193,6 +193,61 @@ test('recent 超过 5 条时按三振口径截断为最近 5 条', () => {
     assert.deepEqual(r.recent, ['fail', 'pass', 'fail', 'pass', 'fail'], '应保留最后 5 条');
 });
 
+// ── 孤儿键裁剪（run 41184777297 之后补）──────────────────────────────────────
+//
+// 背景：health 报告的 sources 键是 norm(bookSourceUrl)。成品每轮会被 quarantine
+// 删掉一些源，旧报告里就残留「成品已剔除」的孤儿键。若不裁掉，update.yml 对账会以
+// 'result url not in product' 整轮拒收。CI 里不会发生（health.js 现读 legado.json），
+// 但本地复跑会和 CI 不一致 —— 这条测试锁死「导出器自己就把差异消掉」。
+
+test('legado.json 存在时按身份键裁掉孤儿键（本地与 CI 行为一致）', () => {
+    const health = makeHealth();
+    // 四个 URL 里只有 a / b 写进成品；c / z 是「成品已剔除」的孤儿
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-prune-'));
+    fs.mkdirSync(path.join(dir, 'health'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'health', 'source_health.json'), JSON.stringify(health));
+    fs.writeFileSync(path.join(dir, 'legado.json'), JSON.stringify([
+        { bookSourceName: 'A', bookSourceUrl: 'https://a.example.com' },
+        { bookSourceName: 'B', bookSourceUrl: 'https://b.example.com#x' }, // 带 # 也要能对上 norm
+    ]));
+    execFileSync(process.execPath, [path.join(REPO, 'scripts', 'export-health-json.js')], {
+        cwd: dir, stdio: 'pipe',
+    });
+    const out = JSON.parse(fs.readFileSync(path.join(dir, 'js-eval-result.json'), 'utf8'));
+    const urls = out.results.map((r) => r.url).sort();
+    assert.deepEqual(urls, ['https://a.example.com', 'https://b.example.com'],
+        '孤儿键必须被裁掉，且带 # 的成品 URL 要按 norm 匹配上');
+    assert.equal(out.totalSources, 2, 'totalSources 必须等于裁剪后的行数');
+    assert.equal(out.totalSources, out.results.length, '契约：totalSources === results.length');
+});
+
+test('legado.json 不存在时不裁剪（构造式单测保持旧行为）', () => {
+    const health = makeHealth();   // a / b / c 共 3 个源
+    const { out } = runExport(health);   // runExport 的临时目录里没有 legado.json
+    assert.equal(out.results.length, 3, '无 legado.json 时不得丢弃任何行');
+    assert.equal(out.totalSources, 3, 'totalSources 应为原始行数');
+});
+
+test('裁剪后为空时 fail-closed（拒绝产出空壳）', () => {
+    const health = makeHealth();
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-prune-empty-'));
+    fs.mkdirSync(path.join(dir, 'health'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'health', 'source_health.json'), JSON.stringify(health));
+    // 成品里一个都对不上
+    fs.writeFileSync(path.join(dir, 'legado.json'), JSON.stringify([
+        { bookSourceName: 'X', bookSourceUrl: 'https://x.example.com' },
+    ]));
+    let threw = false;
+    try {
+        execFileSync(process.execPath, [path.join(REPO, 'scripts', 'export-health-json.js')], {
+            cwd: dir, stdio: 'pipe',
+        });
+    } catch (e) {
+        threw = true;
+    }
+    assert.equal(threw, true, '全部键都不在成品里时必须非零退出，而不是写出空壳');
+});
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);

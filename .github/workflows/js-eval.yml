@@ -78,14 +78,25 @@ jobs:
           echo "size: $bytes bytes"
           # 上限 8 MiB：足够容纳 700 个源的判定，超出说明产物被异常膨胀
           if [ "$bytes" -gt 8388608 ]; then echo "artifact too large"; exit 1; fi
+          # 顶层字段契约必须与 update.yml 一致（expectedTop 两侧同一份口径）。
+          # 历史 bug（run 41184777297 #68）：这里漏了 totalSources，而导出脚本
+          # （scripts/export-health-json.js 的 payload）早已输出 4 个键，于是
+          # 生产 job 还没被调度就被这道过度严格的自检拦死，整轮更新作废。
           node -e "
             const fs=require('fs');
             const j=JSON.parse(fs.readFileSync('$f','utf8'));
             const keys=Object.keys(j).sort().join(',');
-            if (keys!=='generatedAt,results,version') throw new Error('unexpected keys: '+keys);
-            if (!Array.isArray(j.results)) throw new Error('results must be array');
+            const expectedTop='generatedAt,results,totalSources,version';
+            if (keys!==expectedTop) throw new Error('unexpected keys: '+keys);
+            if (j.version!==2) throw new Error('unexpected version: '+j.version);
+            if (!Array.isArray(j.results)||j.results.length===0) throw new Error('results must be non-empty array');
+            if (typeof j.totalSources!=='number'||j.totalSources!==j.results.length) {
+              throw new Error('totalSources mismatch: '+j.totalSources+' vs '+j.results.length);
+            }
             const bad=j.results.filter(r=>typeof r.url!=='string'||typeof r.state!=='string');
             if (bad.length) throw new Error('malformed rows: '+bad.length);
+            // 这条自检只是「产物形状合格」，不等于「判定可信」：
+            // 真正的对账（URL 必须属于成品、去重、时间新鲜度）在 update.yml 里做。
             console.log('ok rows='+j.results.length);
           "
 

@@ -111,6 +111,79 @@ else bad('export-health-json.js', '缺失');
   else bad('update.yml 三态', '导入校验必须允许 untestable');
 }
 
+// ⑦b 对账必须用 norm() 身份键，不能用裸 bookSourceUrl
+//
+// 背景（同一个 run 41184777297 暴露的第二处不兼容）：
+//   health.js 写 health/source_health.json 的 sources 键是 norm(bookSourceUrl)
+//   （src/source-id.js：去 #fragment、去 pathname 尾斜杠）。本仓库 694 个成品源里
+//   有 370 个 URL 带 # 或尾斜杠，于是 update.yml 用裸串 known.has(r.url) 比对时
+//   会把 372 行判成 'result url not in product' —— 即便上游 key-set 修好，这一关
+//   照样整轮失败。两处必须共用同一个身份键定义。
+{
+  const upd = read('update.yml');
+  if (/require\(['"]\.\/src\/source-id['"]\)/.test(upd) && /norm\(/.test(upd)) {
+    ok('update.yml 用 norm() 构造身份键（不是裸 bookSourceUrl）');
+  } else {
+    bad('update.yml 对账键空间', '必须 require src/source-id 并用 norm() 比对');
+  }
+  if (/known\.add\(String\(s\.bookSourceUrl\)\)/.test(upd)) {
+    bad('update.yml 仍用裸 URL 建 known 集合', '已知会把带 # / 尾斜杠的源全部拒收');
+  } else {
+    ok('update.yml 不再用裸 URL 建 known 集合');
+  }
+}
+
+// ⑧ 产物顶层字段契约：两侧必须用**同一份** expectedTop
+//
+// 背景（run 41184777297 / #68，2026-10-31 真实的整轮失败）：
+//   scripts/export-health-json.js 的 payload 输出了 4 个顶层键
+//   （version / generatedAt / totalSources / results），
+//   update.yml 侧的 expectedTop 也已是这 4 个键，
+//   但 js-eval.yml 的自检仍写着旧的三键 'generatedAt,results,version'。
+//   于是「产物完全合规」却在隔离 job 的边界校验处抛
+//   unexpected keys: generatedAt,results,totalSources,version，
+//   后续 upload-artifact 被跳过、update job 直接 skipped，整轮更新作废。
+//
+// 教训与修法：字段集合是**跨 job 的单一契约**，不能在两处各写一份字面量。
+// 这里的断言就是那个单一真源 —— 任何一侧改了键集而没同步，CI 立刻红。
+{
+  const upd = read('update.yml');
+  const jeval = read('js-eval.yml');
+
+  /** 从某文件里抓 expectedTop 的字面量（单引号或双引号） */
+  const grab = (t, label) => {
+    const m = /expectedTop\s*=\s*(['"])([^'"]*)\1/.exec(t);
+    if (!m) return null;
+    return { label, value: m[2] };
+  };
+
+  const a = grab(upd, 'update.yml');
+  const b = grab(jeval, 'js-eval.yml');
+
+  if (!a) bad('update.yml expectedTop', '未找到 expectedTop 字面量');
+  else ok('update.yml 定义了 expectedTop = ' + a.value);
+
+  if (!b) bad('js-eval.yml expectedTop', '未找到 expectedTop（边界校验必须与生产侧同口径）');
+  else ok('js-eval.yml 定义了 expectedTop = ' + b.value);
+
+  if (a && b) {
+    if (a.value === b.value) ok('两侧 expectedTop 完全一致');
+    else bad('expectedTop 两侧不一致', 'js-eval=' + b.value + ' / update=' + a.value);
+  }
+
+  // 导出脚本实际产出的顶层键必须就是这个集合
+  const src = fs.readFileSync('scripts/export-health-json.js', 'utf8');
+  const payload = /const payload = \{([\s\S]*?)\n\s*\};/.exec(src);
+  if (!payload) {
+    bad('export-health-json payload', '未能解析 payload 字面量');
+  } else {
+    const keys = [...payload[1].matchAll(/\n\s*([A-Za-z0-9_]+)\s*:/g)].map((m) => m[1]);
+    const actual = keys.slice().sort().join(',');
+    if (a && actual === a.value) ok('导出脚本产出的键集与 expectedTop 一致');
+    else bad('导出/校验键集不一致', '导出=' + actual + ' / expected=' + (a ? a.value : '?'));
+  }
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
