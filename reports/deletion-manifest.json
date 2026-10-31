@@ -1,13 +1,8 @@
 {
- "https://newsmiss.lofter.com": {
-  "name": "乐乎文章",
-  "reason": "probe-dead",
-  "evidence": "domain dead: https://newsmiss.lofter.com"
- },
- "https://soshuw.net": {
+ "https://www.soshuw.net": {
   "name": "搜书网",
   "reason": "probe-dead",
-  "evidence": "domain dead: https://soshuw.net"
+  "evidence": "domain dead: https://www.soshuw.net"
  },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
@@ -24,11 +19,6 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://www.soshuw.net": {
-  "name": "搜书网",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
  "http://www.hanhuaba.com": {
   "name": "汉化吧网",
   "reason": "aging-failed",
@@ -44,11 +34,6 @@
   "reason": "aging-failed",
   "evidence": "正文不足200字（实得0）；另换 2 本仍失败"
  },
- "https://m.beifanghongrui.com": {
-  "name": "欻书网",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
  "https://fu44.pw": {
   "name": "逆鳞小说",
   "reason": "aging-failed",
@@ -58,11 +43,6 @@
   "name": "六月小说",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
- },
- "https://www.xyuzhaiwu8.com": {
-  "name": "笔趣阁",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
  },
  "https://wapk.gb8796.com": {
   "name": "文窗小说",
@@ -146,6 +126,11 @@
  },
  "https://www.alphapolis.co.jp": {
   "name": "alpha",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.bookb.net": {
+  "name": "顶点小说",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
@@ -259,6 +244,11 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "http://www.8kbook.com": {
+  "name": "🔖八块小说网",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
+ },
  "http://www.wikiyuedu.com": {
   "name": "维基阅读",
   "reason": "aging-failed",
@@ -279,6 +269,11 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
+ "http://hao8.net": {
+  "name": "好吧小说",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "https://www.xs7.com": {
   "name": "小说旗2",
   "reason": "aging-failed",
@@ -289,13 +284,13 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://wap.cmread.com": {
-  "name": "💰 咪咕阅读",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
  "http://www.sgxiaoshuo.com": {
   "name": "搜狗小说",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
+ "https://mirrorfiction.com": {
+  "name": "📖镜文学🛫",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  }

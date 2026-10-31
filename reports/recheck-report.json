@@ -1,93 +1,60 @@
 {
- "generatedAt": 1793453300945,
- "runAt": "2026-10-31T13:28:20.945Z",
+ "generatedAt": 1793454914924,
+ "runAt": "2026-10-31T13:55:14.924Z",
  "oldRef": "HEAD",
- "baselineSha": "f09ab38855c56d4d986dd7ba02742b51144cbdda",
- "tier1": [
+ "baselineSha": "5cdc81fd9c7a9c51a57b5a7870c5028efc1a13b9",
+ "tier1": [],
+ "tier2": [],
+ "resolved": [
   {
    "name": "御宅屋",
    "url": "https://www.hyuzhaiwu.com",
-   "traits": [
-    "GBK",
-    "js规则"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    }
-   ],
-   "verdict": "RECOVERED"
+   "tier": 1,
+   "prevVerdict": "RECOVERED",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 93,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 275,
+    "contentLen": 6705,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793454459208
+   }
   },
   {
    "name": "ncode_syosetu(成为小说家吧)",
    "url": "https://ncode.syosetu.com/",
-   "traits": [],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    }
-   ],
-   "verdict": "RECOVERED"
+   "tier": 1,
+   "prevVerdict": "RECOVERED",
+   "state": "STILL_BROKEN",
+   "evidence": {
+    "health": 3,
+    "search": false,
+    "toc": false,
+    "content": false,
+    "chapters": 0,
+    "contentLen": 0,
+    "note": "搜索无结果",
+    "flapping": true,
+    "recent": [
+     "pass",
+     "pass",
+     "pass",
+     "fail",
+     "fail"
+    ],
+    "checkedAt": 1793454459208
+   }
   }
- ],
- "tier2": [],
- "resolved": []
+ ]
 }

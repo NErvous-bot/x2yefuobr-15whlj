@@ -2,27 +2,24 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  138  available->available
-    2  available->broken
-    6  available->untestable
-    3  broken->broken
-    9  broken->removed
-    2  broken->untestable
-   19  untestable->available
-    7  untestable->broken
-    1  untestable->removed
-  507  untestable->untestable
-新增源 14
+  154  available->available
+    3  available->untestable
+    1  broken->available
+   10  broken->broken
+    4  broken->removed
+    6  untestable->available
+    2  untestable->broken
+  518  untestable->untestable
+新增源 4
 
-━━ 一级复查：旧可用 → 确认坏 2 ━━
-  RECOVERED 2
-  [RECOVERED 5/5] 御宅屋 | 阶段: PASS,PASS,PASS,PASS,PASS | 特征: GBK+js规则
-  [RECOVERED 5/5] ncode_syosetu(成为小说家吧 | 阶段: PASS,PASS,PASS,PASS,PASS
+━━ 一级复查：旧可用 → 确认坏 0 ━━
 
-━━ 二级复查：旧BL不可测 → 确认坏 5（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 0（基线 f09ab38） ━━
+━━ 往轮候选终态 2（基线 5cdc81f） ━━
+  [RECOVERED] (T1 原RECOVERED) 御宅屋 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+  [STILL_BROKEN] (T1 原RECOVERED) ncode_syosetu(成为小说家吧 h=3 [搜索无结果] recent=pass/pass/pass/fail/fail flap=true
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 2（均属抖动/疑似误判，禁止删除即可）
+PASS：旧可用 → 确认坏 = 0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
