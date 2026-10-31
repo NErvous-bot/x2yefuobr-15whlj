@@ -214,6 +214,37 @@ else bad('export-health-json.js', '缺失');
   }
 }
 
+// ⑨ 跨权限边界字段的三处同步（run 72/73 连踩两次的真实事故）
+//
+// 数据要穿过两道白名单才到生产侧：
+//   health.js 产出 → scripts/export-health-json.js 白名单 → update.yml 重建白名单
+// 任何一处没加新字段，下游拿到就是 undefined/0/''，且**不报错**。
+// 实测后果：ipBlocked 在 eval 侧生成了 94 个，但导出器白名单没加这一项，
+// 生产侧 ipBlocked 恒为 0，score.js 的 160/130 分档完全没生效，白跑两轮。
+//
+// 这里从 health.js 实际写入 sources 的键出发，逐个检查是否同时出现在两处白名单里。
+{
+  const healthSrc = fs.readFileSync('health.js', 'utf8');
+  const exportSrc = fs.readFileSync('scripts/export-health-json.js', 'utf8');
+  const updSrc = read('update.yml');
+
+  const block = /sources\[k\] = \{([\s\S]*?)\n        \};/.exec(healthSrc);
+  if (!block) {
+    bad('health.js sources 结构', '未能解析写入字段');
+  } else {
+    const written = [...block[1].matchAll(/\n\s+([A-Za-z0-9_]+)\s*:/g)].map((m) => m[1]);
+    const uniq = [...new Set(written)];
+    const missingExport = uniq.filter((k) => !new RegExp('\\n\\s+' + k + ':\\s').test(exportSrc));
+    const missingRebuild = uniq.filter((k) => !new RegExp('\\n\\s+' + k + ':\\s').test(updSrc));
+
+    if (missingExport.length) bad('导出器字段白名单缺项', 'health.js 写了但 export 没导出：' + missingExport.join(', '));
+    else ok('导出器覆盖 health.js 写入的全部 ' + uniq.length + ' 个字段');
+
+    if (missingRebuild.length) bad('update.yml 重建白名单缺项', 'health.js 写了但生产侧没重建：' + missingRebuild.join(', '));
+    else ok('update.yml 重建覆盖 health.js 写入的全部字段');
+  }
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);

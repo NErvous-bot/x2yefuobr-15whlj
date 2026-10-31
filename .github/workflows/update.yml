@@ -172,6 +172,13 @@ jobs:
                 flapping: bool(r.flapping,'flapping'),
                 explore: bool(r.explore,'explore'),
                 exploreNote: str(r.exploreNote,'exploreNote'),
+                // 2026-10-31 新增的分档依据。缺了这三行，score.js 的
+                // ipBlocked(160/130) 与 deepLimited（降一档）就全部失效 ——
+                // run 72/73 就是这么白跑了两轮。新字段必须三处同步：
+                //   aging-test 产出 → export-health-json 导出 → 这里重建
+                ipBlocked: typeof r.ipBlocked === 'boolean' ? r.ipBlocked : false,
+                deepLimited: typeof r.deepLimited === 'boolean' ? r.deepLimited : false,
+                deepNote: str(r.deepNote === undefined ? '' : r.deepNote,'deepNote'),
               };
             }
 

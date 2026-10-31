@@ -115,12 +115,18 @@ test('导出产物包含 score.js 依赖的全部字段', () => {
     const { out } = runExport(makeHealth());
     assert.equal(out.version, 2, 'version 应为 2（v1 缺字段）');
     const row = out.results[0];
+    // 评分链路依赖的字段（v1→v2 补齐的那批）
     for (const k of ['url', 'state', 'search', 'toc', 'content', 'recent', 'flapping',
         'health', 'name', 'chapters', 'contentLen', 'responseTime', 'note', 'checkedAt',
         'explore', 'exploreNote']) {
         assert.ok(Object.prototype.hasOwnProperty.call(row, k), '导出缺少字段: ' + k);
     }
-    assert.equal(Object.keys(row).length, 16, '字段数应为 16');
+    // 2026-10-31 新增的两个分档依据：ipBlocked（CI IP 被拦）/ deepLimited（试读墙）。
+    // 它们必须出现在导出里，否则生产侧拿到 undefined → score.js 的分档静默失效。
+    for (const k of ['ipBlocked', 'deepLimited', 'deepNote']) {
+        assert.ok(Object.prototype.hasOwnProperty.call(row, k), '导出缺少分档字段: ' + k);
+    }
+    assert.equal(Object.keys(row).length, 19, '字段数应为 19（16 + ipBlocked/deepLimited/deepNote）');
 });
 
 test('导出→导入往返后，评分基础分与原始报告一致', () => {

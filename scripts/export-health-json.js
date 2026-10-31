@@ -168,6 +168,14 @@ function main() {
             // explore 是三值（true/false/null），探索页判定
             explore: typeof v.explore === 'boolean' ? v.explore : null,
             exploreNote: safeString(v.exploreNote === undefined ? '' : v.exploreNote, 120),
+            // ── 2026-10-31 新增的两个分档依据 ──────────────────────────────────
+            // 教训（run 72 / 73 连着踩两次）：ipBlocked 在 eval job 里已经生成了 94 个，
+            // 但导出器的字段集合是**固定白名单**，没加这两项 ⇒ 生产侧 ipBlocked 恒为 0，
+            // score.js 的 160/130 两档完全没生效。新字段必须三处同步：
+            //   aging-test 产出 → 这里导出 → update.yml 重建
+            ipBlocked: v.ipBlocked === true,
+            deepLimited: v.deepLimited === true,
+            deepNote: safeString(v.deepNote === undefined ? '' : v.deepNote, 24),
         });
     }
 
