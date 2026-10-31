@@ -127,7 +127,18 @@ function grade(v) {
         // 不可测保护池：曾经实测通过(recent有pass)→120，从未验证→90。
         // 必须低于备用层下界 150：旧值 440/380 高于 stable 下界 300，会让「从没验证过
         // 的源」排在「已验证稳定」的源前面，与「不判死但也不置顶」的设计意图相反。
+        //
+        // ── IP受限单独成档（2026-10-31）──────────────────────────────────────
+        // ipBlocked = CI 的 IP 被站点拉黑（401/403/429/503），与源质量无关：
+        // 用户手机 IP 不在黑名单里，源多半是好的。
+        // 实测本仓库 94 个源卡在这（当时全被压成 90，排在「已验证备用」的 150 之后）。
+        // 分档后：曾经通过过的 160（略高于备用层下界，承认它历史上是活源）；
+        //         从未验证过的 130（排在备用层之后，但不与「规则超纲」的 90 同档）。
+        // 上限刻意压在 stable 下界（300）之下：CI 看不见的东西，不该排到已验证源前面。
         const verified = Array.isArray(v && v.recent) && v.recent.includes('pass');
+        if (v && v.ipBlocked === true) {
+            return { score: null, layer: 'untestable', weight: verified ? 160 : 130, ipBlocked: true };
+        }
         return { score: null, layer: 'untestable', weight: verified ? 120 : 90 };
     }
     const recent = Array.isArray(v.recent) ? v.recent : [];
@@ -143,6 +154,13 @@ function grade(v) {
     const streak = consPass >= 3 ? 10 : consPass === 2 ? 7 : consPass === 1 ? 4 : 0;
     const score = Math.max(0, Math.min(100, base + stab + streak));
     if (consFail >= 3) return { score, layer: 'watch', weight: 30 };
+    // 后段受限（试读墙 / 深页收费）：三关名义上过了，但用户读到后面会撞墙。
+    // 不判死（手机上可能仍能读，App 有 nextContentUrl 续页能力），
+    // 但降一档权重，让它排在「全文可读」的源后面 —— 实测占可用源的 ~10%。
+    if (v.deepLimited === true) {
+        const w = score >= 90 ? 460 : score >= 75 ? 280 : 140;
+        return { score, layer: score >= 90 ? 'core' : score >= 75 ? 'stable' : 'backup', weight: w, deepLimited: true };
+    }
     if (score >= 90) return { score, layer: 'core', weight: Math.round(500 + (score - 90) * 20) };
     if (score >= 75) return { score, layer: 'stable', weight: Math.round(300 + (score - 75) * 12) };
     if (score >= 60) return { score, layer: 'backup', weight: Math.round(150 + (score - 60) * 9) };

@@ -142,9 +142,24 @@ function parseJson(t) {
 // 返回匹配值数组；路径含不支持语法（$..递归、?()过滤、脚本断言）返回 null → 不可测
 function jpQuery(root, path) {
     let s = String(path).trim();
-    if (s !== '$' && !s.startsWith('$.')) return null;
+    // legado 允许 @JSON: / @Json: 前缀（大小写不敏感），等价于裸 $. 路径
+    if (/^@json:/i.test(s)) s = s.slice(6).trim();
+    // 入口容忍两种「去点号」的写法（实测源里确实有）：
+    //   $.[*]   —— $. 后面直接跟 [*
+    //   $[*]    —— $ 后面直接跟 [*
+    // 两者都是「取根数组的全部元素」，等价于 $.* / $。
+    if (s === '$' || s === '$[*]' || s === '$.[*]') return Array.isArray(root) ? root.slice() : [root];
+    if (!s.startsWith('$')) return null;
     s = s.slice(1);
-    const re = /\.(\*|[\w\u4e00-\u9fff\-]+)|\[\s*(\*|\d+)\s*\]|\[\s*'([^']*)'\s*\]/g;
+    if (s.startsWith('.[')) s = s.slice(1);   // 归一 $.[*] 这类写法
+    if (!s.startsWith('.') && !s.startsWith('[')) return null;
+    // 语法扩展（2026-10-31，对齐 legado 实际写法）：
+    //   ① 递归下降 $..key / $..*    —— 实测 13 个源用 $..xxx[*] 取书列表
+    //   ② 通配 $.[*] / $[*]         —— "$." 后面直接跟 [*]
+    //   ③ 多索引 $.Novels[0,1]      —— 逗号索引
+    //   ④ 过滤 $.*[?(@.novelName)]  —— 只支持「字段存在」这一种最简单形态
+    // 以上仍不覆盖 $..过滤嵌套、脚本断言等，遇到就返回 null（不可测），绝不误判死源。
+    const re = /\.\.(\*|[\w\u4e00-\u9fff\-]+)|\.(\*|[\w\u4e00-\u9fff\-]+)|\[\s*(\*|\d+(?:\s*,\s*\d+)*)\s*\]|\[\s*'([^']*)'\s*\]|\[\?\(@\.([\w\u4e00-\u9fff\-]+)\)\]/g;
     // 语法预检在前：整条路径必须被支持语法完全覆盖，否则一律不可测。
     // （若先遍历，首段查空会提前 return [] 绕过末尾校验，把"规则超纲"误判成"搜索无结果"）
     const toks = [];
@@ -153,15 +168,52 @@ function jpQuery(root, path) {
     if (toks.reduce((a, t) => a + t[0].length, 0) !== s.length) return null;
     let cur = [root];
     for (const mm of toks) {
-        const key = mm[1] !== undefined ? mm[1] : mm[3];
-        const idx = mm[2];
+        const deep = mm[0].startsWith('..');
+        const key = mm[1] !== undefined ? mm[1] : mm[2] !== undefined ? mm[2] : mm[4];
+        const idx = mm[3];
+        const filterField = mm[5];
         const next = [];
+
+        // ① 递归下降：在整棵子树里找该 key（数组元素逐个下钻）
+        if (deep) {
+            const want = key;
+            const walk = (o, depth) => {
+                if (o == null || typeof o !== 'object' || depth > 12) return;
+                if (Array.isArray(o)) { for (const e of o) walk(e, depth + 1); return; }
+                for (const [k, v] of Object.entries(o)) {
+                    if (want === '*') next.push(v);
+                    else if (k === want) next.push(v);
+                    walk(v, depth + 1);
+                }
+            };
+            for (const o of cur) walk(o, 0);
+            cur = next;
+            if (!cur.length) return [];
+            continue;
+        }
+
+        // ④ 过滤：只处理「该字段存在」
+        if (filterField) {
+            for (const o of cur) {
+                const arr = Array.isArray(o) ? o : [o];
+                for (const e of arr) {
+                    if (e != null && typeof e === 'object' && e[filterField] !== undefined) next.push(e);
+                }
+            }
+            cur = next;
+            if (!cur.length) return [];
+            continue;
+        }
+
         for (const o of cur) {
             if (o == null || typeof o !== 'object') continue;
             if (idx !== undefined) {
-                if (!Array.isArray(o)) continue;
-                if (idx === '*') next.push(...o);
-                else if (o[+idx] !== undefined) next.push(o[+idx]);
+                if (idx === '*') { if (Array.isArray(o)) next.push(...o); continue; }
+                // ③ 多索引 [0,1]
+                const parts = idx.split(',').map((x) => parseInt(x.trim(), 10));
+                if (Array.isArray(o)) {
+                    for (const p of parts) if (o[p] !== undefined) next.push(o[p]);
+                }
             } else if (Array.isArray(o)) {
                 if (key === '*') next.push(...o);
                 else for (const e of o) { if (e != null && typeof e === 'object' && e[key] !== undefined) next.push(e[key]); }
@@ -177,7 +229,196 @@ function jpQuery(root, path) {
     return out;
 }
 
-/* ---------- mini 静态选择器解析子集 ---------- */
+/* ---------- XPath 最小子集（2026-10-31） ---------- */
+
+/** 取任意元素（等价 //*）：给 xpathLite 的多级路径用 */
+function allElements(html) {
+    const els = [];
+    const re = /<(\w+)([^>]*)>/g;
+    let mm;
+    while ((mm = re.exec(html))) {
+        const tg = mm[1].toLowerCase();
+        if (VOID.has(tg)) continue;
+        const idx = mm.index, open = mm[0];
+        let j = idx + open.length, inner;
+        const re2 = new RegExp('<(/?)' + tg + '\\b[^>]*>', 'gi');
+        re2.lastIndex = j;
+        let depth = 1, m2;
+        while ((m2 = re2.exec(html))) {
+            depth += m2[1] === '/' ? -1 : 1;
+            if (depth === 0) { inner = html.slice(j, m2.index); break; }
+        }
+        if (inner === undefined) inner = html.slice(j, j + 80000);
+        els.push(open + inner);
+    }
+    return els;
+}
+
+/** 应用 XPath 谓词到已选集：last() / n / @attr / @attr='v' / position()>n / position()<n */
+function applyXPathCond(els, cond) {
+    const c = String(cond).trim();
+    let mm;
+    if (/^last\(\)$/i.test(c)) return els.slice(-1);
+    if (/^\d+$/.test(c)) { const n = parseInt(c, 10); return els[n - 1] !== undefined ? [els[n - 1]] : []; }
+    if ((mm = /^position\(\)\s*>\s*(\d+)$/.exec(c))) { const n = parseInt(mm[1], 10); return els.slice(n); }
+    if ((mm = /^position\(\)\s*<\s*(\d+)$/.exec(c))) { const n = parseInt(mm[1], 10); return els.slice(0, Math.max(0, n - 1)); }
+    if ((mm = /^position\(\)\s*=\s*(\d+)$/i.exec(c))) { const n = parseInt(mm[1], 10); return els[n - 1] !== undefined ? [els[n - 1]] : []; }
+    if ((mm = /^@([\w\-]+)(?:\s*=\s*(['"])(.*?)\2)?$/.exec(c))) {
+        const attr = mm[1].toLowerCase();
+        const want = mm[3];
+        return els.filter((el) => {
+            const gt = el.indexOf('>');
+            const head = gt > 0 ? el.slice(0, gt + 1) : el;
+            const re3 = new RegExp(attr + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
+            const am3 = re3.exec(head);
+            if (want === undefined) return !!am3;
+            if (!am3) return false;
+            return am3[2] === want;
+        });
+    }
+    return null; // 超出子集
+}
+
+// 支持的写法：
+//   //tag                   任意深度的 tag
+//   .//tag                  同上（相对上下文可忽略）
+//   //tag[@attr='v']         属性精确匹配（单引号/双引号都行）
+//   //tag[@attr]             属性存在
+//   //tag[n]                 第 n 个（1-based）
+//   //tag[last()]            最后一个
+//   //tag/text()             取文本
+//
+// 不支持的：position()、following-sibling::、ancestor::、and/or、
+// contains()/starts-with()/normalize-space()、//a/b 多级路径
+// → 一律返回 null（调用方按「不可测」处理，绝不判死源）
+function xpathLite(html, expr) {
+    let e = String(expr).trim();
+    if (e.startsWith('(/') && e.endsWith(')')) e = e.slice(1, -1).trim();
+    e = e.replace(/^\.\//, '//');
+    if (!e.startsWith('//')) return null;
+    e = e.slice(2);
+
+    // 分隔末端的 text() / @attr
+    let tail = '';
+    const tm = /(?:@([\w\-]+)|(\/text\(\)))$/i.exec(e);
+    if (tm) { tail = tm[1] ? '@' + tm[1] : '@text'; e = e.slice(0, tm.index); }
+
+    // ── 多级路径 //a/b/c（2026-10-31 扩展）──────────────────────────────────
+    // 实测源里大量 //div[@class='x']/div[@class='y'] / //div[@class="tb_con"][position()>1]//tr
+    // 这种写法。逐段下钻，每段支持 tag / tag[@attr='v'] / tag[n] / tag[last()]
+    // / tag[position()>n] / tag[position()<n]。
+    // 段内出现 and/or/contains 等仍返回 null（不可测）。
+    if (e.includes('/')) {
+        // 归一：//a//b 视作 //a/b（我们的 DOM 是字符串子集，不区分直系/后代）
+        // 注意先剥掉末尾的 @attr / /text() 已在上面处理，这里只归一中间分隔符。
+        const norm = e.replace(/\/+/g, '/');
+        const segs = norm.split('/').filter(Boolean);
+        // 每段允许 0..N 个谓词：tag[..][..]（实测 //div[@class="x"][position()>1]//tr 这种）
+        const segOk = segs.every((sg) => /^([a-zA-Z*][\w\-]*)(?:\[[^\]]*\])*$/.test(sg));
+        if (segOk && segs.length) {
+            if (/contains\(|starts-with\(|normalize-space\(|following-sibling|ancestor|\band\b|\bor\b/i.test(e)) return null;
+            let curEls = [html];
+            for (const sg of segs) {
+                const mm = /^([a-zA-Z*][\w\-]*)((?:\[[^\]]*\])*)$/.exec(sg);
+                const tg = mm[1];
+                const conds = mm[2] ? [...mm[2].matchAll(/\[([^\]]*)\]/g)].map((x) => x[1]) : [];
+                let got = [];
+                for (const ctx of curEls) {
+                    got = got.concat(tg === '*' ? allElements(ctx) : innerAll(ctx, 'tag', tg.toLowerCase()));
+                }
+                if (!got.length) return [];
+                for (const cd of conds) {
+                    got = applyXPathCond(got, cd);
+                    if (got === null) return null;
+                    if (!got.length) return [];
+                }
+                curEls = got;
+            }
+            if (tail === '@text') return curEls.map((el) => toText(el));
+            if (tail) {
+                const attr = tail.slice(1);
+                return curEls.map((el) => {
+                    const gt = el.indexOf('>');
+                    const head = gt > 0 ? el.slice(0, gt + 1) : el;
+                    const re4 = new RegExp(attr + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
+                    const am4 = re4.exec(head);
+                    return am4 ? am4[2] : '';
+                });
+            }
+            return curEls;
+        }
+        return null;
+    }
+
+    if (e.includes('::') || /\b(contains|starts-with|normalize-space|and|or)\s*\(/i.test(e)) {
+        return null;
+    }
+
+    const m = /^([a-zA-Z*][\w\-]*)(?:\[([^\]]*)\])?$/.exec(e);
+    if (!m) return null;
+    const tag = m[1];
+    const cond = m[2];
+
+    let els;
+    if (tag === '*') {
+        els = [];
+        const re = /<(\w+)([^>]*)>/g;
+        let mm;
+        while ((mm = re.exec(html))) {
+            if (VOID.has(mm[1].toLowerCase())) continue;
+            const idx = mm.index, open = mm[0];
+            const tg = mm[1].toLowerCase();
+            let j = idx + open.length, inner;
+            const re2 = new RegExp('<(/?)' + tg + '\\b[^>]*>', 'gi');
+            re2.lastIndex = j;
+            let depth = 1, m2;
+            while ((m2 = re2.exec(html))) {
+                depth += m2[1] === '/' ? -1 : 1;
+                if (depth === 0) { inner = html.slice(j, m2.index); break; }
+            }
+            if (inner === undefined) inner = html.slice(j, j + 80000);
+            els.push(open + inner);
+        }
+    } else {
+        els = innerAll(html, 'tag', tag.toLowerCase());
+    }
+    if (!els.length) return [];
+
+    // 条件
+    if (cond != null) {
+        const c = cond.trim();
+        if (/^last\(\)$/i.test(c)) { els = els.slice(-1); }
+        else if (/^\d+$/.test(c)) { const n = parseInt(c, 10); els = (els[n - 1] !== undefined ? [els[n - 1]] : []); }
+        else if ((mm2 = /^@([\w\-]+)(?:\s*=\s*(['"])(.*?)\2)?$/.exec(c))) {
+            const attr = mm2[1].toLowerCase();
+            const want = mm2[3];
+            els = els.filter((el) => {
+                const gt = el.indexOf('>');
+                const head = gt > 0 ? el.slice(0, gt + 1) : el;
+                const re3 = new RegExp(attr + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
+                const am3 = re3.exec(head);
+                if (want === undefined) return !!am3;
+                if (!am3) return false;
+                return am3[2] === want;
+            });
+        } else return null; // 含 and/or/contains 等 → 超出子集
+    }
+
+    if (tail === '@text') return els.map((el) => toText(el));
+    if (tail) {
+        const attr = tail.slice(1);
+        return els.map((el) => {
+            const gt = el.indexOf('>');
+            const head = gt > 0 ? el.slice(0, gt + 1) : el;
+            const re4 = new RegExp(attr + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
+            const am4 = re4.exec(head);
+            return am4 ? am4[2] : '';
+        });
+    }
+    return els;
+}
+
+
 const VOID = new Set(['br', 'img', 'hr', 'input', 'meta', 'link', 'area', 'source']);
 
 // 按 class/id/tag 名提取完整元素（含开标签，便于取自身 <a href>），标签平衡
@@ -270,7 +511,11 @@ function applyClean(items, clean) {
     });
 }
 
-const DYN = /<js>|@js:|\$\./i; // 动态规则（js/JSONPath）不进 HTML 选择器分支
+const DYN = /<js>|@js:|\$\.|[^@]\$\[/i; // 动态规则（js/JSONPath）不进 HTML 选择器分支
+
+// 付费墙 / 试读墙 / 防盗链的特征（2026-10-31，纵深采样后补）
+// 只用于「后段章节抽样」的标注，不参与判死；命中就说明这一章是墙不是正文。
+const PAYWALL_RE = /本章未完|请付费|需付费|VIP章节|会员专享|登录后阅读|订阅后|解锁本章|充值|购买本章|试读结束|加入书架后|扫码关注|公众号|未完待续.{0,4}点击|第\s*[（(]?\s*\d+\s*\/\s*\d|下一页继续|付费阅读/;
 // 常见 HTML 标签白名单：裸标签 token（如 h4@a@href 里的 h4/a）必须命中，否则整条规则视为不可测
 const TAGS = new Set(('a abbr article aside b bdi blockquote body br button caption center cite code col dd del details dfn div dl dt em fieldset figcaption figure font footer form h1 h2 h3 h4 h5 h6 head header hr html i iframe img input ins kbd label legend li main mark nav ol optgroup option p pre q rt ruby s section select small source span strong style sub summary sup table tbody td textarea tfoot th thead time tr track tt u ul video wbr').split(' '));
 
@@ -281,15 +526,33 @@ function selectAll(html, rule) {
     if (!rule) return null;
     const alts = rule.split('||').map(x => x.trim()).filter(Boolean);
     if (!alts.length) return null;
+
+    // 逗号选择器（2026-10-31）：`.a,.b > li > a` 是 Jsoup 的并集语义，命中任一即算。
+    // 实测源里有 .volume_tit,.mulu_list > li > a 这种写法（chapterList）。
+    // 展开成多个备选链，取第一个有结果的；全部为空则返回空数组（不是 null，
+    // 因为这确实是合法的选择器语法，只是没命中）
+    const expanded = [];
+    for (const a of alts) {
+        const parts = String(a).split(',').map(x => x.trim()).filter(Boolean);
+        if (parts.length > 1) {
+            for (const p of parts) expanded.push(p);
+        } else expanded.push(a);
+    }
     // JSONPath 分支：任一备选以 $ 开头即走 JSON 通道（响应需可解析为 JSON）
-    if (alts.some(a => a === '$' || a.startsWith('$.'))) {
+    // legado 还允许 @JSON: / @Json: 前缀（大小写不敏感），以及 $[*] / $.[*] 这两种
+    // 不带点号键名的写法 —— 入口判定必须一起认，否则规则再对也进不了 JSON 通道。
+    const isJp = (a) => {
+        const t = String(a).replace(/^@json:/i, '').trim();
+        return t === '$' || t.startsWith('$.') || t.startsWith('$[');
+    };
+    if (alts.some(isJp)) {
         const j = (html != null && typeof html === 'object') ? html : parseJson(html);
         if (j === undefined) return null; // 规则要 JSON 但响应不是 → 不可测
         for (const alt of alts) {
             let r = alt, clean = '';
             const ci = r.indexOf('##');
             if (ci >= 0) { clean = r.slice(ci + 2); r = r.slice(0, ci).trim(); }
-            if (!(r === '$' || r.startsWith('$.'))) continue;
+            if (!isJp(r)) continue;
             const v = jpQuery(j, r);
             if (v === null) continue; // 高级语法 → 试下一备选
             const items = v.map(x => (x != null && typeof x === 'object') ? x : applyClean([String(x)], clean)[0]);
@@ -298,7 +561,15 @@ function selectAll(html, rule) {
         return null; // 所有备选都是不支持的高级语法 → 不可测
     }
     // HTML 静态选择器分支
-    for (const alt of alts) {
+    //
+    // 逗号并集语义（2026-10-31）：`.a,.b > li > a` 在 Jsoup 里是「两个选择器的结果合并」，
+    // 不是「依次尝试、取第一个非空」。实测源里 chapterList 有这种写法，
+    // 若按备选链处理会漏掉另一部分章节（章节数少一半），进而影响后面的章节抽样。
+    // 所以这里先按逗号拆成子选择器，逐个跑，把结果合并。
+    const htmlChains = expanded.length > 1 ? expanded : alts;
+    const unionMode = expanded.length > 1;
+    let unionAcc = [];
+    for (const alt of htmlChains) {
         let sel = alt;
         if (!sel || DYN.test(sel)) continue;
         let clean = '';
@@ -312,14 +583,28 @@ function selectAll(html, rule) {
         //  ④ class.a b 多词类名（legado 允许 class 里带空格，如 class.pt-card pt-card-2）
         //  ⑤ [class="x"] / [id="x"] 属性选择器
         //  ⑥ .class.N / .class.-N 点索引
+        //  ⑦ 伪类 :lt(N) / :gt(N) / :eq(N) / :nth-child() / :first-child / :last-child
+        //  ⑧ 区间切片 [a:b] / [0:4] / [0:-1]
+        //  ⑨ :not(.x) / :has(.x)（单层，不嵌套）
         // 安全阀：只要用了上述新写法且最终取不到元素，就按「不可测」返回 null，
         // 而不是返回空数组——空数组会被上游当成「搜索无结果」判死源，那是误杀。
         let usedNew = false;
+        // 「排除后缀 !N 把结果排到 0 条」标记：这是合法结果，安全阀不该把它判成不可测
+        let exclTrimmedToEmpty = false;
         if (/^@css:/i.test(sel.trim())) { usedNew = true; sel = sel.trim().slice(5); }
         // 用了 > 子代写法也算新语法：取不到就判不可测，避免把「解析没命中」误判成「源已死」
         if (sel.includes('>')) usedNew = true;
+        if (/^@xpath:/i.test(sel.trim()) || /^@json:/i.test(sel.trim())) { usedNew = true; }
+        if (/^@xpath:/i.test(sel.trim())) { sel = sel.trim().slice(7); }
+        if (/[:\[\]]?(?::lt\(|:gt\(|:eq\(|:nth-child\(|:first-child|:last-child|:not\(|:has\(|\[-?\d*:-?\d*\])/.test(sel)) {
+            usedNew = true;
+        }
 
         // 先按 legado 的 @ 分段，段内再按空格 / > 拆后代链
+        // ⚠️ 排除后缀 !N 必须留在它所属的 token 上（实测 class.left@li!-1）：
+        //    `!` 不能当成拆分符，否则 "li!-1" 会被拆成 ["li", "!-1"]，
+        //    而 "!-1" 又以 '-' 开头，会被下面的「前导 - 反转」逻辑吃掉，
+        //    最终把整个规则判成不可测（这是 2026-10-31 修的一个真实误判）。
         const toks = [];
         for (const seg of sel.split('@')) {
             const parts = seg.split(/\s*(?:>|\s)\s*/).filter(Boolean);
@@ -327,15 +612,39 @@ function selectAll(html, rule) {
         }
         if (!toks.length) continue;
 
+        // ── XPath 子集（2026-10-31 新增）────────────────────────────────────────
+        // legado 里 //div[@class='x'] 是最常用的书写方式之一（本仓库实测 470/694 个源
+        // 的规则里出现 //）。此前整个 XPath 分支缺失，这类源一律被判「规则不可测」。
+        // 这里实现最小可用子集：//tag / //tag[@attr='v'] / //tag[n] / //tag/text()
+        // 以及 .//tag。含 position()/following-sibling::/or/and 等表达式 → 返回 null（不可测）。
+        const xp = sel.trim();
+        if (xp.startsWith('//') || xp.startsWith('.//') || xp.startsWith('(/')) {
+            const xr = xpathLite(html, xp);
+            if (xr !== null) {
+                const items = applyClean(xr.map((f) => f), clean);
+                return { items, isText: false };
+            }
+            // XPath 表达式超出子集 → 继续按 HTML 选择器尝试下一备选（保持 usedNew 语义）
+            usedNew = true;
+        }
+
         // ④ 多词类名合并：class.xxx 后面紧跟的裸词若既不是已知标签也不是选择器写法，并入类名
+        //
+        // ⚠️ 判断前必须先剥掉排除后缀 !N（2026-10-31）。
+        //   实测 class.left@li!-1：nx = "li!-1"，字符串比对 TAGS 不含 "li!-1"，
+        //   于是被误并成 "class.left li!-1" 这个两词类名 → 只命中 1 个元素 →
+        //   再 !-1 排掉 → 归零 → 规则整体被判不可测。
+        //   剥掉后缀后 nx = "li"，命中 TAGS，正常走后代链。
         const merged = [];
         for (let i = 0; i < toks.length; i++) {
             const tk = toks[i];
             if (/^class\./i.test(tk) && i + 1 < toks.length) {
-                const nx = toks[i + 1];
-                const looksSelector = /^(class|id|tag)\./i.test(nx) || /^[.#]/.test(nx) || nx.startsWith('[')
-                    || /^(text|textnodes|html|href|all)$/i.test(nx) || TAGS.has(nx.toLowerCase());
-                if (!looksSelector) { merged.push(tk + ' ' + nx); usedNew = true; i++; continue; }
+                const nxRaw = toks[i + 1];
+                // 裸词在判断前先去掉 !N / !-N 排除后缀与数字索引
+                const nxBare = String(nxRaw).replace(/!-?\d+(?::-?\d+)*$/, '').replace(/[.:]-?\d+$/, '');
+                const looksSelector = /^(class|id|tag)\./i.test(nxBare) || /^[.#]/.test(nxBare) || nxBare.startsWith('[')
+                    || /^(text|textnodes|html|href|all)$/i.test(nxBare) || TAGS.has(nxBare.toLowerCase());
+                if (!looksSelector) { merged.push(tk + ' ' + nxRaw); usedNew = true; i++; continue; }
             }
             merged.push(tk);
         }
@@ -349,8 +658,9 @@ function selectAll(html, rule) {
                 return { items, isText: true };
             }
             // 前导 - 表示该步结果反转
+            // ⚠️ 排除后缀的残片（形如 "!-1" / "!0"）不参与反转判断
             let rev = false;
-            if (tk.length > 1 && tk[0] === '-') { rev = true; tk = tk.slice(1); usedNew = true; }
+            if (tk.length > 1 && tk[0] === '-' && !/^!/.test(tk)) { rev = true; tk = tk.slice(1); usedNew = true; }
 
             // ⑤ 属性选择器 [class="x"] / [id="x"]
             let am;
@@ -368,7 +678,72 @@ function selectAll(html, rule) {
             const em = /^(.+?)!(-?\d+(?::-?\d+)*)$/.exec(tk);
             if (em) { tk = em[1]; exclList = em[2].split(':').map(Number); }
 
+            // ⑦⑧⑨ 提取伪类 / 区间切片 / :not / :has 修饰符（可以叠加，按出现顺序从左到右收）
+            // 例：div[class="volume"]:gt(0)>ul[class="cf"] 里的 :gt(0)
+            //     tbody tr:lt(5) 里的 :lt(5)
+            //     .row:nth-child(2) / .post:nth-child(n+2)
+            //     .class.left@li!-1 已被上面的 exclList 处理
+            //     .SHsectionThree-middle p:not(.intro)
+            //     @css:.keywords > div:has(.bookinfo)
+            let rangeSlice = null;      // [a:b]
+            let pseudoLt = null, pseudoGt = null, pseudoEq = null;
+            let nthChild = null;        // {offset, base}
+            let firstChild = false, lastChild = false;
+            let notSel = null, hasSel = null;
+
+            const peel = () => {
+                let mm;
+                if ((mm = /\[(-?\d*):(-?\d*)\]$/.exec(tk))) {
+                    rangeSlice = [mm[1] === '' ? null : parseInt(mm[1], 10), mm[2] === '' ? null : parseInt(mm[2], 10)];
+                    tk = tk.slice(0, mm.index); usedNew = true; return true;
+                }
+                if ((mm = /:lt\((\d+)\)$/i.exec(tk))) { pseudoLt = parseInt(mm[1], 10); tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:gt\((\d+)\)$/i.exec(tk))) { pseudoGt = parseInt(mm[1], 10); tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:eq\((\d+)\)$/i.exec(tk))) { pseudoEq = parseInt(mm[1], 10); tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:first-child$/i.exec(tk))) { firstChild = true; tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:last-child$/i.exec(tk))) { lastChild = true; tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:nth-child\(\s*(?:(\d+)\s*)?(?:n\s*\+\s*(\d+))?\s*\)$/i.exec(tk))) {
+                    // :nth-child(2) → 第 2 个（1-based）；:nth-child(n+2) → 从第 2 个起
+                    nthChild = { only: mm[1] ? parseInt(mm[1], 10) : null, from: mm[2] ? parseInt(mm[2], 10) : null };
+                    tk = tk.slice(0, mm.index); usedNew = true; return true;
+                }
+                if ((mm = /:not\(([^)]*)\)$/i.exec(tk))) { notSel = mm[1].trim(); tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                if ((mm = /:has\(([^)]*)\)$/i.exec(tk))) { hasSel = mm[1].trim(); tk = tk.slice(0, mm.index); usedNew = true; return true; }
+                return false;
+            };
+            // 修饰符可能连续出现（如 div:gt(0):lt(5)），一直剥到剥不动为止
+            while (tk && peel()) { /* keep peeling */ }
+
             let type, name, idx = null, m;
+            if ((m = /^([a-z][a-z0-9]*)\s*\[(class|id)\s*=\s*["']([^"']+)["']\]$/i.exec(tk)) && TAGS.has(m[1].toLowerCase())) {
+                // tag[attr="val"] 组合（如 div[class="volume"] / table[class="list-item"]）
+                // 先按标签取，再按属性过滤
+                type = 'tag'; name = m[1].toLowerCase();
+                const attr = m[2].toLowerCase(), val = m[3];
+                usedNew = true;
+                const filtered = innerAll(html, type, name).filter((el) => {
+                    const gt = el.indexOf('>');
+                    const head = gt > 0 ? el.slice(0, gt + 1) : el;
+                    const re2 = new RegExp(attr + '\\s*=\\s*(["\'])([^"\']*)\\1', 'i');
+                    const am2 = re2.exec(head);
+                    if (!am2) return false;
+                    const nm = new RegExp('(?<![\\w-])' + esc(val) + '(?![\\w-])');
+                    return nm.test(am2[2]);
+                });
+                let nx = filtered;
+                if (pseudoLt != null) nx = nx.slice(0, pseudoLt);
+                if (pseudoGt != null) nx = nx.slice(pseudoGt + 1);
+                if (pseudoEq != null) nx = (nx[pseudoEq] !== undefined ? [nx[pseudoEq]] : []);
+                if (rangeSlice) {
+                    const [a2, b2] = rangeSlice;
+                    const from2 = a2 === null ? 0 : (a2 < 0 ? Math.max(0, nx.length + a2) : a2);
+                    const to2 = b2 === null ? nx.length : (b2 < 0 ? nx.length + b2 : Math.min(nx.length, b2));
+                    nx = nx.slice(from2, Math.max(from2, to2));
+                }
+                frags = nx;
+                if (!frags.length) break;
+                continue;
+            }
             if ((m = /^class\.([\w\u4e00-\u9fff\-\$ ]+?)(?:[.:](-?\d+))?$/.exec(tk))) {
                 // class 允许带空格（legado 的 class.pt-card pt-card-2 = class 属性里同时含两个词）
                 type = 'class'; name = m[1].trim(); if (m[2]) { idx = parseInt(m[2], 10); usedNew = true; }
@@ -396,7 +771,43 @@ function selectAll(html, rule) {
             if (idx != null) next = idx < 0 ? (next.length + idx >= 0 ? [next[next.length + idx]] : []) : (next[idx] ? [next[idx]] : []);
             if (exclList) {
                 const drop = new Set(exclList.map(n => (n < 0 ? next.length + n : n)));
+                const before = next.length;
                 next = next.filter((_, i) => !drop.has(i));
+                // 记录「排除把结果清空」这件事：它是合法结果，不是解析失败
+                if (before > 0 && next.length === 0) exclTrimmedToEmpty = true;
+            }
+            // ⑧ 区间切片 [a:b]（b 为负数时从尾部算；缺省为两端）
+            if (rangeSlice) {
+                const [a, b] = rangeSlice;
+                const from = a === null ? 0 : (a < 0 ? Math.max(0, next.length + a) : a);
+                const to = b === null ? next.length : (b < 0 ? next.length + b : Math.min(next.length, b));
+                next = next.slice(from, Math.max(from, to));
+            }
+            // ⑦ 伪类索引（顺序：lt → gt → eq，均 0-based，与 Jsoup 一致）
+            if (pseudoLt != null) next = next.slice(0, pseudoLt);
+            if (pseudoGt != null) next = next.slice(pseudoGt + 1);
+            if (pseudoEq != null) next = (next[pseudoEq] !== undefined ? [next[pseudoEq]] : []);
+            // :nth-child(n) 是 1-based；:nth-child(n+N) 表示从第 N 个起
+            if (nthChild) {
+                if (nthChild.only != null) { const i = nthChild.only - 1; next = (next[i] !== undefined ? [next[i]] : []); }
+                else if (nthChild.from != null) next = next.slice(nthChild.from - 1);
+            }
+            if (firstChild) next = next.slice(0, 1);
+            if (lastChild) next = next.slice(-1);
+            // ⑨ :not(sel) —— 排掉自身匹配该选择器的元素；:has(sel) —— 只留内含该选择器的元素
+            if (notSel) {
+                const neg = selectAll('<div>' + next.join('') + '</div>', '@css:' + notSel);
+                // 逐个判断太昂贵，改用「用同规则在单个元素上跑，命中则排除」
+                next = next.filter((el) => {
+                    const r1 = selectAll('<div>' + el + '</div>', '@css:' + notSel);
+                    return !(r1 && r1.items.length);
+                });
+            }
+            if (hasSel) {
+                next = next.filter((el) => {
+                    const r1 = selectAll('<div>' + el + '</div>', '@css:' + hasSel);
+                    return r1 && r1.items.length > 0;
+                });
             }
             if (rev) next.reverse();
             frags = next;
@@ -404,9 +815,29 @@ function selectAll(html, rule) {
         }
         if (ok) {
             // 新写法取不到任何元素 → 宁可判「不可测」也不要让上游当成「源已死」
-            if (usedNew && frags.length === 0) continue;
+            //
+            // ⚠️ 唯一例外：本轮用了「排除后缀 !N」且结果恰好被排除到 0 个。
+            // 那是**预期内**的合法结果（把唯一一条排掉了），不是「解析没命中」。
+            // 实测 class.left@li!-1 这种写法必须走这条，否则会被安全阀误判成不可测。
+            if (usedNew && frags.length === 0 && !exclTrimmedToEmpty) {
+                if (unionMode) { unionAcc = unionAcc.concat([]); continue; }
+                continue;
+            }
+            if (unionMode) { unionAcc = unionAcc.concat(frags); continue; }
             return { items: frags, isText: false };
         }
+    }
+    // 逗号并集：全部子选择器跑完再合并（去重，避免同一元素被两条链各取一次）
+    if (unionMode && unionAcc.length) {
+        const seenEl = new Set();
+        const merged = [];
+        for (const f of unionAcc) {
+            const key = String(f);
+            if (seenEl.has(key)) continue;
+            seenEl.add(key);
+            merged.push(f);
+        }
+        return { items: merged, isText: false };
     }
     return null;
 }
@@ -639,6 +1070,13 @@ async function doSearch(s, base, rs, kw) {
     let sp = await fetchPage(ps.opt.url, sopt);
     if (!sp) return { skip: '搜索请求失败' };
     if (sp.status === 404 || sp.status === 410) return { dead: '搜索接口' + sp.status };
+    // 401/403/429/503 = 「CI 的 IP 被拦」，不是「源坏了」（2026-10-31）。
+    // 实测 94 个源卡在 403：Azure 的 CI IP 段被大量盗版站拉黑，
+    // 而用户手机 IP 不在黑名单里 —— 这类必须单独成态（ipBlocked），
+    // 不能混进笼统的 untestable，否则 94 个活源被压到保护池低位权重。
+    if (sp.status === 401 || sp.status === 403 || sp.status === 429 || sp.status === 503) {
+        return { skip: 'IP受限(HTTP ' + sp.status + ')', ipBlocked: true };
+    }
     if (sp.status >= 400) return { skip: '搜索HTTP ' + sp.status };
     let bl = selectAll(sp.text, rs.bookList);
     if (!bl) return { skip: 'bookList规则不可测' };
@@ -945,6 +1383,40 @@ async function checkSource(s, opts = {}) {
         res.usable = true;
         res.reason = '三关全过';
         res.activity = activityOf(toText(bp.text) + '\n' + toText(tp.text));
+
+        // ── 第③关补充：抽样后段章节（2026-10-31）───────────────────────────────
+        // 只测第 1 章有个结构性盲区：付费站的第 1 章通常是「试读」，后面才是收费墙。
+        // 实测纵深采样（20 个可用源里 2 个中后段 0 字或带付费标记，占 10%）。
+        // 这里在目录的 80% 处再取一章，只为「发现试读型源」，不改变判定口径：
+        //   · 该章 ≤120 字 或 命中付费墙特征  → 不判死，仅打标注（后段受限）
+        //   · 该章正常                        → 什么都不做
+        // 为什么不做成「判死」：盗版站的分页/防盗链经常只对深页生效，
+        // 用户在手机上可能仍然能读（App 有 nextContentUrl 续页能力）。
+        // 把它判死等于把 10% 的源误杀；只标注则让 score.js 有据可依地降权。
+        if (cl.items.length >= 10) {
+            const deepIdx = Math.floor(cl.items.length * 0.8);
+            const deepItem = cl.items[deepIdx];
+            let du = pickOne(deepItem, cuRule);
+            if (!du && typeof deepItem !== 'object') du = firstHref(deepItem);
+            if (du) {
+                let dabs;
+                try { dabs = new URL(String(du).trim(), tocUrl).href; } catch (e) { dabs = null; }
+                if (dabs) {
+                    const dp = await fetchPage(dabs, { ref: tocUrl });
+                    if (dp && dp.status < 400) {
+                        const dcon = selectAll(dp.text, rc.content || '');
+                        if (dcon) {
+                            const dtxt = dcon.items.filter(x => x != null && typeof x !== 'object').join('\n').trim();
+                            const paywall = PAYWALL_RE.test(dtxt) || PAYWALL_RE.test(dp.text.slice(0, 3000));
+                            if (dtxt.length <= 120 || paywall) {
+                                res.deepLimited = true;
+                                res.deepNote = paywall ? '后段付费墙' : ('后段正文仅' + dtxt.length + '字');
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return res;
     } catch (e) {
         res.usable = 'skip';

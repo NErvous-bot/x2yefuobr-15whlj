@@ -1329,6 +1329,152 @@ test('第②关换书后仍失败 → skip（不判死），不是 usable=false'
 });
 
 // ============================================================
+// 23. 选择器引擎能力（2026-10-31 扩能回归）
+// ============================================================
+// 背景：694 个源里 534 个（76.9%）被判 untestable，其中最大几块是
+// 「引擎不认识这种写法」（bookList 94 / chapterList 38 / content 14）。
+// 这一节把新支持的写法逐个钉住，防止以后重构时又退回「不可测」。
+console.log('\n=== 23. 选择器引擎能力（JSONPath / 伪类 / XPath / 并集） ===');
+
+const at = require(path.join(REPO, 'aging-test.js'));
+const E = at.selectAll;
+
+test('JSONPath 递归下降 $..key[*]（实测 13 个源用这个取书列表）', () => {
+    const body = JSON.stringify({ result: { books: [{ n: 'x' }, { n: 'y' }] } });
+    const r = E(body, '$..books[*]');
+    assert.ok(r && r.items.length === 2, '$..books[*] 应取到 2 条');
+});
+
+test('JSONPath $.[*] / $[*] 两种去点号写法', () => {
+    const body = JSON.stringify([{ a: 1 }, { b: 2 }]);
+    for (const rule of ['$.[*]', '$[*]']) {
+        const r = E(body, rule);
+        assert.ok(r && r.items.length === 2, rule + ' 应取到 2 条');
+    }
+});
+
+test('JSONPath @JSON: 前缀（大小写不敏感）', () => {
+    const body = JSON.stringify({ data: { content: [{ x: 1 }, { x: 2 }] } });
+    const r = E(body, '@JSON:$.data.content[*]');
+    assert.ok(r && r.items.length === 2, '@JSON: 前缀应被识别为 JSONPath');
+});
+
+test('JSONPath 多索引 [0,1]', () => {
+    const body = JSON.stringify({ Novels: [{ n: 1 }, { n: 2 }, { n: 3 }] });
+    const r = E(body, '$.Novels[0,1]');
+    assert.ok(r && r.items.length === 2, '[0,1] 应取前两条');
+});
+
+test('JSONPath 过滤 [?( @.field )]（只支持字段存在形态）', () => {
+    const body = JSON.stringify({ list: [{ novelName: 'a' }, { other: 1 }] });
+    const r = E(body, '$.*[?(@.novelName)]');
+    assert.ok(r && r.items.length === 1, '应只留含 novelName 的那条');
+});
+
+test('伪类 :lt / :gt / :eq（实测 tbody tr:lt(5)）', () => {
+    const html = '<tbody>' + Array.from({ length: 6 }, (_, i) => `<tr><td>${i}</td></tr>`).join('') + '</tbody>';
+    assert.ok(E(html, 'tbody tr:lt(5)').items.length === 5, ':lt(5) 应取前 5');
+    assert.ok(E(html, 'tr:gt(3)').items.length === 2, ':gt(3) 应取第 4 条起');
+    assert.ok(E(html, 'tr:eq(2)').items.length === 1, ':eq(2) 应只取第 3 条');
+});
+
+test('伪类 :nth-child / :first-child / :last-child', () => {
+    const html = '<div>' + Array.from({ length: 6 }, (_, i) => `<i>${i}</i>`).join('') + '</div>';
+    assert.ok(E(html, 'i:nth-child(2)').items.length === 1, ':nth-child(2) 取第 2 个');
+    assert.ok(E(html, 'i:nth-child(n+3)').items.length === 4, ':nth-child(n+3) 从第 3 个起');
+    assert.ok(E(html, 'i:first-child').items.length === 1, ':first-child');
+    assert.ok(E(html, 'i:last-child').items.length === 1, ':last-child');
+});
+
+test('区间切片 [a:b]（实测 class.common-bookele[0:4]）', () => {
+    const html = '<div class="common-bookele"></div>'.repeat(6);
+    assert.ok(E(html, 'class.common-bookele[0:4]').items.length === 4, '[0:4] 应取 4 条');
+    assert.ok(E(html, 'class.common-bookele[0:-1]').items.length === 5, '[0:-1] 应去掉最后一条');
+});
+
+test('XPath 多级路径 //a/b/c 与双谓词', () => {
+    const html = '<div class="tb_con"><table><tr><td><a href="/a">A</a></td></tr><tr><td><a href="/b">B</a></td></tr></table></div>'
+        + '<div class="tb_con"><table><tr><td><a href="/c">C</a></td></tr></table></div>';
+    assert.ok(E(html, "//div[@class='tb_con']/table/tr").items.length === 3, '多级路径');
+    assert.ok(E(html, '//div[@class="tb_con"][position()>1]//tr').items.length === 1, '双谓词 + position()>1');
+    const hrefs = E(html, "//div[@class='tb_con']/table/tr/td/a@href");
+    assert.deepEqual(hrefs.items, ['/a', '/b', '/c'], 'XPath 取 @attr 应逐条返回');
+});
+
+test('逗号并集 .a,.b > li > a（Jsoup 并集语义，不是备选链）', () => {
+    const html = '<div class="volume_tit">卷名</div>'
+        + '<ul class="mulu_list"><li><a href="/1">一</a></li><li><a href="/2">二</a></li></ul>';
+    const r = E(html, '.volume_tit,.mulu_list > li > a');
+    assert.ok(r && r.items.length === 3, '并集应合并两边结果（1 + 2 = 3）');
+});
+
+test('排除后缀 !N 在多段规则里生效（class.left@li!-1）', () => {
+    const html = '<div class="left"><ul><li>1</li><li>2</li><li>3</li></ul></div>';
+    const r = E(html, 'class.left@li!-1');
+    assert.ok(r && r.items.length === 2, 'class.left@li!-1 应取 3 条再排除最后一条 = 2');
+});
+
+test('扩能后旧写法不受影响（.class / id. / tag. / tag.class）', () => {
+    const html = '<div class="bk"><span>t</span></div>';
+    assert.ok(E(html, '.bk').items.length === 1, '.class');
+    assert.ok(E(html, 'class.bk').items.length === 1, 'class.');
+    assert.ok(E(html, 'tag.span').items.length === 1, 'tag.');
+    assert.ok(E(html, 'div.bk').items.length === 1, 'tag.class');
+});
+
+// ============================================================
+// 24. IP 受限 / 后段受限 两个新档位
+// ============================================================
+console.log('\n=== 24. IP受限 / 后段受限 权重档位 ===');
+
+test('doSearch 把 401/403/429/503 标成 ipBlocked（而不是笼统 untestable）', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    assert.ok(/sp\.status === 403/.test(code), '应显式处理 403');
+    assert.ok(/ipBlocked: true/.test(code), '应返回 ipBlocked 标记');
+});
+
+test('score.js：ipBlocked 档高于普通 untestable，但低于 stable 下界', () => {
+    const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
+    assert.ok(m, '应能解析 grade()');
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] === k) n++; else break; } return n; };
+    const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
+    const ipVerified = grade({ health: null, ipBlocked: true, recent: ['pass'] });
+    const ipNever = grade({ health: null, ipBlocked: true, recent: [] });
+    const plainVerified = grade({ health: null, ipBlocked: false, recent: ['pass'] });
+    const plainNever = grade({ health: null, ipBlocked: false, recent: [] });
+    assert.equal(ipVerified.weight, 160, 'IP受限+曾通过 → 160');
+    assert.equal(ipNever.weight, 130, 'IP受限+从未验证 → 130');
+    assert.equal(plainVerified.weight, 120, '普通+曾通过 → 120');
+    assert.equal(plainNever.weight, 90, '普通+从未验证 → 90');
+    assert.ok(ipVerified.weight > plainVerified.weight, 'IP受限应高于普通不可测');
+    assert.ok(ipNever.weight < 300, '仍必须低于 stable 下界 300');
+});
+
+test('score.js：deepLimited（试读墙）降一档但不判死', () => {
+    const src = fs.readFileSync(path.join(REPO, 'score.js'), 'utf8');
+    const m = /function grade\(v\)[\s\S]*?\n\}/.exec(src);
+    const consOf = (arr, k) => { let n = 0; for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] === k) n++; else break; } return n; };
+    const grade = new Function('consOf', m[0] + '; return grade;')(consOf);
+    const base = { health: 92, search: true, toc: true, content: true, recent: ['pass', 'pass', 'pass'] };
+    const normal = grade(Object.assign({}, base, { deepLimited: false }));
+    const limited = grade(Object.assign({}, base, { deepLimited: true }));
+    assert.equal(normal.weight, 700, '正常满来源 → 700');
+    assert.equal(limited.weight, 460, '后段受限 → 降一档到 460');
+    assert.equal(limited.layer, 'core', '但仍在核心层，不判死');
+});
+
+test('aging-test 第③关会做后段抽样（80% 处一章）并标注，不判死', () => {
+    const code = fs.readFileSync(path.join(REPO, 'aging-test.js'), 'utf8');
+    assert.ok(/cl\.items\.length \* 0\.8/.test(code), '应取目录 80% 处的章节');
+    assert.ok(/deepLimited = true/.test(code), '应设置 deepLimited 标记');
+    assert.ok(/PAYWALL_RE/.test(code), '应有付费墙特征识别');
+    // 关键：后段受限不能让整源变 unusable
+    const seg = code.slice(code.indexOf('第③关补充：抽样后段章节'), code.indexOf('return res;', code.indexOf('第③关补充：抽样后段章节')));
+    assert.ok(!/res\.usable = false/.test(seg), '后段抽样不得把源判死');
+});
+
+// ============================================================
 // 汇总
 // ============================================================
 console.log(`\n===== 回归测试汇总: ${passed + failed} 项 =====`);

@@ -80,14 +80,16 @@ function scoreOf(r, g, ms) {
     const now = Date.now();
     const sources = {};
     const testedKeys = new Set();
-    let usable = 0, dead = 0, untestable = 0, scoreSum = 0, scoreN = 0, flappingN = 0;
+    let usable = 0, dead = 0, untestable = 0, ipBlocked = 0, scoreSum = 0, scoreN = 0, flappingN = 0;
     for (const [s, r, ms, explore] of tested) {
         const k = norm(s.bookSourceUrl); if (!k) continue;
         testedKeys.add(k);
         const g = gatesOf(r);
         const h = scoreOf(r, g, ms);
-        if (h === null) untestable++;
-        else {
+        if (h === null) {
+            untestable++;
+            if (r.ipBlocked) ipBlocked++;
+        } else {
             scoreSum += h; scoreN++;          // 坏源分数也计入均分，否则均分虚高
             if (g.content) usable++; else dead++;
         }
@@ -104,6 +106,14 @@ function scoreOf(r, g, ms) {
             chapters: r.chapters || 0, contentLen: r.contentLen || 0,
             responseTime: ms, note: String(r.reason || '').slice(0, 30), checkedAt: now,
             recent, flapping,
+            // ipBlocked：CI 的 IP 被站点拉黑，与「源质量」无关。
+            // 单独成态的理由见 aging-test.js 的 doSearch —— 这批源在手机上可用，
+            // 不能和「规则超出测试器能力」一起压到保护池最低权重。
+            ipBlocked: r.ipBlocked === true,
+            // deepLimited：第③关后段抽样发现试读墙（付费站第 1 章免费、后面收费）。
+            // 不判死（手机端可能仍能读），只作为降权依据。
+            deepLimited: r.deepLimited === true,
+            deepNote: r.deepNote ? String(r.deepNote).slice(0, 24) : '',
             // 第④关：发现页能力。null=没测（三关没过或没配 exploreUrl）
             explore, exploreNote: explore === false ? String(r.exploreReason || '').slice(0, 24) : ''
         };
@@ -143,6 +153,7 @@ function scoreOf(r, g, ms) {
         updatedAt: now,
         summary: {
             total: list.length, tested: tested.length, usable, broken: dead, untestable, carried,
+            ipBlocked,
             flapping: flappingN,
             // 发现页四态（互斥）：exploreOk + exploreBad + exploreUnknown + exploreAbsent = total
             exploreOk: exOk, exploreBad: exBad, exploreUnknown: exUnknown, exploreAbsent: exAbsent,
@@ -151,7 +162,8 @@ function scoreOf(r, g, ms) {
     };
     fs.writeFileSync(HFILE, JSON.stringify(out));
     const avg = scoreN ? Math.round(scoreSum / scoreN) : 0;
-    console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（覆盖率 ' + coverage + '，预算 ' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable + ' / 沿用上轮 ' + carried + '（平均 ' + carriedAvgAge + '，最老 ' + (carriedMaxAge || 'N/A') + '天）');
+    console.log('健康检查: 实测 ' + tested.length + '/' + list.length + ' 个（覆盖率 ' + coverage + '，预算 ' + BUDGET_MIN + '分钟）→ 可用 ' + usable + ' / 确认坏 ' + dead + ' / 不可测 ' + untestable
+        + '（其中 IP受限 ' + ipBlocked + '） / 沿用上轮 ' + carried + '（平均 ' + carriedAvgAge + '，最老 ' + (carriedMaxAge || 'N/A') + '天）');
     console.log('健康检查: 第④关发现页 → 可用 ' + exOk + ' / 确定失效 ' + exBad + ' / 测不了 ' + exUnknown
         + ' / 未配置 exploreUrl ' + exAbsent + '（四态互斥，合计 ' + list.length + '）');
     console.log('健康检查: 全库平均健康分 ' + avg + '，抖动观察期(FLAPPING) ' + flappingN + ' 个，沿用上轮数据 ' + carried + ' 个，已写入 ' + HFILE);
