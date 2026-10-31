@@ -148,11 +148,55 @@ test('死循环被超时切断', () => {
   if (Date.now() - t0 > 3000) throw new Error('超时保护失效，耗时 ' + (Date.now() - t0) + 'ms');
 });
 
-test('网络能力一律拒绝（ajax/post/get/connect）', () => {
-  for (const api of ['ajax', 'post', 'get', 'connect']) {
-    const r = evaluateSearchJs({ su: '@js:java.' + api + "('https://evil.example.com')", base: BASE, key: 'k' });
-    eq(r.ok, false, 'java.' + api);
-    if (!/需要联网/.test(r.skip)) throw new Error('java.' + api + ' 理由不符: ' + r.skip);
+// ── 受限网络（2026-10-31）──────────────────────────────────────────────────
+//
+// 语义变化：java.ajax/post/get 从「一律拒绝」改为「**同源**且能预取到才给结果」。
+// 边界一条没松：只允许书源自己 origin、只 GET/POST、有超时与体积上限、
+// 跨站 / file / userinfo 伪装一律拒绝并降级为 skip（绝不判死源）。
+test('网络能力：跨站请求一律拒绝并降级 skip（不判死）', () => {
+  for (const api of ['ajax', 'post', 'get']) {
+    const r = evaluateSearchJs({ su: '@js:java.' + api + "('https://evil.example.com/x')", base: BASE, key: 'k' });
+    eq(r.ok, false, 'java.' + api + ' 应失败');
+    if (!/需要联网/.test(r.skip)) throw new Error('java.' + api + ' 应降级为「需要联网」而不是别的: ' + r.skip);
+  }
+});
+
+test('网络能力：connect（socket）仍不支持', () => {
+  const r = evaluateSearchJs({ su: "@js:java.connect('127.0.0.1:80')", base: BASE, key: 'k' });
+  eq(r.ok, false);
+  if (!/需要联网/.test(r.skip)) throw new Error('connect 应降级为需要联网: ' + r.skip);
+});
+
+test('网络安全闸门：sameOriginAllowed 的四个拒绝面', () => {
+  const net = require('../src/legado-js-net.js');
+  const O = 'https://a.example.com';
+  const cases = [
+    [O + '/x', true, '同源放行'],
+    ['https://b.example.com/x', false, '跨站拒绝'],
+    ['file:///etc/passwd', false, 'file 协议拒绝'],
+    ['https://a.example.com@evil.com/x', false, 'userinfo 伪装拒绝'],
+    ['http://a.example.com/x', false, '协议不一致拒绝'],
+  ];
+  for (const [u, want, label] of cases) eq(net.sameOriginAllowed(u, O), want, label);
+});
+
+test('网络安全闸门：LEGADO_JS_NET=0 可彻底关闭', () => {
+  const { execFileSync } = require('node:child_process');
+  const out = execFileSync(process.execPath, ['-e', `
+    process.env.LEGADO_JS_NET='0';
+    const n=require(${JSON.stringify(require.resolve('../src/legado-js-net.js'))});
+    const r=n.syncFetch({url:'https://a.example.com/x',method:'GET',sourceOrigin:'https://a.example.com'});
+    console.log(n.ENABLED+'|'+(r.ok?'ok':'blocked:'+r.reason));
+  `], { encoding: 'utf8', timeout: 30000 }).trim();
+  if (!out.startsWith('false|blocked')) throw new Error('关网开关失效: ' + out);
+});
+
+test('沙箱内不存在真实网络对象（隔离边界未放松）', () => {
+  // 关键回归：VM 里不能出现 fetch / XMLHttpRequest / require / process
+  for (const probe of ['fetch', 'XMLHttpRequest', 'require', 'process', 'WebSocket']) {
+    const r = evaluateSearchJs({ su: '@js:(typeof ' + probe + "==='undefined'?'NO':'LEAK')", base: BASE, key: 'k' });
+    const v = r.ok ? String(r.url || '') : '';
+    if (v === 'LEAK') throw new Error('沙箱泄漏了 ' + probe);
   }
 });
 

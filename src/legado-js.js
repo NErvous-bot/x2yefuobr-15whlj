@@ -132,14 +132,92 @@ function precomputeToolResults(code, key, gbkEncode) {
 }
 
 /**
- * 生成沙箱 bootstrap 代码。所有对象与函数都在沙箱内部创建；
- * `__PURE` 只来自 JSON.stringify，宿主函数/闭包/原型一律进不来。
+ * 扫描并**预取**脚本里所有 java.ajax/post/get/connect 调用的结果（2026-10-31）。
+ *
+ * 为什么是「预取」而不是「沙箱内真调网络」：
+ *   java.ajax 在 legado 里是同步函数，而 vm.runInContext 也同步 —— 没法在 vm 里
+ *   放一个真网络对象还能同步返回。唯一可行路径是：宿主先同步跑完这些请求，
+ *   把「URL(+方法+body) → 响应文本」做成表，沙箱内只做**纯查表**。
+ *   这样 vm 里依旧没有任何网络/文件/进程能力，隔离边界一点没松。
+ *
+ * 提取能力受限于正则：只认字面量参数（'url'、"url"、key、page 这几种），
+ * 动态拼出来的 URL（字符串相加、变量二次赋值）拿不到 → 那些仍走 skip。
+ * 这是刻意的取舍：宁可少救一些源，也不在解析不确定的情况下发出请求。
  */
+function precomputeNetworkResults(code, opts) {
+    const table = Object.create(null);
+    const net = require('./legado-js-net');
+    const sourceOrigin = net.originOfSource(opts.base);
+    if (!sourceOrigin) return { table, fetched: 0, blocked: 0 };
+
+    // 支持两种常见形态（2026-10-31 扩展）：
+    //   ① 纯字面量：        java.ajax('https://x/y')
+    //   ② 字面量 + key 拼接：java.get('https://x/?q='+key+'&p=1')
+    //      —— 实测 8 个 java.get 源里多数是这种，之前完全提不到。
+    // 仍不支持：变量二次赋值（url1=...; java.ajax(url1+json(post)）—— 那类在 vm 里
+    // 只能靠运行时求值，宿主预取拿不到，继续降级为 skip（不误判）。
+    const callRe = new RegExp(
+        'java\\.(ajax|post|get|connect)\\s*\\(\\s*' +
+        "'([^']*)'\\s*(?:\\+\\s*(?:key|globalThis\\.key)\\s*\\+\\s*'([^']*)'\\s*)?" +   // 单引号 + key 拼接
+        '(?:,\\s*([\'"])([^\'"]*)\\4\\s*)?\\)?',
+        'g'
+    );
+    let m;
+    let fetched = 0;
+    let blocked = 0;
+    while ((m = callRe.exec(code)) !== null) {
+        const fn = m[1];
+        const head = m[2];
+        const tail = m[3];       // '+' key '+' 之后的尾巴（可能 undefined）
+        const bodyLit = m[5];
+        // 拼接：head + key + tail
+        const joined = tail === undefined
+            ? String(head)
+            : String(head) + String(opts.key || '') + String(tail);
+        const url = joined
+            .replace(/\{\{key\}\}|\{key\}/g, opts.key || '')
+            .replace(/\{\{page\}\}|\{page\}/g, String(opts.page === undefined ? 1 : opts.page));
+
+        // ⚠️ sig 必须与沙箱内运行时**完全一致**（2026-10-31 实测踩坑）：
+        //   预取时这里算出的 url 已经是拼接好的完整地址，
+        //   而沙箱内 java.get(...) 收到的也是同一个完整地址 ——
+        //   所以 sig 就该用**拼接后的 url**，不能把占位符留在里面。
+        //   （之前一版把 key 烘进 sig、沙箱侧又传了拼接后的串，两边对不上。）
+        const sig = fn + '|' + url + '|' + (bodyLit === undefined ? '' : bodyLit);
+        if (table[sig] !== undefined) continue;
+
+        // connect 是 socket，不支持
+        if (fn === 'connect') { blocked++; continue; }
+
+        let abs = url;
+        if (!/^https?:/i.test(abs)) {
+            try { abs = new URL(abs, opts.base).href; } catch (e) { blocked++; continue; }
+        }
+        const method = fn === 'post' ? 'POST' : 'GET';
+        const r = net.syncFetch({
+            url: abs,
+            method,
+            headers: fn === 'post' ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {},
+            body: bodyLit,
+            sourceOrigin,
+        });
+        if (r.ok) {
+            table[sig] = r.text;
+            // 同时记下响应头：脚本会写 java.get(url).header("location") 拿重定向后的地址
+            table[sig + '|HDR'] = r.headers || {};
+            fetched++;
+        } else { blocked++; }
+    }
+    return { table, fetched, blocked };
+}
+
+
 function bootstrapSource(pure) {
     return `
 (function () {
   const P = ${JSON.stringify(pure)};
   const TABLE = P.toolTable;
+  const NET = P.netTable || Object.create(null);
 
   function unimplemented(name) { throw new Error('UNIMPLEMENTED_JAVA:' + name); }
   function needsNetwork(name) { throw new Error('NEEDS_NETWORK:' + name); }
@@ -147,6 +225,38 @@ function bootstrapSource(pure) {
     const sig = name + '|' + a + '|' + (b === undefined ? '' : b);
     if (Object.prototype.hasOwnProperty.call(TABLE, sig)) return TABLE[sig];
     throw new Error('TOOL_NOT_PRECOMPUTED:' + name);
+  }
+  // 查预取网络表；查不到就是「这个调用的 URL 我们没法在宿主侧确定」→ 降级为 skip
+  //
+  // 返回形态：legado 的 java.get/post 返回的是「响应对象」，脚本常直接用它写
+  //   .header / .body() / .toString() / .string()
+  // 实测八叉书库就是 new_url.header —— 只返回字符串会在这一步炸。
+  // 这里包一层，既保留字符串语义（String(r) / typeof 判断），又提供常用成员。
+  // ⚠️ 本段在模板字符串里：注释内不许出现反引号，否则会提前终止字符串。
+  function netLookup(fn, u, b) {
+    const sig = fn + '|' + String(u) + '|' + (b === undefined ? '' : String(b));
+    if (Object.prototype.hasOwnProperty.call(NET, sig)) {
+      const text = String(NET[sig]);
+      const hdrs = NET[sig + '|HDR'] || {};
+      const obj = {
+        body: function () { return text; },
+        string: function () { return text; },
+        toString: function () { return text; },
+        // legado 的 header 是函数：header("location") 取响应头
+        header: function (name) {
+          if (name === undefined) return '';
+          const k = String(name).toLowerCase();
+          return Object.prototype.hasOwnProperty.call(hdrs, k) ? String(hdrs[k]) : '';
+        },
+        headers: function (name) { return obj.header(name); },
+        statusCode: 200,
+        url: String(u),
+        valueOf: function () { return text; },
+      };
+      obj[Symbol.toPrimitive] = function () { return text; };
+      return obj;
+    }
+    needsNetwork(fn);
   }
 
   globalThis.__vars = Object.create(null);
@@ -169,10 +279,28 @@ function bootstrapSource(pure) {
     HMacHex: function (s, k) { return lookup('HMacHex', String(s), String(k)); },
     desEncodeToBase64String: function (d, k) { return lookup('desEncodeToBase64String', String(d), String(k)); },
     randomUUID: function () { return P.uuid; },
-    ajax: function () { needsNetwork('ajax'); },
-    ajaxAll: function () { needsNetwork('ajaxAll'); },
-    post: function () { needsNetwork('post'); },
-    get: function () { needsNetwork('get'); },
+    // ── 受限网络（2026-10-31）──────────────────────────────────────────────
+    // 宿主已把这些调用的响应预取进 NET 表（见 precomputeNetworkResults）。
+    // 沙箱内只查表，**没有任何真实网络能力** —— 隔离边界没有放松。
+    // 查不到（URL 由拼串动态生成、跨站、或请求失败）→ 仍走 NEEDS_NETWORK 降级为 skip。
+    ajax: function (u) { return netLookup('ajax', u); },
+    ajaxAll: function (u) { return netLookup('ajax', u); },
+    post: function (u, b) { return netLookup('post', u, b); },
+    // ⚠️ java.get 在 legado 里是**双语义**，实测两类源都在用：
+    //   ① java.get('key')        → 读 java.put 存进 __vars 的变量（大量源靠这个传参）
+    //   ② java.get('https://…')  → 发 GET 请求，返回响应对象
+    // 这里必须同时支持，否则会打破 ①（早期版本就因为同名覆盖挂了 18 个用例）。
+    // 分派依据：首字符是 http(s) / 双斜杠 / 单斜杠，就当 URL，其余当变量名。
+    // ⚠️ 本段在模板字符串里：正则里不能写 \/ 这类会破坏字符串的转义。
+    //     改用 String.charAt 判断前几个字符，绕开转义问题。
+    get: function (u, b) {
+      const s = String(u);
+      const isUrl = ((s.charCodeAt(0) === 104 && s.charCodeAt(1) === 116)     // 'ht'  (http)
+                  || (s.charCodeAt(0) === 47 && s.charCodeAt(1) === 47)        // '//'
+                  || s.charCodeAt(0) === 47);                                  // '/'
+      if (isUrl || arguments.length > 1) return netLookup('get', s, b);
+      return __vars[s];
+    },
     connect: function () { needsNetwork('connect'); },
     net: function () { needsNetwork('net'); },
     webView: function () { unimplemented('webView'); },
@@ -230,6 +358,12 @@ function evaluateSearchJs(opts) {
             .replace(/\{\{key\}\}|\{key\}/g, key)
             .replace(/\{\{page\}\}|\{page\}/g, String(page));
 
+    // 预取受限网络的响应（只允许同源、只 GET/POST、有超时与体积上限）
+    const netRes = precomputeNetworkResults(code, { base, key, page });
+    if (netRes.fetched || netRes.blocked) {
+        log('[net] 预取 ' + netRes.fetched + ' 个 / 拒绝或失败 ' + netRes.blocked + ' 个');
+    }
+
     // 纯 JSON 常量：字符串、数字、对象 —— 没有任何宿主函数
     const pure = {
         key,
@@ -240,6 +374,7 @@ function evaluateSearchJs(opts) {
         result: fillStatic(staticPrefix === '' ? suffix : staticPrefix + suffix),
         uuid: crypto.randomUUID(),
         toolTable: precomputeToolResults(code, key, gbkEncode),
+        netTable: netRes.table,
     };
 
     let ctx;
