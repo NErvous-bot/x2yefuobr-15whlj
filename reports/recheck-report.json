@@ -1,17 +1,17 @@
 {
- "generatedAt": 1793468126003,
- "runAt": "2026-10-31T17:35:26.003Z",
+ "generatedAt": 1793525793157,
+ "runAt": "2026-11-01T09:36:33.157Z",
  "oldRef": "HEAD",
- "baselineSha": "9fb5241f0b1915530e9f85a53c4c6b7ca741e5c7",
+ "baselineSha": "c6e29b440356c927b9a9c3a526e5a5f551870ba1",
  "tier1": [
   {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
+   "name": "墨坛文学",
+   "url": "http://www.22mt.net/",
    "traits": [
-    "POST"
+    "js规则"
    ],
    "oldNote": "三关全过",
-   "newNote": "搜索无结果",
+   "newNote": "书籍页404",
    "attempts": [
     {
      "pass": true,
@@ -20,16 +20,10 @@
      "reason": "三关全过"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     },
     {
      "pass": true,
@@ -38,15 +32,47 @@
      "reason": "三关全过"
     },
     {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
     }
    ],
-   "verdict": "SUSPECT"
+   "verdict": "RECOVERED"
   }
  ],
  "tier2": [],
- "resolved": []
+ "resolved": [
+  {
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
+   "tier": 1,
+   "prevVerdict": "SUSPECT",
+   "state": "RECOVERED",
+   "evidence": {
+    "health": 100,
+    "search": true,
+    "toc": true,
+    "content": true,
+    "chapters": 300,
+    "contentLen": 1343,
+    "note": "三关全过",
+    "flapping": true,
+    "recent": [
+     "fail",
+     "pass",
+     "pass",
+     "fail",
+     "pass"
+    ],
+    "checkedAt": 1793525273714
+   }
+  }
+ ]
 }
