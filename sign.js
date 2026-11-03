@@ -6,7 +6,9 @@
 'use strict';
 const fs = require('fs'), crypto = require('crypto');
 
-const b64 = process.env.ED25519_KEY || '';
+// 历史遗留：Secret 名沿用 ED25519_KEY，但算法早已是 ECDSA P-256。
+// 两个名字都认，便于后续把 Secret 正式改名而不必同一时刻改代码。
+const b64 = process.env.ECDSA_KEY || process.env.ED25519_KEY || '';
 const pem = Buffer.from(b64, 'base64').toString('utf8');
 if (!pem.includes('PRIVATE KEY')) {
   console.error('× ED25519_KEY secret 无效（解码后不含 PEM 私钥）');

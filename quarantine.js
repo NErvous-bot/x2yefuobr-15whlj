@@ -29,9 +29,13 @@ const LEGADO = 'legado.json';
 const HEALTH = 'health/source_health.json';
 const QFILE = 'quarantine.json';
 const REPORT = 'reports/quarantine.json';
+const STASH = 'quarantine-stash.json';
 const DEAD_WEIGHT = 5;          // score.js dead 层的权重
 const MAX_RATIO = 0.30;         // 单轮新增隔离上限（防批量误杀）
 const MIN_KEEP = 100;           // 隔离后成品下限
+// 历史隔离项已不在 legado.json，只沉淀在这些来源池里（实测 extra-sources.json
+// 覆盖 303 条名单中的 221 条：72.9%）。复测要拿到完整源对象必须回溯这些池。
+const POOL_FILES = ['extra-sources.json', 'legado-cross.json', 'harvested.json'];
 const NOW = Date.now();
 
 function readJson(p, fallback) {
@@ -95,18 +99,35 @@ try {
             reason: 'stable-dead',
             since: NOW,
         });
+        // 完整源对象挂在内存里，供本次落 quarantine-stash.json（不写进 qOut）
+        qMap.get(k).__src = s;
     }
 
-    // ── 2) 放：健康报告已证明复活的源解除隔离 ──
+    // ── 2) 放：由隔离池专属复测报告解除隔离（评审 P1：原实现是死代码）──
+    // 原实现读 health[k]，但 k 必须出现在 health/source_health.json 的 sources 里；
+    // 而 health.js 只测 legado.json 内的源（L142）、carried 也只沿用 inLib 内的源
+    // （L126-128），隔离源恰恰已被踢出 legado.json 且被 filter.js 每轮拦回流
+    // ⇒ health[k] 恒为 undefined ⇒ released 恒为空 ⇒ 名单只进不出。
+    // 现改为消费 js-eval.yml 产出的 quarantine-release.json（在那份低权限 job 里
+    // 以完整规则真实复测，是本仓库唯一允许执行书源 JS 的地方）。
     const released = [];
-    if (healthOk) {
-        for (const [k, q] of [...qMap]) {
-            const h = health[k];
-            if (h && h.content === true) {
-                qMap.delete(k);
-                released.push(q);
-            }
+    let relReport = null;
+    try { relReport = JSON.parse(fs.readFileSync('reports/quarantine-release.json', 'utf8')); }
+    catch (_) {
+        try { relReport = JSON.parse(fs.readFileSync('quarantine-release.json', 'utf8')); } catch (_) {}
+    }
+    if (relReport && Array.isArray(relReport.release)) {
+        const cap = Math.max(1, Math.ceil(qMap.size * MAX_RATIO));
+        if (relReport.release.length > cap) {
+            console.log('  提示：本轮复测建议解除 ' + relReport.release.length + ' 个，超过名单 ' +
+                qMap.size + ' 的 ' + (MAX_RATIO * 100) + '%（= ' + cap + '），按上限截断，防复测异常时批量放生');
         }
+        for (const u of relReport.release.slice(0, cap)) {
+            const k = norm(u);
+            if (k && qMap.has(k)) { released.push(qMap.get(k)); qMap.delete(k); }
+        }
+    } else {
+        console.log('  （本轮无隔离池复测报告，跳过解除；名单只做累积与人工维护）');
     }
 
     // ── 3) 从成品剔除（含既有名单，防止 filter 之外的路径残留）──
@@ -123,9 +144,43 @@ try {
     // 磁盘上 legado.json / quarantine.json / reports 其实已经被改过了。
     // 结果是「退出码 1」不能推出「文件没动」，对回滚和审计都是隐患。
     // 现在改成：所有硬性检查通过之后才第一次写盘，退出码非 0 时磁盘保证是原样。
+    // 隔离条目本身只存 {url,name}，缺 searchRule 等字段无法复测。故另落一份
+    // 完整源对象快照 quarantine-stash.json，供 js-eval job 下轮真实复测。
+    //
+    // ⚠ 关键：历史隔离项早已不在 legado.json 里（实测本仓库 303 条隔离源对
+    // legado.json 的覆盖率为 0%，全部沉淀在 extra-sources.json 里，覆盖 221/303）。
+    // 若只从 list（= legado.json）取对象，stash 对历史名单恒为空 ⇒ 复测永远拿不到
+    // 源 ⇒ 「放」这条回路在真数据上依然是死的。因此顺序是：
+    //   ① list 内的（本轮新隔离）——对象最新最全，优先
+    //   ② 已有 stash 的（上轮留下的）——保留，避免每轮重建时丢对象
+    //   ③ extra-sources.json 等来源池——历史隔离项的唯一可回溯来源
+    // 三者按身份键合并，先到先得，绝不覆盖已有完整对象。
+    const stash = {};
+    const put = (s) => {
+        if (!s || typeof s !== 'object') return;
+        const k = norm(s.bookSourceUrl);
+        if (k && qMap.has(k) && !stash[k]) stash[k] = s;
+    };
+    // ② 先接上轮快照
+    try {
+        const prev = readJson(STASH, {});
+        if (prev && typeof prev === 'object') {
+            for (const [k, v] of Object.entries(prev)) if (qMap.has(k) && !stash[k]) stash[k] = v;
+        }
+    } catch (_) {}
+    // ① 本轮在库的
+    for (const s of list) put(s);
+    // ③ 历史池回溯（只读，不改这些文件）
+    for (const f of POOL_FILES) {
+        const arr = readJson(f, null);
+        if (!Array.isArray(arr)) continue;
+        for (const s of arr) put(s);
+    }
+
     const qOut = [...qMap.entries()]
         .sort((a, b) => String(a[1].url || '').localeCompare(String(b[1].url || '')))
         .map(([, v]) => ({
+            // __src 是内存内完整源对象，绝不落盘（quarantine.json 只留元数据）
             url: v.url || '',
             name: v.name || '',
             reason: v.reason || 'manual',
@@ -141,6 +196,12 @@ try {
 
     // ── 落盘（到这里所有闸门都已通过）──
     fs.writeFileSync(QFILE, JSON.stringify(qOut, null, 1));
+    // 完整源对象快照（供下轮隔离池复测）。由 update.yml 一并提交。
+    try { fs.writeFileSync('quarantine-stash.json', JSON.stringify(stash)); }
+    catch (e) {
+        console.error('× 隔离池快照写入失败（拒绝发布，避免下轮复测失去依据）: ' + e.message);
+        process.exit(1);
+    }
 
     const changed = stripped > 0 || released.length > 0 || toBan.length > 0;
     if (stripped > 0) fs.writeFileSync(LEGADO, JSON.stringify(out));

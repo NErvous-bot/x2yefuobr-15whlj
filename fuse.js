@@ -245,6 +245,12 @@ try {
     // 诊断报告先落盘（即使随后回滚失败 CI 红灯，reports 仍保留本轮证据；commit 步骤在 fuse 之后）
     fs.mkdirSync('reports', { recursive: true });
     fs.writeFileSync('reports/fuse-summary.txt', L.join('\n'));
+    // 显式发布闸门标记：fuse BLOCKED 时 exit 0（成品已回滚），调用方无法从退出码
+    // 判断是否放行，落一个标记文件让 workflow 能在签名/隔离前精确分流。
+    try {
+        if (reasons.length) fs.writeFileSync('reports/fuse-blocked', L.join('\n'));
+        else { try { fs.unlinkSync('reports/fuse-blocked'); } catch (_) {} }
+    } catch (_) {}
     console.log(L.join('\n'));
 
     if (reasons.length) {

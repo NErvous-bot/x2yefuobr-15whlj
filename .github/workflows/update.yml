@@ -33,14 +33,18 @@ jobs:
   update:
     runs-on: ubuntu-latest
     needs: eval
+    env:
+      # 高权限 job 内一律不做书源 JS 求值（src/legado-js.js 同名闸门对称生效）。
+      # 本 job 的真实职责是「编排 + 校验 + 签名 + 提交」，不是执行外部代码。
+      NO_JS_EVAL: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
           # 关键：默认 checkout 会把认证凭据写进 .git/config。
           # 虽然本 job 不执行外部书源 JS，仍按最小暴露面关闭；
           # 推送阶段需要凭据，故在此步骤之后单独恢复（见 Publish 步骤）。
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
       - name: P0 Smoke（上游拉取+健康+签名三关，exit 非 0 阻断发布）
@@ -64,7 +68,7 @@ jobs:
       # 不能发生在持有 contents:write + ED25519_KEY 的工作区里。
       # 这里改为消费那个 job 的纯 JSON 产物：只读数据，不执行代码。
       - name: 下载求值结果（纯 JSON，不执行代码）
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: js-eval-result
           path: .
@@ -266,7 +270,24 @@ jobs:
       # fuse BLOCKED 时会把 legado.json 回滚到 HEAD 基线，这里再按最终成品做隔离，
       # 顺序反了会隔离掉一份马上被丢弃的候选文件（等于白跑）。
       # 必须在 ECDSA签名 之前跑，否则手机会拿到「内容已变、签名未变」的文件而全部验签失败。
+      # 发布闸门：fuse BLOCKED 时 exit 0（成品已回滚到 HEAD），退出码不表达放行与否。
+      # 这里读标记文件显式分流：BLOCKED → 跳过隔离池与签名，成品与签名保持 HEAD
+      # 原状（手机端验签继续通过），本轮只提交健康与诊断报告。
+      - name: 发布闸门判定
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ -f reports/fuse-blocked ]; then
+            echo "blocked=1" >> "$GITHUB_OUTPUT"
+            echo "::warning::发布保险丝 BLOCKED —— 本轮不签名、不动成品，只提交诊断报告"
+            sed -n '1,80p' reports/fuse-summary.txt || true
+          else
+            echo "blocked=0" >> "$GITHUB_OUTPUT"
+            echo "发布闸门 PASS，继续隔离池与签名"
+          fi
+
       - name: 隔离池（稳定死亡源移出成品，写 quarantine.json，filter 下轮据此拦复活）
+        if: steps.gate.outputs.blocked == '0'
         run: node quarantine.js
       - name: 成品校验（防上游返回畸形数据被自动提交）
         run: |
@@ -275,6 +296,7 @@ jobs:
           node -e "const r=require('./replaceRule.json');if(!Array.isArray(r)||r.length<1)throw new Error('净化规则异常:'+r.length)"
           echo "校验通过：legado.json 与 replaceRule.json 结构正常"
       - name: ECDSA签名（node内置crypto + 自验签，防镜像投毒）
+        if: steps.gate.outputs.blocked == '0'
         env:
           # Secret 名沿用 ED25519_KEY，现值为 EC P-256 PKCS#8 PEM 的 base64
           #（Ed25519 在部分 vivo/Android 机型上 KeyFactory 无法导入 X.509 公钥）
@@ -294,7 +316,7 @@ jobs:
           git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           # 清理旧命名的签名文件（v3.5首版的 legado.sig/replaceRule.sig）
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
-          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json harvested.json upstream-state.json
+          git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json quarantine-stash.json harvested.json upstream-state.json
           git add reports/ 2>/dev/null || true
           # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
           git diff --cached --quiet || (

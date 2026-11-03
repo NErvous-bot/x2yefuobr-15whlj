@@ -967,12 +967,22 @@ test('隔离池：本轮新增 250 条（总量 719，34.8%）仍必须拒绝执
     assert.strictEqual(r.out.length, 719, '拒绝时不得改动成品');
 });
 
-test('隔离池：健康报告证明复活 → 解除隔离', () => {
-    // 成品至少要过 MIN_KEEP(100)，否则会被"隔离后成品下限"拦下
+// 2026-11 语义变更：解除依据从「health/source_health.json 的 content===true」
+// 改为「quarantine-release.json（低权限 job 真实复测产出）」。
+//
+// 原因：原依据是死代码。health[k] 要求 k 出现在 health/source_health.json 的
+// sources 里，而 health.js 只测 legado.json 内的源（health.js:142），carried 也
+// 只沿用 inLib 内的源（health.js:126-128）；隔离源恰恰已被踢出 legado.json 且被
+// filter.js 每轮拦回流 ⇒ health[k] 恒 undefined ⇒ 解除分支永不触发。
+// 实测 main 上 releasedThisRound 恒为 []，名单累积 303 条只进不出。
+//
+// 故本组测试断言：health 证明复活不再能解除（旧接口已废弃），
+// 只有 quarantine-release.json 里的 URL 才解除，且仍受 30% 上限约束。
+test('隔离池：health 报告 content===true 不再解除隔离（旧接口已废弃）', () => {
     const legado = [];
     for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'A' + i, bookSourceUrl: 'https://a' + i + '.example.com', weight: 300 });
     const quarantine = [
-        { url: 'https://alive.example.com', name: '复活', reason: 'stable-dead', since: 1 },
+        { url: 'https://alive.example.com', name: '健康说复活', reason: 'stable-dead', since: 1 },
         { url: 'https://stilldead.example.com', name: '仍死', reason: 'stable-dead', since: 1 },
     ];
     const tmp = makeTempDir();
@@ -988,7 +998,69 @@ test('隔离池：健康报告证明复活 → 解除隔离', () => {
     const q = JSON.parse(fs.readFileSync(path.join(tmp, 'quarantine.json'), 'utf8'));
     cleanupDir(tmp);
     assert.strictEqual(r.status, 0, r.stderr);
-    assert.deepStrictEqual(q.map(x => x.name), ['仍死'], '只解除已证复活的源');
+    assert.deepStrictEqual(q.map(x => x.name), ['健康说复活', '仍死'],
+        'health 不再具备解除权（它测不到隔离源），两条都应保留');
+    assert.ok(/无隔离池复测报告，跳过解除/.test(r.stdout),
+        '应明确提示未读到复测报告: ' + r.stdout);
+});
+
+test('隔离池：quarantine-release.json 复测通过 → 解除隔离', () => {
+    const legado = [];
+    for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'A' + i, bookSourceUrl: 'https://a' + i + '.example.com', weight: 300 });
+    const quarantine = [
+        { url: 'https://alive.example.com', name: '复测复活', reason: 'stable-dead', since: 1 },
+        { url: 'https://stilldead.example.com', name: '仍死', reason: 'stable-dead', since: 1 },
+    ];
+    const tmp = makeTempDir();
+    fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(tmp, 'quarantine.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+    fs.mkdirSync(path.join(tmp, 'health'));
+    fs.mkdirSync(path.join(tmp, 'reports'));
+    fs.writeFileSync(path.join(tmp, 'legado.json'), JSON.stringify(legado));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), JSON.stringify({ sources: {} }));
+    fs.writeFileSync(path.join(tmp, 'quarantine.json'), JSON.stringify(quarantine));
+    // 复测报告：只把 alive 报为通过；同时混入一个名单外的陌生 URL，必须被忽略
+    fs.writeFileSync(path.join(tmp, 'reports', 'quarantine-release.json'), JSON.stringify({
+        generatedAt: Date.now(),
+        release: ['https://alive.example.com', 'https://not-in-list.example.com/evil'],
+    }));
+    const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: tmp, encoding: 'utf8' });
+    const q = JSON.parse(fs.readFileSync(path.join(tmp, 'quarantine.json'), 'utf8'));
+    cleanupDir(tmp);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.deepStrictEqual(q.map(x => x.name), ['仍死'],
+        '只解除复测通过的源，且陌生 URL 不得凭空进入名单');
+    assert.ok(/已恢复并解除隔离/.test(r.stdout), '应输出解除日志: ' + r.stdout);
+});
+
+test('隔离池：复测报告超过名单 30% → 按上限截断（防批量放生）', () => {
+    const legado = [];
+    for (let i = 0; i < 120; i++) legado.push({ bookSourceName: 'A' + i, bookSourceUrl: 'https://a' + i + '.example.com', weight: 300 });
+    // 名单仅 2 条，30% → 向上取整为 1，报告却报 3 条通过
+    const quarantine = [
+        { url: 'https://q1.example.com', name: 'Q1', reason: 'stable-dead', since: 1 },
+        { url: 'https://q2.example.com', name: 'Q2', reason: 'stable-dead', since: 1 },
+    ];
+    const tmp = makeTempDir();
+    fs.copyFileSync(path.join(REPO, 'quarantine.js'), path.join(tmp, 'quarantine.js'));
+    fs.mkdirSync(path.join(tmp, 'src'));
+    fs.copyFileSync(path.join(REPO, 'src', 'source-id.js'), path.join(tmp, 'src', 'source-id.js'));
+    fs.mkdirSync(path.join(tmp, 'health'));
+    fs.mkdirSync(path.join(tmp, 'reports'));
+    fs.writeFileSync(path.join(tmp, 'legado.json'), JSON.stringify(legado));
+    fs.writeFileSync(path.join(tmp, 'health', 'source_health.json'), JSON.stringify({ sources: {} }));
+    fs.writeFileSync(path.join(tmp, 'quarantine.json'), JSON.stringify(quarantine));
+    fs.writeFileSync(path.join(tmp, 'reports', 'quarantine-release.json'), JSON.stringify({
+        generatedAt: Date.now(),
+        release: ['https://q1.example.com', 'https://q2.example.com', 'https://q3.example.com'],
+    }));
+    const r = spawnSync(process.execPath, ['quarantine.js'], { cwd: tmp, encoding: 'utf8' });
+    const q = JSON.parse(fs.readFileSync(path.join(tmp, 'quarantine.json'), 'utf8'));
+    cleanupDir(tmp);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.strictEqual(q.length, 1, '2 条名单的 30% = 1，只应解除 1 条');
+    assert.ok(/按上限截断/.test(r.stdout), '应提示已截断: ' + r.stdout);
 });
 
 test('隔离池：健康报告损坏 → 只收不放，且不阻断发布', () => {
