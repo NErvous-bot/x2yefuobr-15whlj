@@ -2,26 +2,25 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  149  available->available
-    1  available->broken
-    6  available->untestable
+  155  available->available
+    4  available->untestable
     1  broken->available
-    2  broken->broken
-    3  broken->removed
-    9  untestable->available
-   15  untestable->broken
-  504  untestable->untestable
-新增源 1
+    9  broken->broken
+    6  broken->removed
+    2  broken->untestable
+    4  untestable->available
+    5  untestable->broken
+    1  untestable->removed
+  501  untestable->untestable
+新增源 2
 
-━━ 一级复查：旧可用 → 确认坏 1 ━━
-  SUSPECT 1
-  [SUSPECT 2/5] 🎃顶点小说🎃#8 | 阶段: PASS,SEARCH_EMPTY,SEARCH_EMPTY,PASS,SEARCH_EMPTY | 特征: POST
+━━ 一级复查：旧可用 → 确认坏 0 ━━
 
-━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
+━━ 二级复查：旧BL不可测 → 确认坏 1（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 1（基线 63efe75） ━━
-  [RECOVERED] (T1 原RECOVERED) 墨坛文学 h=93 [三关全过] recent=pass/pass/pass/fail/pass flap=true
+━━ 往轮候选终态 1（基线 294980d） ━━
+  [RECOVERED] (T1 原SUSPECT) 🎃顶点小说🎃#8 h=100 [三关全过] recent=pass/fail/pass/fail/pass flap=true
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
+PASS：旧可用 → 确认坏 = 0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

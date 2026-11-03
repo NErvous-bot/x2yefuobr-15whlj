@@ -1,77 +1,34 @@
 {
- "generatedAt": 1793724423310,
- "runAt": "2026-11-03T16:47:03.310Z",
+ "generatedAt": 1793726046515,
+ "runAt": "2026-11-03T17:14:06.515Z",
  "oldRef": "HEAD",
- "baselineSha": "63efe75d05510a256608b24b4e4e19c784daa9e9",
- "tier1": [
-  {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
-   "traits": [
-    "POST"
-   ],
-   "oldNote": "三关全过",
-   "newNote": "搜索无结果",
-   "attempts": [
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": false,
-     "kind": "fail",
-     "stage": "SEARCH_EMPTY",
-     "reason": "搜索无结果"
-    }
-   ],
-   "verdict": "SUSPECT"
-  }
- ],
+ "baselineSha": "294980d5d780e46327bfbd708acfd39f9a8d145f",
+ "tier1": [],
  "tier2": [],
  "resolved": [
   {
-   "name": "墨坛文学",
-   "url": "http://www.22mt.net/",
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
    "tier": 1,
-   "prevVerdict": "RECOVERED",
+   "prevVerdict": "SUSPECT",
    "state": "RECOVERED",
    "evidence": {
-    "health": 93,
+    "health": 100,
     "search": true,
     "toc": true,
     "content": true,
-    "chapters": 100,
-    "contentLen": 1024,
+    "chapters": 300,
+    "contentLen": 1343,
     "note": "三关全过",
     "flapping": true,
     "recent": [
      "pass",
-     "pass",
+     "fail",
      "pass",
      "fail",
      "pass"
     ],
-    "checkedAt": 1793723620045
+    "checkedAt": 1793724968002
    }
   }
  ]

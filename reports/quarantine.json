@@ -1,35 +1,70 @@
 {
- "generatedAt": 1793724423378,
- "totalBefore": 690,
- "totalAfter": 684,
+ "generatedAt": 1793726046576,
+ "totalBefore": 685,
+ "totalAfter": 675,
  "newThisRound": [
   {
-   "url": "http://www.soeo.net",
-   "name": "搜搜小说"
+   "url": "https://www.soshuw.net#🎃",
+   "name": "搜书网"
   },
   {
-   "url": "https://xshbook.com/",
-   "name": "小说虎"
+   "url": "https://m.2023txt.com#🎃",
+   "name": "二零二三电子书小说网"
   },
   {
-   "url": "https://www.xshbook.com/",
-   "name": "小说虎"
+   "url": "https://www.dangyuedu.com#🎃",
+   "name": "当阅读网"
   },
   {
-   "url": "https://www.999zw.net/",
-   "name": "三九中文"
+   "url": "https://www.wzsxs.com#🎃",
+   "name": "完整书"
   },
   {
-   "url": "https://www.fengyu.cc/",
-   "name": "风雨小说"
+   "url": "http://api.lfdapengu.com#🎃",
+   "name": "猫眼看书🎃#2"
   },
   {
-   "url": "http://www.epshu.com",
-   "name": "一品小说"
+   "url": "http://api.anwaben.com",
+   "name": "🔰 顶点小说"
+  },
+  {
+   "url": "http://api.jmlldsc.com#🎃",
+   "name": "猫眼看书🎃#3"
+  },
+  {
+   "url": "http://api.lemiyigou.com/",
+   "name": "猫眼看书"
+  },
+  {
+   "url": "http://api.basusan.com#",
+   "name": "顶点小说"
+  },
+  {
+   "url": "http://api.sxwlyhzp.com",
+   "name": "笔趣阁"
   }
  ],
- "releasedThisRound": [],
- "quarantineSize": 309,
- "stripped": 6,
+ "releasedThisRound": [
+  {
+   "url": "http://www.kptxt.com/",
+   "name": "🔞 靠谱小说 🪜",
+   "reason": "stable-dead",
+   "since": 1793165839985
+  },
+  {
+   "url": "https://www.haitang123.com#🎃",
+   "name": "海马读书_值得收藏的海马文学小_haitang123.com",
+   "reason": "stable-dead",
+   "since": 1793165839985
+  },
+  {
+   "url": "https://www.po5.net#77",
+   "name": "52书库（po5.net）",
+   "reason": "stable-dead",
+   "since": 1793165839985
+  }
+ ],
+ "quarantineSize": 316,
+ "stripped": 10,
  "changed": true
 }

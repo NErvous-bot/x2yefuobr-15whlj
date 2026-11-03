@@ -1,4 +1,9 @@
 {
+ "http://www.kehuan.net.cn": {
+  "name": "💡 科幻小说",
+  "reason": "probe-dead",
+  "evidence": "domain dead: http://www.kehuan.net.cn"
+ },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
   "reason": "manual-confirmed",
@@ -14,10 +19,10 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
- "https://www.qimao.com": {
-  "name": "七猫小说",
+ "https://www.99duxiaoshuo.com": {
+  "name": "九九读小说",
   "reason": "aging-failed",
-  "evidence": "搜索无结果"
+  "evidence": "搜索接口404"
  },
  "http://app.jjwxc.org": {
   "name": "晋江文学城",
@@ -63,6 +68,11 @@
   "name": "文窗小说",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
+ },
+ "http://m.ubuxs.com": {
+  "name": "优步小说网",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  },
  "http://www.tcwxx.com": {
   "name": "同创文学",
@@ -134,6 +144,11 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "https://www.fengyu.cc": {
+  "name": "风雨小说",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
+ },
  "http://m.dhzw.cc": {
   "name": "大海中文",
   "reason": "aging-failed",
@@ -149,6 +164,11 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
+ "https://www.999zw.net": {
+  "name": "三九中文",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "http://www.xiaoshuo588.com": {
   "name": "小说屋",
   "reason": "aging-failed",
@@ -158,6 +178,11 @@
   "name": "断秋风",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
+ },
+ "http://www.epshu.com": {
+  "name": "一品小说",
+  "reason": "aging-failed",
+  "evidence": "搜索接口404"
  },
  "https://www.c66c.com": {
   "name": "🎉笔趣库②",
@@ -249,6 +274,16 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
+ "http://www.8kbook.com": {
+  "name": "🔖八块小说网",
+  "reason": "aging-failed",
+  "evidence": "目录为空"
+ },
+ "http://www.wikiyuedu.com": {
+  "name": "维基阅读",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
  "https://bestlightnovel.com": {
   "name": "🔤 BestLightNovel",
   "reason": "aging-failed",
@@ -278,15 +313,5 @@
   "name": "天天书吧",
   "reason": "aging-failed",
   "evidence": "搜索无结果"
- },
- "http://www.sgxiaoshuo.com": {
-  "name": "搜狗小说",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
- "https://mirrorfiction.com": {
-  "name": "📖镜文学🛫",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
  }
 }
