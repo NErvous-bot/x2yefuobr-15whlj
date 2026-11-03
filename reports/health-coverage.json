@@ -1,10 +1,11 @@
 {
- "generatedAt": 1793525273714,
- "product": 691,
- "covered": 690,
- "coverageRatio": 0.9986,
+ "generatedAt": 1793723620045,
+ "product": 690,
+ "covered": 688,
+ "coverageRatio": 0.9971,
  "uncovered": [
-  "http://gugehk.org"
+  "http://www.m.ubuxs.com",
+  "https://newsmiss.lofter.com"
  ],
  "orphan": [],
  "droppedRows": 0,

@@ -1,17 +1,17 @@
 {
- "generatedAt": 1793525793157,
- "runAt": "2026-11-01T09:36:33.157Z",
+ "generatedAt": 1793724423310,
+ "runAt": "2026-11-03T16:47:03.310Z",
  "oldRef": "HEAD",
- "baselineSha": "c6e29b440356c927b9a9c3a526e5a5f551870ba1",
+ "baselineSha": "63efe75d05510a256608b24b4e4e19c784daa9e9",
  "tier1": [
   {
-   "name": "墨坛文学",
-   "url": "http://www.22mt.net/",
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
    "traits": [
-    "js规则"
+    "POST"
    ],
    "oldNote": "三关全过",
-   "newNote": "书籍页404",
+   "newNote": "搜索无结果",
    "attempts": [
     {
      "pass": true,
@@ -20,10 +20,16 @@
      "reason": "三关全过"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     },
     {
      "pass": true,
@@ -32,46 +38,40 @@
      "reason": "三关全过"
     },
     {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
-    },
-    {
-     "pass": true,
-     "kind": "pass",
-     "stage": "PASS",
-     "reason": "三关全过"
+     "pass": false,
+     "kind": "fail",
+     "stage": "SEARCH_EMPTY",
+     "reason": "搜索无结果"
     }
    ],
-   "verdict": "RECOVERED"
+   "verdict": "SUSPECT"
   }
  ],
  "tier2": [],
  "resolved": [
   {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
+   "name": "墨坛文学",
+   "url": "http://www.22mt.net/",
    "tier": 1,
-   "prevVerdict": "SUSPECT",
+   "prevVerdict": "RECOVERED",
    "state": "RECOVERED",
    "evidence": {
-    "health": 100,
+    "health": 93,
     "search": true,
     "toc": true,
     "content": true,
-    "chapters": 300,
-    "contentLen": 1343,
+    "chapters": 100,
+    "contentLen": 1024,
     "note": "三关全过",
     "flapping": true,
     "recent": [
-     "fail",
+     "pass",
      "pass",
      "pass",
      "fail",
      "pass"
     ],
-    "checkedAt": 1793525273714
+    "checkedAt": 1793723620045
    }
   }
  ]

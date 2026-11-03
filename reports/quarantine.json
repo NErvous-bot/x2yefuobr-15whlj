@@ -1,23 +1,35 @@
 {
- "generatedAt": 1793525793203,
- "totalBefore": 691,
- "totalAfter": 688,
+ "generatedAt": 1793724423378,
+ "totalBefore": 690,
+ "totalAfter": 684,
  "newThisRound": [
   {
-   "url": "http://www.shuhai.com/",
-   "name": "书海小说"
+   "url": "http://www.soeo.net",
+   "name": "搜搜小说"
   },
   {
-   "url": "http://m.ubuxs.com#🎃",
-   "name": "优步小说网"
+   "url": "https://xshbook.com/",
+   "name": "小说虎"
   },
   {
-   "url": "http://www.podlook.com",
-   "name": "菠萝网"
+   "url": "https://www.xshbook.com/",
+   "name": "小说虎"
+  },
+  {
+   "url": "https://www.999zw.net/",
+   "name": "三九中文"
+  },
+  {
+   "url": "https://www.fengyu.cc/",
+   "name": "风雨小说"
+  },
+  {
+   "url": "http://www.epshu.com",
+   "name": "一品小说"
   }
  ],
  "releasedThisRound": [],
- "quarantineSize": 303,
- "stripped": 3,
+ "quarantineSize": 309,
+ "stripped": 6,
  "changed": true
 }
