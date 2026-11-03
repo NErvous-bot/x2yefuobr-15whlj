@@ -42,14 +42,14 @@ jobs:
   eval:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
         with:
           # 关键：默认 checkout 会把认证凭据写进 .git/config，
           # 恶意脚本逃逸后可以直接 git push。这里彻底关掉。
           persist-credentials: false
           ref: ${{ inputs.ref || github.sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -100,9 +100,31 @@ jobs:
             console.log('ok rows='+j.results.length);
           "
 
-      - uses: actions/upload-artifact@v4
+      # 隔离池复活复测：只有这个低权限 job 允许执行书源 JS，故复测也归这里。
+      # 产出 quarantine-release.json（只列「三关全过」的 URL），生产 job 只读不执行。
+      - name: 隔离池复活复测（quarantine-stash.json → quarantine-release.json）
+        env:
+          HEALTH_JS_SCOPE: '1'
+        run: node quarantine-recheck.js
+
+      - name: 复测报告边界校验
+        run: |
+          set -euo pipefail
+          f=quarantine-release.json
+          test -f "$f" || { echo "missing $f"; exit 1; }
+          node -e "
+            const fs=require('fs');
+            const j=JSON.parse(fs.readFileSync('$f','utf8'));
+            if(!Array.isArray(j.release)) throw new Error('release must be array');
+            for(const u of j.release) if(typeof u!=='string'||!u) throw new Error('malformed release row');
+            console.log('ok release='+j.release.length);
+          "
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: js-eval-result
-          path: js-eval-result.json
+          path: |
+            js-eval-result.json
+            quarantine-release.json
           retention-days: 3
           if-no-files-found: error

@@ -9,6 +9,11 @@ node_modules/
 # 运行日志
 *.log
 
+# 签名密钥（CI 从 Secrets 解码落盘，禁止入库）
+*.jks
+*.keystore
+keystore.jks
+
 # 排名诊断输出（由 rank-legado.js 生成，可随时重算；仅 reports/ 下的汇总入库）
 ranked-legado.json
 

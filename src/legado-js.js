@@ -341,6 +341,17 @@ function bootstrapSource(pure) {
  * @returns {{ok:true,url:string} | {ok:false,skip:string}}
  */
 function evaluateSearchJs(opts) {
+    // ── 高权限 job 硬闸门（评审 P1）────────────────────────────────────────
+    // update.yml 的 update job 持有 contents:write + ED25519_KEY 签名私钥。
+    // 在该进程里执行上游不可信书源 JS，等于把「外部代码 + 写权限 + 私钥」塞进
+    // 同一个内存空间：一旦 vm 逃逸，攻击者可直接改写 legado.json，再被 sign.js
+    // 用真私钥背书，手机端验签全过。故该 job 一律 NO_JS_EVAL=1。
+    // 求值只允许发生在 js-eval.yml（contents:read、零 Secrets、独立 runner）。
+    // 返回 skip 而非 fail：filter.js 把 usable==='skip' 当「不可测豁免、不误删」，
+    // 因此本闸门只会让高权限 job 停手，不会批量误杀书源。
+    if (process.env.NO_JS_EVAL === '1') {
+        return { ok: false, skip: 'JS求值已在高权限job禁用(NO_JS_EVAL)' };
+    }
     const su = String(opts.su || '');
     const base = String(opts.base || '');
     const key = String(opts.key || '');
@@ -381,7 +392,12 @@ function evaluateSearchJs(opts) {
     let out;
     try {
         ctx = vm.createContext(Object.create(null), {
-            codeGeneration: { strings: true, wasm: false },
+            // strings:false —— 沙箱内不再允许 Function / new Function / 字符串 eval。
+            // 作者原有补丁把宿主函数换成沙箱内自建 + 纯 JSON 常量注入，掐断了已知的
+            // java.put.constructor('return process') 链；但 strings:true 意味着只要未来
+            // 任何一个宿主对象漏进上下文，那条链立刻复活。这里彻底关掉。
+            // 代价：书源若依赖动态字符串构造代码，会抛错被判为不可测（skip），不误删。
+            codeGeneration: { strings: false, wasm: false },
         });
         vm.runInContext(bootstrapSource(pure), ctx, { timeout: EVAL_TIMEOUT_MS, filename: 'legado-bootstrap.js' });
         out = vm.runInContext(code, ctx, { timeout: EVAL_TIMEOUT_MS, filename: 'legado-search.js' });
