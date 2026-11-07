@@ -1,11 +1,15 @@
 {
- "generatedAt": 1793724968002,
- "product": 685,
- "covered": 683,
- "coverageRatio": 0.9971,
+ "generatedAt": 1794041844234,
+ "product": 680,
+ "covered": 674,
+ "coverageRatio": 0.9912,
  "uncovered": [
-  "http://www.m.biqugse.com",
-  "https://www.mengbige.com"
+  "https://soshuw.net",
+  "https://www.po5.net",
+  "http://www.kptxt.com",
+  "https://www.shumilou.co",
+  "http://www.kehuan.net.cn",
+  "https://www.haitang123.com"
  ],
  "orphan": [],
  "droppedRows": 1,

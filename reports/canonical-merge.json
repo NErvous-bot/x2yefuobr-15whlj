@@ -1,5 +1,5 @@
 {
- "generatedAt": 1793447085293,
+ "generatedAt": 1794042581886,
  "rules": {
   "rootMultislash": "collapse-root-only",
   "nonRootDoubleSlash": "keep-and-report",
@@ -31,9 +31,37 @@
  ],
  "advisories": [
   {
-   "type": "query-has-unverified-param-kept",
-   "name": "盗墓笔记全集",
-   "url": "http://www.daomubiji.org/?yuedu"
+   "type": "www-or-host-variant-kept",
+   "host": "qbtr.cc",
+   "urls": [
+    "https://www.qbtr.cc",
+    "https://qbtr.cc/##by_夏尔"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "yqk.net",
+   "urls": [
+    "https://www.yqk.net",
+    "http://www.yqk.net/"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "m.gulongbbs.com",
+   "urls": [
+    "https://m.gulongbbs.com/wuxia",
+    "http://m.gulongbbs.com/wuxia",
+    "https://m.gulongbbs.com/zhentan/"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "kuuai.com",
+   "urls": [
+    "http://www.kuuai.com",
+    "https://kuuai.com"
+   ]
   },
   {
    "type": "www-or-host-variant-kept",
@@ -53,26 +81,10 @@
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "qbtr.cc",
+   "host": "wenku8.cc",
    "urls": [
-    "https://www.qbtr.cc",
-    "https://qbtr.cc/##by_夏尔"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "yqk.net",
-   "urls": [
-    "https://www.yqk.net",
-    "http://www.yqk.net/"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "kuuai.com",
-   "urls": [
-    "http://www.kuuai.com",
-    "https://kuuai.com"
+    "https://www.wenku8.cc/index.php",
+    "https://www.wenku8.cc"
    ]
   },
   {
@@ -149,14 +161,6 @@
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "wenku8.cc",
-   "urls": [
-    "https://www.wenku8.cc",
-    "https://www.wenku8.cc/index.php"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
    "host": "pixiv.net",
    "urls": [
     "https://www.pixiv.net/novel",
@@ -189,27 +193,35 @@
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "xshbook.com",
+   "host": "m.biqugse.com",
    "urls": [
-    "https://xshbook.com/",
-    "https://www.xshbook.com/"
+    "http://www.m.biqugse.com/",
+    "http://m.biqugse.com/"
    ]
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "m.gulongbbs.com",
+   "host": "gugehk.org",
    "urls": [
-    "https://m.gulongbbs.com/zhentan/",
-    "https://m.gulongbbs.com/wuxia",
-    "http://m.gulongbbs.com/wuxia"
+    "http://gugehk.org",
+    "http://www.gugehk.org"
    ]
   },
   {
    "type": "www-or-host-variant-kept",
-   "host": "reader.browser.miui.com",
+   "host": "novel.tingroom.com",
    "urls": [
-    "https://reader.browser.miui.com",
-    "https://reader.browser.miui.com/v2"
+    "http://novel.tingroom.com/wap/index.php",
+    "http://novel.tingroom.com/wap",
+    "http://novel.tingroom.com"
+   ]
+  },
+  {
+   "type": "www-or-host-variant-kept",
+   "host": "mengbige.com",
+   "urls": [
+    "https://www.mengbige.com",
+    "http://www.mengbige.com"
    ]
   },
   {
@@ -218,15 +230,6 @@
    "urls": [
     "http://syosetu.com",
     "https://syosetu.com/"
-   ]
-  },
-  {
-   "type": "www-or-host-variant-kept",
-   "host": "novel.tingroom.com",
-   "urls": [
-    "http://novel.tingroom.com/wap",
-    "http://novel.tingroom.com/wap/index.php",
-    "http://novel.tingroom.com"
    ]
   }
  ]

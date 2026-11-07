@@ -1,35 +1,9 @@
 {
- "generatedAt": 1793726046515,
- "runAt": "2026-11-03T17:14:06.515Z",
+ "generatedAt": 1794042644889,
+ "runAt": "2026-11-07T09:10:44.889Z",
  "oldRef": "HEAD",
- "baselineSha": "294980d5d780e46327bfbd708acfd39f9a8d145f",
+ "baselineSha": "1e05368b58d42bf978b1065698e2dc284dbfd040",
  "tier1": [],
  "tier2": [],
- "resolved": [
-  {
-   "name": "🎃顶点小说🎃#8",
-   "url": "https://www.dingdian888.com#🎃",
-   "tier": 1,
-   "prevVerdict": "SUSPECT",
-   "state": "RECOVERED",
-   "evidence": {
-    "health": 100,
-    "search": true,
-    "toc": true,
-    "content": true,
-    "chapters": 300,
-    "contentLen": 1343,
-    "note": "三关全过",
-    "flapping": true,
-    "recent": [
-     "pass",
-     "fail",
-     "pass",
-     "fail",
-     "pass"
-    ],
-    "checkedAt": 1793724968002
-   }
-  }
- ]
+ "resolved": []
 }
