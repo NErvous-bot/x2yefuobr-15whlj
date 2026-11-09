@@ -5,6 +5,22 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+    <!-- 自检面板 v3.24：装完第一眼要能看出「明天早上会不会自动跑」。
+         四项任一不满足都会让后台任务链断掉，比同步失败更难自查。 -->
+    <TextView
+        android:id="@+id/selfcheck"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:lineSpacingExtra="2dp"
+        android:paddingBottom="8dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#33888888"
+        android:layout_marginBottom="8dp" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -18,9 +34,30 @@
             android:lineSpacingExtra="4dp" />
     </ScrollView>
 
-    <Button
-        android:id="@+id/syncNow"
+    <TextView
+        android:id="@+id/nextRun"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="立即同步" />
+        android:textSize="13sp"
+        android:paddingBottom="6dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnSelfTest"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="自检" />
+
+        <Button
+            android:id="@+id/syncNow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="立即同步" />
+    </LinearLayout>
 </LinearLayout>

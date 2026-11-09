@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends Activity {
 
     private TextView status;
+    private TextView selfcheck;
+    private TextView nextRun;
     private volatile String progress;   // 实时进度（来自 WorkInfo.progress）
     private String lastRendered;        // 上次渲染的整段文案，相同则跳过 setText
     private final Handler poll = new Handler();
@@ -64,6 +66,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         status = findViewById(R.id.status);
+        selfcheck = findViewById(R.id.selfcheck);
+        nextRun = findViewById(R.id.nextRun);
 
         // Android 13+ 通知运行时权限：启动时申请一次，授权后同步结束即可发系统通知
         if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -87,6 +91,10 @@ public class MainActivity extends Activity {
                             .build());
             refresh();
         });
+
+        // v3.24 自检按钮：把这些年踩过的「任务链静默断掉」逐项验一遍。
+        // 用户早上发现没同步时，靠这个能立刻分出是权限问题还是网络问题。
+        findViewById(R.id.btnSelfTest).setOnClickListener(v -> runSelfTest());
 
         // 固定 05:00（v3.20）：24h 周期任务从「上次执行完成」重新计时，逐日漂移；
         // 改为一次性任务链 daily-next——每轮成功后 Worker 自己预约次日 05:00。
@@ -149,12 +157,115 @@ public class MainActivity extends Activity {
             lastRendered = text;
             status.setText(text);
         }
+        renderSelfCheck();
+    }
+
+    // ============================================================
+    // 自检面板 v3.24
+    // ============================================================
+    /**
+     * 四项决定「明天早上会不会自动跑」的前提。任何一项不满足，
+     * 任务链都会在用户毫无感知的情况下断掉——这正是历史上最难自查的一类问题。
+     * 这里把它们显式画出来，而不是等用户发现「没同步」再猜。
+     */
+    private void renderSelfCheck() {
+        if (selfcheck == null) return;
+        StringBuilder sb = new StringBuilder();
+
+        // ① 通知权限（Android 13+）：不授予则同步照跑但完全静默
+        boolean notif = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        sb.append(notif ? "✅ 通知权限已授予" : "⚠️ 通知权限未授予（同步会静默完成）").append('\n');
+
+        // ② 电池优化豁免：国产 ROM 不豁免会在后台清掉 WorkManager
+        boolean battery = true;
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            battery = pm == null || pm.isIgnoringBatteryOptimizations(getPackageName());
+        } catch (Exception ignored) {}
+        sb.append(battery ? "✅ 已在电池优化白名单" : "⚠️ 未加入电池优化白名单（后台可能被清）").append('\n');
+
+        // ③ 网络（minSdk 33，直接用 NetworkCapabilities，不用已废弃的 getActiveNetworkInfo）
+        boolean net = true;
+        try {
+            android.net.ConnectivityManager cm =
+                    (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                android.net.Network n = cm.getActiveNetwork();
+                if (n == null) {
+                    net = false;
+                } else {
+                    android.net.NetworkCapabilities nc = cm.getNetworkCapabilities(n);
+                    net = nc != null && nc.hasCapability(
+                            android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+                }
+            }
+        } catch (Exception ignored) {}
+        sb.append(net ? "✅ 网络已连接" : "⚠️ 当前无网络（任务会等网络恢复）");
+        selfcheck.setText(sb.toString());
+
+        // 下次运行时间：从 WorkManager 里读真实排程，不靠本地估算
+        if (nextRun != null) {
+            queryExec.execute(() -> {
+                String line = "下次自动检查：未排程（点此页任意处或重开 App 会补排）";
+                try {
+                    List<WorkInfo> list = WorkManager.getInstance(this)
+                            .getWorkInfosForUniqueWork("daily-next").get();
+                    for (WorkInfo wi : list) {
+                        if (wi.getState() == WorkInfo.State.ENQUEUED) {
+                            line = "下次自动检查：每天 05:00（已排程）";
+                            break;
+                        }
+                        if (wi.getState() == WorkInfo.State.RUNNING) {
+                            line = "下次自动检查：正在执行中…";
+                            break;
+                        }
+                    }
+                } catch (Exception ignored) {}
+                final String out = line;
+                runOnUiThread(() -> nextRun.setText(out));
+            });
+        }
+    }
+
+    /** 「自检」按钮：做一次主动探测，把结论写进历史，便于事后回看 */
+    private void runSelfTest() {
+        StringBuilder sb = new StringBuilder("自检 v" + BuildConfig.VERSION_NAME + "：");
+        try {
+            boolean notif = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    == android.content.pm.PackageManager.PERMISSION_GRANTED;
+            sb.append(notif ? "通知OK" : "通知未授权");
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            boolean battery = pm == null || pm.isIgnoringBatteryOptimizations(getPackageName());
+            sb.append(battery ? "；省电已豁免" : "；省电未豁免");
+            sb.append("；任务链");
+            List<WorkInfo> list = WorkManager.getInstance(this)
+                    .getWorkInfosForUniqueWork("daily-next").get();
+            boolean scheduled = false;
+            for (WorkInfo wi : list) {
+                WorkInfo.State st = wi.getState();
+                if (st == WorkInfo.State.ENQUEUED || st == WorkInfo.State.RUNNING) { scheduled = true; break; }
+            }
+            sb.append(scheduled ? "正常" : "未排程");
+        } catch (Exception e) {
+            sb.append("检查异常：").append(e.getClass().getSimpleName());
+        }
+        String msg = sb.toString();
+        try {
+            android.content.SharedPreferences sp = getSharedPreferences("sync", MODE_PRIVATE);
+            sp.edit().putString("last", msg).apply();
+        } catch (Exception ignored) {}
+        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
+        refresh();
+        renderSelfCheck();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         poll.postDelayed(pollTask, 200);
+        // 回到前台时刷新自检：用户可能刚从系统设置里改完权限回来
+        renderSelfCheck();
     }
 
     @Override

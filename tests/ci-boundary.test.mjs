@@ -321,6 +321,32 @@ else bad('export-health-json.js', '缺失');
   else bad('缺优先池', '只靠番茄热榜取书，题库长期不可测');
 }
 
+// ============================================================
+// ⑪ 截断值与超短目录不得污染测量
+// ------------------------------------------------------------
+// 实证后果（2026-11-10，本地实跑三轮标定）：
+//   · 《斗罗大陆》参考 336，零点看书/入殓师/何以笙箫都报 400，
+//     状态是「翻页截断（MAX_PAGES）」—— 400 只是 20 页上限，
+//     不是章节数。原代码照它算 diff，判定成"领先"。
+//   · 《剑来》参考 1307，新欲望社被截到 385 → 判"严重落后"，同样错。
+//   · 《斗罗大陆》第一版主报 2 章、露露书报 1 章（根本没这本书），
+//     这两条进了 valid 后把中位数拉到 2，整本书判定全废。
+{
+  const src = fs.readFileSync('freshness-audit.js', 'utf8');
+
+  if (/truncated && toc\.chapters < book\.reference/.test(src))
+    ok('截断值（MAX_PAGES/TIME_BUDGET）在低于参考时判 unknown，不当"落后"');
+  else bad('截断语义', '截断得到的章节数只是下限，不能直接算 diff');
+
+  if (/truncated_lower_bound/.test(src))
+    ok('截断样本打 truncated_lower_bound 标记（下游可复核）');
+  else bad('截断标记', '截断样本与真实测量无法区分');
+
+  if (/toc\.chapters < 20 && toc\.chapters < book\.reference \* 0\.05/.test(src))
+    ok('超短目录（<20 章且<5%）判 unknown，不污染中位数');
+  else bad('超短目录', '1-2 章的假目录会计入 valid，把中位数拉到个位数');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
