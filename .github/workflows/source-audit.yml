@@ -114,7 +114,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-          git add books.json reports/freshness-summary.json reports/freshness-details.csv
+          # freshness-ledger.json 必须入库：它是唯一的跨轮次状态载体。
+          # 不提交 = 每个 CI run 都从空账本起步，rounds 永远回到 1，
+          # last_valid_round / consecutive_failures / 未测优先排序全部失效，
+          # 等于四层账本白做。
+          git add books.json reports/freshness-summary.json reports/freshness-details.csv reports/freshness-ledger.json
           # 硬断言：诊断不得改动成品/评分/健康证据
           for f in legado.json replaceRule.json version.txt legado.json.sig replaceRule.json.sig health/source_health.json reports/source_scores.json; do
             if ! git diff --quiet HEAD -- "$f"; then
