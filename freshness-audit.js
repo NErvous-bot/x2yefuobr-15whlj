@@ -1357,6 +1357,27 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     
                     const diff = toc.chapters - book.reference;
                     const ratio = toc.chapters / book.reference;
+
+                    // 目录极短 = 该源没有这本书（或只放了个引子页），不是"落后"。
+                    // 实测《斗罗大陆》参考 336：第一版主报 2 章、露露书报 1 章，
+                    // 这类源照样进 valid，把中位数拉到 2，整本书的判定全废。
+                    // 判据：章节数 < 参考的 5% 且绝对数 < 20 → 判「非本书目录」。
+                    // 用双条件是因为短篇书参考可能是 5 章，单看比例会误杀。
+                    if (toc.chapters < 20 && toc.chapters < book.reference * 0.05) {
+                        result = 'unknown';
+                        bookResult.sourcesChecked--;
+                        bookResult.sourcesUnknown++;
+                        details.push({
+                            book_key: book.key, source_url_hash: hash,
+                            reference_chapter: book.reference, source_chapter: toc.chapters,
+                            catalog_checked: false, body_verified: false,
+                            touched: true, checked_at: Date.now(), result: 'unknown',
+                            reason: '目录过短疑似非本书（' + toc.chapters + ' 章 / 参考 ' + book.reference + '）',
+                            pagination_rule_dormant: !!toc.pagination_rule_dormant,
+                        });
+                        await sleep(300);
+                        continue;
+                    }
                     // 上界口径校验：源不可能比官方参考多出 20% 以上章节——多半命中了同名书，
                     // 或站点把分卷/重复项算进目录。这类样本既不能算"领先"（会污染中位数），
                     // 也不能算"滞后"，统一降为 unknown，不进 bySource。
@@ -1366,6 +1387,32 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                         bookResult.sourcesChecked--;
                         bookResult.sourcesUnknown++;
                     } else {
+                        // 截断语义（2026-11-10 实测修正，P0）：
+                        // MAX_PAGES / TIME_BUDGET 命中时，抓到的章节数只是**下限**，
+                        // 不是真实总数。原代码照样拿它算 diff，于是
+                        // 《斗罗大陆》参考 336、源被 20 页上限截到 400 → 判"领先"；
+                        // 《剑来》参考 1307、源被截到 385 → 判"严重落后"。
+                        // 两种都错：400 和 385 都只是"至少这么多"。
+                        // 正确口径：
+                        //   · 下限 >= 参考 → 能确定「不落后」（领先/匹配）
+                        //   · 下限 <  参考 → 无法判断（可能只是没抓完）→ unknown，不进 valid
+                        // 这样截断样本不再污染中位数和 valid。
+                        const truncated = (termReason === 'MAX_PAGES' || termReason === 'TIME_BUDGET');
+                        if (truncated && toc.chapters < book.reference) {
+                            result = 'unknown';
+                            bookResult.sourcesChecked--;
+                            bookResult.sourcesUnknown++;
+                            details.push({
+                                book_key: book.key, source_url_hash: hash,
+                                reference_chapter: book.reference, source_chapter: toc.chapters,
+                                catalog_checked: false, body_verified: false,
+                                touched: true, checked_at: Date.now(), result: 'unknown',
+                                reason: '翻页截断无法判定（下限 ' + toc.chapters + ' < 参考 ' + book.reference + '）',
+                                pagination_rule_dormant: !!toc.pagination_rule_dormant,
+                            });
+                            await sleep(300);
+                            continue;
+                        }
                         if (diff >= 0) result = 'leading_or_match';
                         else if (diff >= -5) result = 'slightly_behind';
                         else if (diff >= -20) result = 'behind';
@@ -1379,6 +1426,8 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                             url: su, hash, name: String(s.bookSourceName || '').slice(0, 25),
                             observed_chapters: toc.chapters, result, diff, ratio,
                             pagination_status, confidence,
+                            // 截断样本：章节数只是下限，标记出来供下游降权/复核
+                            truncated_lower_bound: truncated,
                             // v1.5 #1: 疑似截断标记——单页 + 章节数是 100 的整数倍
                             // （很多站点每页刚好 100 章，没翻页就抓到 100/200/300 ...）
                             suspicious_truncation: (toc.pages <= 1) && (toc.chapters > 0) && (toc.chapters % 100 === 0),
