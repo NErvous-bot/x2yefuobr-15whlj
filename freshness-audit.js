@@ -1047,35 +1047,81 @@ function buildResult(state) {
     return result;
 }
 
-/* ---------- 从搜索结果选第一本（书名模糊匹配） ---------- */
-function pickFirstBook(r, source, base, preferTitle) {
+/* ---------- 从搜索结果选书（书名必须匹配，不猜） ---------- */
+// 2026-11-10 实测修正：原实现「兜底取第一个能构造 URL 的」，等于在书名
+// 匹配不上时随机抓一本书的目录去和参考章节数比。实测证据：
+//   · 得奇小说对《中奖10个亿》《黎明星火》两本不同的书都返回 15 条，
+//     书名全为空 → 落到 items[0] → 两本书测出同一本无关书。
+//   · 48 个多书样本源里 12 个「跨多本书观测值完全相同」
+//     （a2c737d4f3c4 恒 127、3e9814a115a9 恒 520、c8bbeb93a87c 恒 645）。
+//   · 该书官方 188 章，16 个不同域名却齐刷刷报 645 章。
+// 这些假样本会把 diff 算成 +460，再被「超出参考 20%」降成 unknown，
+// 于是一整轮下来 valid 恒为 0 —— 账本没数据不是因为源差，而是因为
+// 测的根本不是这本书。
+// 正确口径：书名必须有可核对的匹配，否则判「书名不匹配」不测。
+// 返回 { url, matched } 或 { fail: 原因 }。
+function pickBookForTitle(r, source, base, preferTitle) {
     const rs = source.ruleSearch || {};
     const pat = String(source.bookUrlPattern || '').trim();
     const buRule = String(rs.bookUrl || '');
-    
-    // 如果有搜索结果文本包含书名关键词，优先选
-    if (preferTitle && r.bl.items.length > 1) {
-        const kw = preferTitle.replace(/第[一二三四五六七八九十百千]+部/g, '').slice(0, 4); // 取前 4 字
-        for (const f of r.bl.items) {
-            const name = typeof f === 'object' ? (f.name || '') : String(f || '');
-            if (kw && name.includes(kw)) {
-                let u = pickOne(f, buRule);
-                if (!u && typeof f !== 'object') u = firstHref(f);
-                if (u && !(pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u))) {
-                    try { return new URL(u, base).href; } catch (e) {}
-                }
-            }
-        }
-    }
-    // 兜底：第一个能构造 URL 的
-    for (const f of r.bl.items) {
+    const items = (r && r.bl && r.bl.items) || [];
+    const hrefOf = (f) => {
         let u = pickOne(f, buRule);
         if (!u && typeof f !== 'object') u = firstHref(f);
-        if (!u) continue;
-        if (pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u)) continue; // 需要模板拼接跳过
-        try { return new URL(u, base).href; } catch (e) {}
+        if (!u) return '';
+        if (pat && !/^https?:\/\//i.test(u) && !/[./]/.test(u)) return '';
+        try { return new URL(u, base).href; } catch (e) { return ''; }
+    };
+
+    // 书名归一：去空白、去《》、去“最新章节”等后缀噪声，便于包含比对
+    const normName = (s) => String(s || '')
+        .replace(/\s+/g, '')
+        .replace(/^《|》$/g, '')
+        .replace(/(最新章节|全文阅读|无弹窗|笔趣阁|免费阅读).*$/, '');
+    const want = normName(preferTitle);
+    if (!want) return { fail: '书名不匹配(参考书名缺失)' };
+
+    // 关键词：取书名主体前若干字（去「第N部」这类卷标）
+    const main = want.replace(/第[一二三四五六七八九十百千0-9]+部/g, '');
+    const kw = main.slice(0, 6);
+
+    let sawEmptyName = 0;
+    let sawAnyName = 0;
+    let sawSimilar = 0;
+    for (const f of items) {
+        // 关键：bookList 的 items 常常是 **HTML 片段字符串**（selectAll 的
+        // isText=false 分支），不是带 .name 字段的对象。只判 object 会一律
+        // 取到空 —— 我第一版就踩了这个坑，实测 73 个源全部「空书名」。
+        // 正确做法：用该源自己的 ruleSearch.name 规则去取，取不到再退回对象字段。
+        const raw = pickOne(f, rs.name) || (typeof f === 'object' ? (f.name || '') : '');
+        const name = normName(raw);
+        if (!name) { sawEmptyName++; continue; }
+        sawAnyName++;
+        // 判据是「精确同名」，不是模糊包含。
+        // 实证：快眼看书对《中奖10个亿的老师躺平生活》返回 100 条、精确同名 0 条，
+        // 首条是《中奖10个亿的护士躺平生活》—— 前 6 字完全一致的另一本书。
+        // 用「前 6 字包含」当命中，等于拿 654 章的外书去比 185 章的参考值，
+        // 再被「超出 20%」降成 unknown。valid 恒为 0 的真因就在这里。
+        // 近似书名只计数上报，绝不用于测量。
+        if (name === main) {
+            const u = hrefOf(f);
+            if (u) return { url: u, matched: name.slice(0, 40) };
+        }
+        // 允许源站追加的常见后缀（(完)/（完结）/最新章节 等已在 normName 清掉）
+        if (name.startsWith(main) && name.length <= main.length + 6) sawSimilar++;
     }
-    return '';
+
+    // 全部书名都为空：无法核对命中，属于规则/站点结构问题，不是源坏
+    if (sawAnyName === 0) {
+        return { fail: '书名不匹配(搜索结果为' + (sawEmptyName ? '空书名' : '空列表') + '，无法核对)' };
+    }
+    return { fail: '书名不匹配(无精确同名书' + (sawSimilar ? '，仅' + sawSimilar + '条近似' : '') + ')' };
+}
+
+/* ---------- 兼容旧调用点：只要 URL 的场合 ---------- */
+function pickFirstBook(r, source, base, preferTitle) {
+    const hit = pickBookForTitle(r, source, base, preferTitle);
+    return hit && hit.url ? hit.url : '';
 }
 
 /* ---------- T1 fixture 测试入口（零网络、零文件写入） ---------- */
@@ -1258,13 +1304,14 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     continue;
                 }
                 
-                // 取书籍 URL
-                const bookUrl = pickFirstBook(r1, s, base, book.title);
-                if (!bookUrl) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '无法构造书籍URL' , touched: true });
+                // 取书籍 URL：书名必须匹配，匹配不上就不测（不再拿无关书凑数）
+                const pick = pickBookForTitle(r1, s, base, book.title);
+                if (!pick || !pick.url) {
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: (pick && pick.fail) || '无法构造书籍URL', touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
+                const bookUrl = pick.url;
                 
                 // 目录
                 // v1.5 P1-5: 主流程给每个源传独立预算（60s），避免一个慢源吃光整书 8 分钟
