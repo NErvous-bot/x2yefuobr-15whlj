@@ -972,28 +972,49 @@ public class SyncWorker extends Worker {
     private String syncRules(List<String> lines) {
         try {
             StringBuilder err = new StringBuilder();
+            android.content.SharedPreferences sp =
+                    getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE);
+
+            // v3.23 改动一：先用 version.txt 的规则指纹做轻量比对，命中就直接返回。
+            // 旧实现每轮无条件下载 replaceRule.json（9KB + 一次验签），
+            // 但内容绝大多数轮次都没变，这次下载是纯浪费。
+            String fpRules = sp.getString("fpRules", null);
+            String remoteFp = rulesFingerprintFromVersionTxt(lines);
+            if (remoteFp != null && remoteFp.equals(fpRules)) {
+                // 指纹一致 = 仓库里的规则没动过，本地缓存必然已是最新
+                File rcFast = new File(getApplicationContext().getFilesDir(), "last_rules.json");
+                if (rcFast.exists()) return "规则无变化（指纹一致）";
+                // 缓存丢了（清除数据/首次升级）→ 落到下面的完整流程补一次
+            }
+
             String rjson = fetchVerified("replaceRule.json", lines, err);
             if (rjson == null) return "规则未同步：" + err;
 
             String remoteMd5 = md5(rjson);
             File rcache = new File(getApplicationContext().getFilesDir(), "last_rules.json");
-            android.content.SharedPreferences sp =
-                    getApplicationContext().getSharedPreferences("sync", Context.MODE_PRIVATE);
             String firedMd5 = sp.getString("rulesFiredMd5", null);
             long firedAt = sp.getLong("rulesFiredAt", 0);
+            int tries = sp.getInt("rulesFireTries", 0);
             boolean firedSame = remoteMd5.equals(firedMd5);
             long sinceFire = System.currentTimeMillis() - firedAt;
 
-            if (rcache.exists() && md5(rcache).equals(remoteMd5) && !firedSame) {
+            // v3.23 改动二（核心修复）：旧判据是
+            //     if (rcache.exists() && md5(rcache).equals(remoteMd5) && !firedSame)
+            // 多出来的 !firedSame 让「内容相同且已成功唤起过」反而不算"无变化"，
+            // 于是 24h 后又被当成"有更新"再次唤起阅读 App 导入同一份规则——
+            // 用户看到的就是「每次同步都多导入一遍规则」。
+            // 现在只按内容判：只要本地缓存与仓库内容一致，就永不再导入。
+            if (rcache.exists() && md5(rcache).equals(remoteMd5)) {
                 return "规则无变化";
             }
+
             if (firedSame && sinceFire < 24L * 3600 * 1000) {
                 return "规则已唤起导入（24h内不重复）";
             }
-            int tries = firedSame ? sp.getInt("rulesFireTries", 0) : 0;
-            if (tries >= 3) {
+            if (firedSame && tries >= 3) {
                 return "规则有更新：请打开本App点「立即同步」完成导入";
             }
+
             String src = fallbackUrl("replaceRule.json");
             boolean fired = fireOnlineImport("replaceRule", src);
             if (!fired) {
@@ -1003,13 +1024,36 @@ public class SyncWorker extends Worker {
             OutputStream os = new FileOutputStream(rcache);
             os.write(rjson.getBytes("UTF-8"));
             os.close();
+            // v3.23 改动三：重试计数只在「同一份内容」上累加，内容一变就重置为 1。
+            // 旧实现 tried+1 会让新内容继承旧内容的失败次数，可能一上来就被卡死。
             sp.edit().putString("rulesFiredMd5", remoteMd5)
                     .putLong("rulesFiredAt", System.currentTimeMillis())
-                    .putInt("rulesFireTries", tries + 1).apply();
+                    .putInt("rulesFireTries", firedSame ? tries + 1 : 1).apply();
             return "规则更新：已唤起阅读App自动导入";
         } catch (Exception e) {
             return "规则未同步：异常";
         }
+    }
+
+    /**
+     * v3.23：从 version.txt（每线路都有，格式为两行 md5：书源 / 规则）
+     * 取第二行作为规则指纹。取不到返回 null，调用方回退到完整下载比对。
+     * 只读 70 字节，比下载 9KB 的 replaceRule.json 便宜得多。
+     */
+    private String rulesFingerprintFromVersionTxt(List<String> lines) {
+        for (String base : lines) {
+            try {
+                String url = base.replace("legado.json", "version.txt")
+                        + "?cb=" + System.currentTimeMillis();
+                String body = fetch(url);
+                if (body == null) continue;
+                String[] parts = body.trim().split("\\s+");
+                if (parts.length >= 2 && parts[1].length() >= 16) return parts[1];
+            } catch (Exception ignored) {
+                // 单线路失败换下一条，全失败则由调用方走完整下载
+            }
+        }
+        return null;
     }
 
     /** 刷新下载线路：云端拉 urls.txt → 成功则缓存并返回新名单；失败则用本地缓存；再退内置兜底。 */
