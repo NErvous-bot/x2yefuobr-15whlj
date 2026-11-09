@@ -1120,6 +1120,61 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     const details = [];
     const summary = { generatedAt: Date.now(), books: {} };
     const t0 = Date.now();
+
+    // ── 跨轮次账本：必须在主循环之前加载 ──────────────────────────────
+    // 关键修正（2026-11-10）：账本原实现在主循环之后才读，于是它只能
+    // 「记录」而不能「影响抽样」。PR #10 注释里写的「长期未测源优先」
+    // 因此从未生效——每轮仍从 stride 偏移处顺序消费，从没轮到过的源
+    // 永远排在预算截断之外。
+    // 这里把加载提到抽样之前，让账本里的轮次记录成为真实排序键。
+    const outDir = 'reports';
+    const LEDGER_PATH = outDir + '/freshness-ledger.json';
+    let ledger = { version: 1, rounds: 0, updatedAt: 0, sources: {} };
+    if (fs.existsSync(LEDGER_PATH)) {
+        try {
+            const prev = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
+            if (prev && typeof prev === 'object' && prev.sources) ledger = prev;
+        } catch (e) {
+            console.warn('⚠️ 上轮账本损坏，本轮重建：' + e.message);
+        }
+    }
+    ledger.version = 1;
+    ledger.rounds = (ledger.rounds || 0) + 1;
+    ledger.updatedAt = Date.now();
+    const ROUND = ledger.rounds;
+    const HISTORY_MAX = 8;   // 每源保留最近 8 次有效测量
+    const LEDGER = ledger.sources;
+
+    // 账本键与 details 的 source_url_hash 同口径：norm(url) 的 sha256 前 12 位。
+    // 两侧必须共用这一个函数，否则账本条目和明细行永远对不上。
+    const ledgerKey = (url) => crypto.createHash('sha256').update(url || '').digest('hex').slice(0, 12);
+
+    // 抽样优先级：数值越小越先测。
+    // 主键：曾经被真实请求过的轮次（last_touched_round）。
+    //   = 0  → 账本里没有，或从未发出过请求 → 最稀缺样本，排最前
+    //   > 0  → 上次请求发生在第几轮，越小＝越久没测，越该优先
+    // 关键修正（2026-11-10 实测）：原本用 last_valid_round 排序，
+    // 但真实站点里绝大多数源长期拿不到 valid（parsed 都不一定到），
+    // 它们的 last_valid_round 恒为 0，排序键全部相等 → 稳定排序保持
+    // 原 stride 顺序 → 每轮都砍同一批尾部源。本地连跑三轮实测
+    // 三轮交集 = 三轮并集 = 18，零轮换，覆盖完全不扩张。
+    // 必须用「上次被请求的轮次」而不是「上次有效的轮次」，
+    // 让预算截断砍到刚测过的源，而不是永远砍同一批。
+    const priorityOf = (s) => {
+        const u = norm(s.bookSourceUrl);
+        if (!u) return 0;
+        const rec = LEDGER[ledgerKey(u)];
+        if (!rec) return 0;
+        return rec.last_touched_round || 0;
+    };
+    // 次级排序键：完全同优先级的源，用「距上次出现已过多少轮」打破平局，
+    // 保证连跑多轮也能持续向前推进，不依赖源清单顺序。
+    const tiebreakOf = (s) => {
+        const u = norm(s.bookSourceUrl);
+        if (!u) return 0;
+        const rec = LEDGER[ledgerKey(u)];
+        return rec ? (rec.rounds_since_seen || 0) : 0;
+    };
     
     // 覆盖偏移：每本书从源清单的不同位置开始消费。若每本书都从 #0 开始，
     // 预算截断后所有书只会测到同一批高权重源，低权重源永远无样本——
@@ -1141,8 +1196,19 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         
         const startTime = Date.now();
         const offset = (bi * stride) % Math.max(1, list.length);
-        const queue = offset === 0 ? list.slice() : list.slice(offset).concat(list.slice(0, offset));
+        // stride 轮转 + 账本优先：先按 stride 保证每本书从不同位置铺开，
+        // 再按「从未有效 → 最近最久未有效」稳定排序，使预算截断砍到的
+        // 永远是「刚刚测过」的源，而不是反复砍掉同一批尾部源。
+        const rotated = offset === 0 ? list.slice() : list.slice(offset).concat(list.slice(0, offset));
+        // 稳定排序：Array.prototype.sort 在 Node 20 起是稳定排序，
+        // 同优先级保持 stride 顺序，不破坏铺开效果。
+        const queue = rotated.slice().sort((a, b) => {
+            const pa = priorityOf(a), pb = priorityOf(b);
+            if (pa !== pb) return pa - pb;
+            return tiebreakOf(b) - tiebreakOf(a);   // 越久没出现越靠前
+        });
         bookResult.coverage_start = offset;
+        bookResult.priority_sorted = true;
         if (offset !== 0) console.log('  覆盖窗口起始 #' + offset + '（共 ' + list.length + ' 源，stride ' + stride + '）');
         let idx = 0;
         
@@ -1410,7 +1476,6 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     };
 
     // 输出
-    const outDir = 'reports';
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
     
     fs.writeFileSync(outDir + '/freshness-summary.json', JSON.stringify(summary, null, 1));
@@ -1420,23 +1485,9 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     // 目的：单轮报告会被下一轮覆盖，历史有效结果因此丢失。
     // 账本按 source_url 累积每轮四层结果，并保留最近 N 次有效测量，
     // 使「连续失败」可与「历史有效」分离，长期未测源优先被抽样。
+    // 注意：账本对象与 ROUND 已在主循环之前加载，此处只做聚合与落盘，
+    // 不得再读一次文件——重复读会把上一轮刚写的内容当成「上上轮」。
     try {
-        const LEDGER_PATH = outDir + '/freshness-ledger.json';
-        let ledger = { version: 1, rounds: 0, updatedAt: 0, sources: {} };
-        if (fs.existsSync(LEDGER_PATH)) {
-            try {
-                const prev = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
-                if (prev && typeof prev === 'object' && prev.sources) ledger = prev;
-            } catch (e) {
-                console.warn('⚠️ 上轮账本损坏，本轮重建：' + e.message);
-            }
-        }
-        ledger.version = 1;
-        ledger.rounds = (ledger.rounds || 0) + 1;
-        ledger.updatedAt = Date.now();
-        const ROUND = ledger.rounds;
-        const HISTORY_MAX = 8;   // 每源保留最近 8 次有效测量
-
         // 从本轮 details 聚合到 source_url_hash → 四层状态
         const perSource = {};
         for (const d of details) {
@@ -1457,6 +1508,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
             const s = ledger.sources[hash] || {
                 candidate_rounds: 0, touched_rounds: 0, parsed_rounds: 0, valid_rounds: 0,
                 last_valid_round: 0, last_valid_at: 0, consecutive_failures: 0,
+                last_seen_round: 0, last_touched_round: 0, rounds_since_seen: 0,
                 freshness_history: [], confidence: 'low',
             };
             // Candidate / Touched / Parsed / Valid 分别累加：
@@ -1483,17 +1535,32 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                 }
             } else {
                 // 本轮没拿到有效结论：只累加失败计数，历史保持不动
-                s.consecutive_failures = (s.consecutive_failures || 0) + 1;
-                // 连续 3 轮无有效结论才降级，且不把 result 改成"落后"
+                // 关键修正（2026-11-10 实测）：预算截断 / 未分配到的源
+                // touched === false，它们根本没被请求过，不属于「失败」。
+                // 原实现一律 +1，导致连跑两轮后 679 个源里 661 个
+                // 从未发出请求也被记成 consecutive_failures=2，
+                // 「连续失败」这个指标彻底失真，降级逻辑会被无差别触发。
+                // 只有真的发过请求（touched）且仍未拿到有效结论，才算失败。
+                if (p.touched) {
+                    s.consecutive_failures = (s.consecutive_failures || 0) + 1;
+                }
+                // 连续 3 轮实测无有效结论才降级，且不把 result 改成"落后"
                 if (s.consecutive_failures >= 3 && s.confidence === 'medium') s.confidence = 'low';
             }
+            // 记录本轮是否真的被分配 / 被请求，供下一轮排序与诊断使用
+            s.last_seen_round = ROUND;
+            if (p.touched) s.last_touched_round = ROUND;
             ledger.sources[hash] = s;
         }
 
-        // 本轮未触及的历史源：失败计数 +1（从未出场也要能反映"久未测量"）
+        // 本轮完全没出现的源：只记住「已经多久没被抽到」，不记失败。
+        // 从未出现在 details 里的源什么都没发生，把它算成失败等于
+        // 用「没轮到」伪造「源坏了」。
         for (const [hash, s] of Object.entries(ledger.sources)) {
             if (!perSource[hash]) {
-                s.consecutive_failures = (s.consecutive_failures || 0) + 1;
+                s.rounds_since_seen = (s.rounds_since_seen || 0) + 1;
+            } else {
+                s.rounds_since_seen = 0;
             }
         }
 

@@ -245,6 +245,46 @@ else bad('export-health-json.js', '缺失');
   }
 }
 
+// ============================================================
+// ⑨ 跨轮次账本必须真的能跨轮 —— 两个断链都要锁死
+// ------------------------------------------------------------
+// 实证后果（2026-11-10）：
+//   a) 账本文件没进 `git add` → 每个 CI run 从空账本起步，rounds 永远 1，
+//      last_valid_round / 连续失败 / 未测优先全部失效，四层账本白做。
+//   b) freshness-audit.js 在主循环之后才读账本 → 只能「记录」不能
+//      「影响抽样」，「长期未测源优先」从未生效。
+//   两条都必须有断言，否则以后改回去没人发现。
+{
+  const src = fs.readFileSync('freshness-audit.js', 'utf8');
+  const yml = read('source-audit.yml');
+
+  // a) 账本入库
+  if (/git add[^\n]*freshness-ledger\.json/.test(yml)) ok('source-audit.yml 提交 freshness-ledger.json（账本可跨轮）');
+  else bad('账本未入库', 'git add 缺 freshness-ledger.json → rounds 每轮归 1，账本失效');
+
+  // b) 账本在主循环之前加载
+  const loopIdx = src.search(/for \(const \[bi, book\] of books\.entries\(\)\)/);
+  const loadIdx = src.search(/LEDGER_PATH\s*=\s*outDir \+ '\/freshness-ledger\.json'/);
+  if (loopIdx < 0) bad('未找到主循环', 'freshness-audit.js 结构变了，需重校本条断言');
+  else if (loadIdx < 0) bad('未找到账本加载点', '账本路径构造缺失');
+  else if (loadIdx < loopIdx) ok('账本在主循环之前加载（可影响抽样，不只是记录）');
+  else bad('账本加载位置错误', '加载在第 ' + loadIdx + ' 字符、主循环在第 ' + loopIdx + ' 字符 → 只记录不影响抽样');
+
+  // c) 只加载一次：主循环之后不得再读文件，否则 rounds 会多算一轮
+  const afterLoop = src.slice(loopIdx);
+  const reloads = (afterLoop.match(/readFileSync\(LEDGER_PATH/g) || []).length;
+  if (reloads === 0) ok('主循环之后不再重复读账本（rounds 不重复自增）');
+  else bad('账本被重复读取 ' + reloads + ' 次', '主循环后重复 load 会把上一轮刚写的内容当成上上轮');
+
+  // d) 失败计数只统计真实请求：未请求的源不得计失败
+  if (/if \(p\.touched\) \{\s*s\.consecutive_failures/.test(src)) ok('consecutive_failures 只对 touched 的源累加（未测≠失败）');
+  else bad('失败计数口径错误', '未请求的源被计入 consecutive_failures → 「连续失败」指标失真');
+
+  // e) 排序键必须是「上次请求轮次」而不是「上次有效轮次」
+  if (/rec\.last_touched_round \|\| 0/.test(src)) ok('抽样优先级用 last_touched_round（有效轮次对多数源恒为 0，无法轮换）');
+  else bad('抽样排序键错误', '用 last_valid_round 排序时多数源恒为 0，每轮砍同一批源，覆盖不扩张');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
