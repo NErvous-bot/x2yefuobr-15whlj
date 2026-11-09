@@ -285,6 +285,42 @@ else bad('export-health-json.js', '缺失');
   else bad('抽样排序键错误', '用 last_valid_round 排序时多数源恒为 0，每轮砍同一批源，覆盖不扩张');
 }
 
+// ============================================================
+// ⑩ 选书必须精确同名 + 题库必须被源库覆盖
+// ------------------------------------------------------------
+// 实证后果（2026-11-10，本地实跑）：
+//   a) 「前 6 字包含」当命中 → 快眼看书对《中奖10个亿的老师躺平生活》
+//      返回 100 条、精确同名 0 条，首条是《中奖10个亿的护士躺平生活》
+//      （前 6 字完全一致的另一本书）。拿它的 653 章比 185 章参考值，
+//      再被「超出 20%」降成 unknown，valid 恒为 0。
+//   b) 题库来自番茄实时热榜「正在连载的新书」，盗版源基本不收录：
+//      实测 6 本番茄新书在 25 源里精确命中 0；而经典书目 5-10/10。
+//      题库不被源库覆盖 → 整轮 parsed=0，报告看上去像「源全坏了」。
+{
+  const src = fs.readFileSync('freshness-audit.js', 'utf8');
+  const pick = fs.readFileSync('scripts/pick-books.js', 'utf8');
+
+  // a1) 选书必须是精确同名，不能是模糊包含兜底
+  if (/name === main/.test(src)) ok('选书用精确同名（name === main）');
+  else bad('选书判据', '未使用精确同名 → 近似书名会把外书章节数当成源的数据');
+
+  // a2) 不许再有「兜底取第一个能构造 URL 的」
+  if (!/兜底：第一个能构造 URL/.test(src)) ok('已移除「取第一个能构造 URL」的兜底');
+  else bad('仍有兜底选书', '书名不匹配时会拿任意一本书的数据当测量结果');
+
+  // a3) 书名必须用该源的 name 规则取（items 常是 HTML 字符串，不是对象）
+  if (/pickOne\(f, rs\.name\)/.test(src)) ok('书名用源自身的 ruleSearch.name 取（兼容 HTML 片段）');
+  else bad('书名取法', '只判 typeof===object 会对 HTML 片段一律取空');
+
+  // b1) 题库必须有覆盖率验收
+  if (/coverageHit/.test(pick) && /不入题库/.test(pick)) ok('pick-books 有覆盖率验收（搜不到的书不入题库）');
+  else bad('题库无覆盖率验收', '番茄新书盗版站不收录，会整轮 valid=0');
+
+  // b2) 必须有高覆盖经典书优先池
+  if (/CONST_REF/.test(pick) && /雪中悍刀行/.test(pick)) ok('pick-books 有高覆盖经典书优先池');
+  else bad('缺优先池', '只靠番茄热榜取书，题库长期不可测');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
