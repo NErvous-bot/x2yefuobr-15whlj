@@ -21,6 +21,18 @@ const crypto = require('crypto');
 const { doSearch, fetchPage, selectAll, pickOne, firstHref, originOf, norm, isChallenge, sleep } = require('./aging-test');
 
 const CONC = 2;              // 并发数（防止 OOM）
+
+// 非书源域名黑名单：这些站不是小说站，测了也只会返回"搜索无结果"，
+// 却会占用与真实书源相同的预算槽位。实测 dict.cn 单轮被分到 7 次。
+const NON_BOOK_HOST = /(^|\.)(dict\.cn|iciba\.com|youdao\.com|baidu\.com|zhihu\.com|weibo\.com|bilibili\.com|douban\.com|wikipedia\.org|so\.com|bing\.com|sogou\.com)$/i;
+const isNonBookSource = (url) => {
+    try {
+        const host = new URL(String(url)).hostname;
+        return NON_BOOK_HOST.test(host);
+    } catch (e) {
+        return false;
+    }
+};
 const BUDGET_PER_BOOK = Number(process.env.AUDIT_BUDGET_SEC || 480); // 每本书最多 8 分钟（390 源全量）；冒烟试跑可用 AUDIT_BUDGET_SEC 临时调低
 const CHAPTER_HINT = /第.{1,8}章|^\d{2,5}$/;
 
@@ -1122,6 +1134,9 @@ if (require.main === module && process.argv.includes('--test-t1')) {
             source: book.source, checkedAt: Date.now(),
             bySource: [], medianChapter: 0, maxChapter: 0,
             sourcesChecked: 0, sourcesLagging: 0, sourcesUnknown: 0,
+            // 四层覆盖计数：Candidate → Touched → Parsed → Valid
+            // 把"分配了但没测到""测了但解析失败""解析了但判不了新鲜度"分开统计
+            layers: { candidate: 0, touched: 0, parsed: 0, valid: 0 },
         };
         
         const startTime = Date.now();
@@ -1134,31 +1149,45 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         async function worker() {
             while (idx < queue.length && Date.now() - startTime < BUDGET_PER_BOOK * 1000) {
                 const s = queue[idx++];
+                bookResult.layers.candidate++;
                 const su = norm(s.bookSourceUrl);
                 if (!su) continue;
+                // 非书源直接跳过：不计 touched，避免污染转化率统计
+                if (isNonBookSource(s.bookSourceUrl)) {
+                    details.push({
+                        book_key: book.key,
+                        source_url_hash: crypto.createHash('sha256').update(su).digest('hex').slice(0, 12),
+                        reference_chapter: book.reference, source_chapter: 0,
+                        catalog_checked: false, body_verified: false,
+                        checked_at: Date.now(), result: 'unknown', reason: '非书源(词典/门户站)', touched: false,
+                    });
+                    bookResult.sourcesUnknown++;
+                    continue;
+                }
                 const hash = crypto.createHash('sha256').update(su).digest('hex').slice(0, 12);
                 const base = originOf(s.bookSourceUrl);
                 if (!base) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '无效URL' });
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '无效URL' , touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
                 
                 // 搜索
+                bookResult.layers.touched++;
                 const rs = s.ruleSearch || {};
                 const r1 = await doSearch(s, base, rs, book.title);
                 if (r1.skip) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: r1.skip });
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: r1.skip , touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
                 if (r1.dead) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: r1.dead });
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: r1.dead , touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
                 if (!r1.bl.items.length) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '搜索无结果' });
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '搜索无结果' , touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
@@ -1166,7 +1195,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                 // 取书籍 URL
                 const bookUrl = pickFirstBook(r1, s, base, book.title);
                 if (!bookUrl) {
-                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '无法构造书籍URL' });
+                    details.push({ book_key: book.key, source_url_hash: hash, reference_chapter: book.reference, source_chapter: 0, catalog_checked: false, body_verified: false, checked_at: Date.now(), result: 'unknown', reason: '无法构造书籍URL' , touched: true });
                     bookResult.sourcesUnknown++;
                     continue;
                 }
@@ -1181,6 +1210,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                 let countMismatch = false;   // 源章节数显著高于官方参考 → 口径不可比
                 if (toc.status === 'ok' && toc.chapters > 0) {
                     // 有效源才算 checked
+                    bookResult.layers.parsed++;
                     bookResult.sourcesChecked++;
                     // v1.5 P1-4: 直接消费 toc.pagination_trust（状态机已算好），
                     // 不要从 toc.pages 反推（单页/截断会误判）
@@ -1228,6 +1258,10 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                         else if (diff >= -20) result = 'behind';
                         else result = 'far_behind';
 
+                        // 能形成明确新鲜度结论（result 已知）才计入 valid
+                        if (result !== 'unknown' && confidence !== 'unknown') {
+                            bookResult.layers.valid++;
+                        }
                         bookResult.bySource.push({
                             url: su, hash, name: String(s.bookSourceName || '').slice(0, 25),
                             observed_chapters: toc.chapters, result, diff, ratio,
@@ -1246,6 +1280,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     book_key: book.key, source_url_hash: hash,
                     reference_chapter: book.reference, source_chapter: toc.chapters,
                     catalog_checked: toc.status === 'ok', body_verified: false,
+                    touched: true,
                     checked_at: Date.now(), result,
                     reason: countMismatch ? '章节数超出官方参考 20%（疑似同名书/计数口径不同）' : (toc.status === 'ok' ? '' : toc.reason),
                     pagination_rule_dormant: !!toc.pagination_rule_dormant,
@@ -1268,6 +1303,7 @@ if (require.main === module && process.argv.includes('--test-t1')) {
                     book_key: book.key, source_url_hash: hash,
                     reference_chapter: book.reference, source_chapter: 0,
                     catalog_checked: false, body_verified: false,
+                    touched: false,
                     checked_at: Date.now(), result: 'unknown',
                     reason: budgetTruncated ? '时间预算截断（剩余源未测）' : '源队列剩余未消费',
                 });
@@ -1341,6 +1377,18 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         const k = d.reason.startsWith('时间预算截断') ? '时间预算截断（剩余源未测）' : d.reason;
         reasonBuckets[k] = (reasonBuckets[k] || 0) + 1;
     }
+    // 四层覆盖汇总：Candidate → Touched → Parsed → Valid
+    // 关键：把「分配了但没测」和「测了但解析失败」区分开，
+    // 否则 attempts 永远无法解释成「有效测量了多少个源」。
+    const layerTotals = { candidate: 0, touched: 0, parsed: 0, valid: 0 };
+    for (const b of Object.values(summary.books)) {
+        const L = b.layers || {};
+        layerTotals.candidate += L.candidate || 0;
+        layerTotals.touched += L.touched || 0;
+        layerTotals.parsed += L.parsed || 0;
+        layerTotals.valid += L.valid || 0;
+    }
+    const pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
     summary.totals = {
         books: books.length,
         sourcesInList: list.length,
@@ -1351,6 +1399,14 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         failureReasons: reasonBuckets,
         budgetSecPerBook: BUDGET_PER_BOOK,
         elapsedSec: Math.round((Date.now() - t0) / 1000),
+        // 四层计数与转化率：一眼看出预算浪费在哪一层
+        layers: {
+            ...layerTotals,
+            touchRate: pct(layerTotals.touched, layerTotals.candidate),
+            parseRate: pct(layerTotals.parsed, layerTotals.touched),
+            validRate: pct(layerTotals.valid, layerTotals.parsed),
+            overallRate: pct(layerTotals.valid, layerTotals.candidate),
+        },
     };
 
     // 输出
@@ -1359,11 +1415,113 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     
     fs.writeFileSync(outDir + '/freshness-summary.json', JSON.stringify(summary, null, 1));
     console.log('\n✅ reports/freshness-summary.json');
+
+    // ── 跨轮次账本（Cross-Round Ledger）──────────────────────────────
+    // 目的：单轮报告会被下一轮覆盖，历史有效结果因此丢失。
+    // 账本按 source_url 累积每轮四层结果，并保留最近 N 次有效测量，
+    // 使「连续失败」可与「历史有效」分离，长期未测源优先被抽样。
+    try {
+        const LEDGER_PATH = outDir + '/freshness-ledger.json';
+        let ledger = { version: 1, rounds: 0, updatedAt: 0, sources: {} };
+        if (fs.existsSync(LEDGER_PATH)) {
+            try {
+                const prev = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
+                if (prev && typeof prev === 'object' && prev.sources) ledger = prev;
+            } catch (e) {
+                console.warn('⚠️ 上轮账本损坏，本轮重建：' + e.message);
+            }
+        }
+        ledger.version = 1;
+        ledger.rounds = (ledger.rounds || 0) + 1;
+        ledger.updatedAt = Date.now();
+        const ROUND = ledger.rounds;
+        const HISTORY_MAX = 8;   // 每源保留最近 8 次有效测量
+
+        // 从本轮 details 聚合到 source_url_hash → 四层状态
+        const perSource = {};
+        for (const d of details) {
+            const h = d.source_url_hash;
+            if (!h) continue;
+            if (!perSource[h]) {
+                perSource[h] = { candidate: false, touched: false, parsed: false, valid: false, last: null };
+            }
+            const p = perSource[h];
+            p.candidate = true;
+            // touched 必须来自真实请求标记；预算截断与非书源为 false
+            if (d.touched === true) p.touched = true;
+            if (d.catalog_checked) p.parsed = true;
+            if (d.result && d.result !== 'unknown') { p.valid = true; p.last = d; }
+        }
+
+        for (const [hash, p] of Object.entries(perSource)) {
+            const s = ledger.sources[hash] || {
+                candidate_rounds: 0, touched_rounds: 0, parsed_rounds: 0, valid_rounds: 0,
+                last_valid_round: 0, last_valid_at: 0, consecutive_failures: 0,
+                freshness_history: [], confidence: 'low',
+            };
+            // Candidate / Touched / Parsed / Valid 分别累加：
+            // 只有该层本轮真的到达才 +1，避免把「分配但没测」算成有效覆盖
+            if (p.candidate) s.candidate_rounds++;
+            if (p.touched) s.touched_rounds++;        // 只统计真的发过请求的
+            if (p.parsed) s.parsed_rounds++;
+            if (p.valid) {
+                s.valid_rounds++;
+                s.last_valid_round = ROUND;
+                s.last_valid_at = Date.now();
+                s.consecutive_failures = 0;          // 有效即清零
+                s.confidence = (p.last && p.last.confidence) || 'low';
+                // 历史有效结果只追加，不被失败覆盖
+                s.freshness_history.push({
+                    round: ROUND,
+                    result: p.last ? p.last.result : 'unknown',
+                    diff: p.last && typeof p.last.diff === 'number' ? p.last.diff : null,
+                    observed: p.last ? p.last.source_chapter : 0,
+                    reference: p.last ? p.last.reference_chapter : 0,
+                });
+                if (s.freshness_history.length > HISTORY_MAX) {
+                    s.freshness_history = s.freshness_history.slice(-HISTORY_MAX);
+                }
+            } else {
+                // 本轮没拿到有效结论：只累加失败计数，历史保持不动
+                s.consecutive_failures = (s.consecutive_failures || 0) + 1;
+                // 连续 3 轮无有效结论才降级，且不把 result 改成"落后"
+                if (s.consecutive_failures >= 3 && s.confidence === 'medium') s.confidence = 'low';
+            }
+            ledger.sources[hash] = s;
+        }
+
+        // 本轮未触及的历史源：失败计数 +1（从未出场也要能反映"久未测量"）
+        for (const [hash, s] of Object.entries(ledger.sources)) {
+            if (!perSource[hash]) {
+                s.consecutive_failures = (s.consecutive_failures || 0) + 1;
+            }
+        }
+
+        fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 1));
+        const stat = {
+            total: Object.keys(ledger.sources).length,
+            validEver: Object.values(ledger.sources).filter(x => x.valid_rounds > 0).length,
+            neverValid: Object.values(ledger.sources).filter(x => x.valid_rounds === 0).length,
+            stale: Object.values(ledger.sources).filter(x => x.consecutive_failures >= 3).length,
+        };
+        console.log('📒 reports/freshness-ledger.json（第 ' + ROUND + ' 轮）');
+        console.log('   累计源 ' + stat.total + '，曾有效 ' + stat.validEver +
+            '，从未有效 ' + stat.neverValid + '，连续失败≥3 ' + stat.stale);
+    } catch (e) {
+        // 账本失败不阻断主流程：summary 已经落盘，本轮判定仍可用
+        console.warn('⚠️ 跨轮次账本更新失败（不影响本轮结果）：' + e.message);
+    }
     {
         const T = summary.totals;
         console.log('📊 本轮汇总：' + T.books + ' 本书 × ' + T.sourcesInList + ' 源，样本 ' + T.samples +
             '，有效样本 ' + T.measuredSamples + '，覆盖源 ' + T.uniqueSourcesSampled +
             '，其中有实测 ' + T.uniqueSourcesMeasured + '，耗时 ' + T.elapsedSec + 's');
+        if (T.layers) {
+            const L = T.layers;
+            console.log('   四层覆盖：Candidate ' + L.candidate + ' → Touched ' + L.touched +
+                ' (' + L.touchRate + '%) → Parsed ' + L.parsed + ' (' + L.parseRate + '%) → Valid ' +
+                L.valid + ' (' + L.validRate + '%)  | 端到端 ' + L.overallRate + '%');
+        }
         const top = Object.entries(T.failureReasons).sort((a, b) => b[1] - a[1]).slice(0, 3);
         if (top.length) console.log('   主要失败原因：' + top.map(([k, v]) => k + '×' + v).join('；'));
     }
