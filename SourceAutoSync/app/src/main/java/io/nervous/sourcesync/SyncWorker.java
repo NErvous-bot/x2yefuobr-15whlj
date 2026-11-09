@@ -446,11 +446,17 @@ public class SyncWorker extends Worker {
             done(false, "失败：" + (m == null ? e.getClass().getSimpleName() : m));
             r = Result.failure();
         }
-        // 固定 05:00：24h 周期任务每次从「上次执行完成」重新计时，越跑越偏；
-        // v3.20 改成一次性任务链——本轮成功后自行预约下一次 05:00 的检查。
-        if (r instanceof Result.Success
-                && !"manual".equals(getInputData().getString("mode"))) {
-            scheduleNextDaily();
+        // v3.22 修复：任务链原先只在 Result.Success 时预约下一次，
+        // 一旦某轮失败（网络/验证码/服务端 5xx）链条就永久断开，
+        // 表现是「后台通知突然没了」——其实是任务根本没再跑。
+        // 现在无论成功、失败还是 retry，都把下一次 05:00 排上；
+        // scheduleNextDaily 用 REPLACE 语义，重复预约只保留最后一次，不会堆积。
+        try {
+            if (!"manual".equals(getInputData().getString("mode"))) {
+                scheduleNextDaily();
+            }
+        } catch (Exception ignored) {
+            // 预约失败不能把本轮结果改成失败：本轮已经跑完并把状态写进历史了
         }
         return r;
     }
@@ -470,6 +476,30 @@ public class SyncWorker extends Worker {
                                             30, TimeUnit.MINUTES)
                                     .build());
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * v3.22：供 BootReceiver 调用的静态入口。
+     * 开机广播或应用更新广播到达时没有 WorkManager 实例上下文可用，
+     * 必须能在不构造 Worker 的情况下重新排上每日任务——
+     * 否则用户重启手机后任务链不会自动恢复（表现为「过几天就再没通知」）。
+     */
+    static void scheduleDailyFrom(Context context) {
+        try {
+            androidx.work.WorkManager.getInstance(context)
+                    .enqueueUniqueWork("daily-next",
+                            androidx.work.ExistingWorkPolicy.REPLACE,
+                            new androidx.work.OneTimeWorkRequest.Builder(SyncWorker.class)
+                                    .setInitialDelay(delayUntilNext5am(), TimeUnit.MILLISECONDS)
+                                    .setConstraints(new androidx.work.Constraints.Builder()
+                                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                            .build())
+                                    .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                            30, TimeUnit.MINUTES)
+                                    .build());
+        } catch (Exception ignored) {
+            // 排程失败不抛给调用方：开机广播里崩溃会被系统认为应用异常
+        }
     }
 
     /** 距下一个 05:00 的毫秒数；与 MainActivity 共用同一份算法 */
@@ -1231,6 +1261,21 @@ public class SyncWorker extends Worker {
         if (!ok && getRunAttemptCount() > 0) return;
         try {
             Context ctx = getApplicationContext();
+
+            // v3.22：通知失败不再静默。Android 13+ 未授予 POST_NOTIFICATIONS，
+            // 或用户在系统里关掉了本应用通知渠道，都会让 notify() 无声失败；
+            // 这里显式判断并把原因写进同步历史，避免「以为发了其实没发」。
+            if (androidx.core.content.ContextCompat.checkSelfPermission(ctx,
+                    android.Manifest.permission.POST_NOTIFICATIONS)
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                saveQuiet("通知未授权（Android 13+ 需在系统设置里允许通知）");
+                return;
+            }
+            if (!androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled()) {
+                saveQuiet("系统已关闭本应用通知，跳过提示");
+                return;
+            }
+
             android.app.NotificationManager nm = (android.app.NotificationManager)
                     ctx.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.createNotificationChannel(new android.app.NotificationChannel(
@@ -1248,7 +1293,15 @@ public class SyncWorker extends Worker {
                     .setAutoCancel(true)
                     .build();
             nm.notify(1001, n);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // v3.22：原先 catch (Exception ignored) 会把通知失败彻底吞掉，
+            // 用户永远不知道「同步完成了但没提示」。现在记一条到历史。
+            try {
+                saveQuiet("通知发送失败：" + e.getClass().getSimpleName());
+            } catch (Exception ignored2) {
+                // 连写历史都失败时保持安静，不能影响 doWork 返回值
+            }
+        }
     }
 
     // ============================================================

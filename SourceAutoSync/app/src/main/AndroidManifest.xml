@@ -4,6 +4,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 13+ 通知运行时权限：同步结束后发系统通知用 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- v3.22：开机/更新后重建每日任务链，否则重启一次就永久断链 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- v3.22：允许应用直接弹出「忽略电池优化」系统对话框。
+         国产 ROM 不忽略电池优化时会在后台清掉 WorkManager。 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- 精确可见性：只声明阅读App的包名与其ContentProvider，
          替代 QUERY_ALL_PACKAGES（避免被国产安全软件标记"获取全部应用列表"） -->
@@ -44,5 +49,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- v3.22：开机与覆盖安装后恢复每日任务链（只排程，不执行同步） -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -71,6 +71,11 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
         }
 
+        // v3.22：请求忽略电池优化。国产 ROM（vivo/OPPO/小米）在「智能省电」下
+        // 会在后台清掉 WorkManager，任务链随之断掉——用户感知就是「没通知了」。
+        // 系统弹框只出现一次，用户拒绝后不再打扰；后续可在系统设置里手动开。
+        ensureBatteryOptimizationIgnored();
+
         // manual sync button (ignores schedule, syncs immediately)
         findViewById(R.id.syncNow).setOnClickListener(v -> {
             WorkManager.getInstance(this).enqueueUniqueWork("manual",
@@ -164,4 +169,44 @@ public class MainActivity extends Activity {
         poll.removeCallbacks(pollTask);
         queryExec.shutdownNow();
     }
+
+    /**
+     * v3.22：请求忽略电池优化。
+     * 已豁免或系统不支持时静默跳过；用户拒绝不重复打扰。
+     */
+    private void ensureBatteryOptimizationIgnored() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return;
+            android.os.PowerManager pm =
+                    (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            if (pm == null) return;
+            if (pm.isIgnoringBatteryOptimizations(getPackageName())) return;
+
+            android.content.Intent i = new android.content.Intent();
+            i.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            i.setData(android.net.Uri.parse("package:" + getPackageName()));
+            startActivity(i);
+        } catch (Exception ignored) {
+            // 部分 ROM 没有该 Activity：不影响同步，只是可能被省电策略延后
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != 1 || permissions == null || permissions.length == 0) return;
+        boolean granted = grantResults != null && grantResults.length > 0
+                && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        // v3.22：拒绝通知不是错误，但要让用户知道「同步会静默完成」，
+        // 而不是以为功能坏了。
+        refresh();
+        if (!granted) {
+            try {
+                android.widget.Toast.makeText(this,
+                        "未授予通知权限：同步仍会执行，但不会弹出提示",
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {}
+        }
+    }
+
 }
