@@ -1555,6 +1555,99 @@ if (require.main === module && process.argv.includes('--test-t1')) {
         if (chapters.length) {
             bookResult.medianChapter = chapters[Math.floor(chapters.length / 2)];
             bookResult.maxChapter = chapters[chapters.length - 1];
+
+            // ── 自校准：用本轮实测反推参考章节数，再重判偏差样本 ──────────
+            // 2026-11-10 实测发现的根本问题：人工填写的绝对 reference 靠不住。
+            // 《斗罗大陆》一书在不同站点实测到 236 / 336 / 711 三种值，
+            // 全都「对」——分别对应原著分卷口径、通行口径、以及单章被拆成
+            // 多个子节的站点。拿任何一个绝对值去判其它源，都会把一整批
+            // 正确源判成「领先 111%」或「落后 53%」，进而误判源质量。
+            //
+            // 正确做法：同一本书在同一轮里，各源报的章节数应当聚成一簇。
+            // 用「本轮已测样本的众数」当临时基准，把明显离群（>3 倍或 <1/3）
+            // 的样本标为口径不可比，避免它们污染判断；其余按相对位置判。
+            // 人工 reference 保留为「先验」，但只在与实测共识一致时才采信。
+            const consensus = (() => {
+                if (!chapters.length) return null;
+                const cnt = new Map();
+                for (const v of chapters) cnt.set(v, (cnt.get(v) || 0) + 1);
+                let mode = null;
+                let bestN = 0;
+                for (const [v, c] of cnt) {
+                    if (c > bestN || (c === bestN && v < mode)) {
+                        mode = v;
+                        bestN = c;
+                    }
+                }
+                return { mode, count: bestN, total: chapters.length };
+            })();
+
+            if (consensus) {
+                bookResult.consensusChapters = consensus.mode;
+                bookResult.consensusAgreement = consensus.count + '/' + consensus.total;
+                // 实测共识 vs 人工先验：偏差超过 20% 就明确标出来，
+                // 这类书目的 reference 需要按默认值重标（我们不再手工维护绝对值）。
+                const priorDelta = book.reference > 0
+                    ? Math.round(((consensus.mode - book.reference) / book.reference) * 1000) / 10
+                    : 0;
+                bookResult.referencePriorDeltaPct = priorDelta;
+                if (Math.abs(priorDelta) > 20) {
+                    bookResult.referenceDrift = {
+                        prior: book.reference,
+                        measured: consensus.mode,
+                        deltaPct: priorDelta,
+                        note: '人工先验与实测共识偏差 >20%，判定已改用实测共识',
+                    };
+                    console.log('  ⚠️ 参考值漂移：人工 ' + book.reference + ' 章 vs 实测共识 ' +
+                        consensus.mode + ' 章（' + priorDelta + '%），本报告按实测共识判定');
+                }
+
+                // 用共识重判：离群样本（口径不可比）降为 unknown 并不计入滞后；
+                // 其余样本的 result 必须按**共识**重新分类，不能沿用按人工先验
+                // 算出来的旧 result —— 否则会出现「ratio_vs_consensus≈1.0 却判
+                // far_behind」这种自相矛盾的结论（实测《神墓》：人工 900、
+                // 实测共识 788，该源报 788 却仍被判 far_behind）。
+                let reassigned = 0;
+                let reclassified = 0;
+                for (const x of bookResult.bySource) {
+                    const r = x.observed_chapters / consensus.mode;
+                    x.ratio_vs_consensus = Math.round(r * 1000) / 1000;
+                    if (r > 3 || r < 1 / 3) {
+                        // 数量级差 3 倍以上：拆章/合章/续集拼接，口径不可比
+                        x.result = 'unknown';
+                        x.reason_incomparable = '与实测共识 ' + consensus.mode + ' 章相差 ' +
+                            Math.round(r * 100) + '%，口径不可比';
+                        reassigned++;
+                        continue;
+                    }
+                    // 按共识重新套用同一套阈值（与先验判定保持完全一致的语义）
+                    const before = x.result;
+                    let nr;
+                    if (r >= 1) nr = 'leading_or_match';
+                    else if (r >= 0.98) nr = 'slightly_behind';
+                    else if (r >= 0.9) nr = 'behind';
+                    else nr = 'far_behind';
+                    if (nr !== before) {
+                        x.result = nr;
+                        x.result_before_consensus = before;
+                        reclassified++;
+                    }
+                }
+                bookResult.reclassifiedByConsensus = reclassified;
+                // 重判后把 unknown 的从 bySource 的统计口径里剔除
+                if (reassigned > 0) {
+                    bookResult.sourcesChecked -= reassigned;
+                    bookResult.sourcesUnknown += reassigned;
+                    bookResult.incomparableDropped = reassigned;
+                    bookResult.bySource = bookResult.bySource.filter((x) => x.result !== 'unknown');
+                    console.log('  ⚠️ 口径不可比剔除 ' + reassigned + ' 个源（与共识 ' +
+                        consensus.mode + ' 章差 3 倍以上）');
+                }
+                if (reclassified > 0) {
+                    console.log('  ↻ 按实测共识重判 ' + reclassified + ' 个源的领先/滞后等级');
+                }
+            }
+
             const laggers = bookResult.bySource.filter(x => ['behind', 'far_behind'].includes(x.result));
             bookResult.sourcesLagging = laggers.length;
             // v1.5 #1: 按 confidence 拆分——medium+high 才算"可靠滞后"
@@ -2961,3 +3054,9 @@ async function runPaginationProbe() {
 }
 
 /* ---------- T3 入口已在 L1055 的 else-if 链中处理，此处不再重复 ---------- */
+
+// 供 scripts/calibrate-reference.js 复用完整分页状态机。
+// 标定 reference 章节数时必须走 getToc，不能用「取首屏 li 数量」的简版逻辑：
+// 分页源首屏只有一页，简版会返回 MAX_PAGES 截断值（历史教训：《剑来》
+// 被填成 1100，真实 1307；《斗罗大陆》被填成 400，真实 336）。
+module.exports = { getToc, pickBookForTitle };

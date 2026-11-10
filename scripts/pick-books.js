@@ -1,16 +1,38 @@
-// scripts/pick-books.js — 从番茄实时更新热榜抽取活跃连载书，生成追更诊断题库 books.json
-// 只写 books.json（freshness-audit.js 的输入），绝不修改 legado.json / 权重 / 评分
+// scripts/pick-books.js — 生成追更诊断题库 books.json（freshness-audit.js 的输入）
+// 只写 books.json，绝不修改 legado.json / 权重 / 评分
 //
 // 用法：
-//   node scripts/pick-books.js [--count=20] [--out=books.json] [--min-chapters=50] [--polls=4]
+//   node scripts/pick-books.js [--count=20] [--out=books.json] [--polls=4]
+//   node scripts/pick-books.js --mode=classic    # 只用完结老书（默认）
+//   node scripts/pick-books.js --mode=fanqie     # 只用番茄热榜（旧行为，不推荐）
+//   node scripts/pick-books.js --mode=mixed      # 老书为主，不足时用番茄补齐
 //
-// 口径：
-//   - 书源：番茄官方「最近更新」+「热门推荐」两个稳定接口，天然是在更书，
-//     避免用完结书残留数据误判死源（分类榜接口有反爬限流，返回空列表，故不采用）
-//   - 最近更新是滚动 feed，单次仅 20 条；多次轮询（默认 4 次，间隔 5s）可累计 ~70 本候选
-//   - reference：书页 chapterTotal（官方章节总数，含感言等条目，与各源目录计数同口径）
-//   - 仅保留 creationStatus=1（连载中）
-//   - 按分类轮询取样，保证题材分散；同 bookId 去重
+// ══ 为什么默认改成「完结老书」（2026-11-10，P0 实测结论）══════════════
+//
+// 旧默认用番茄实时热榜取书。实测结果是整轮 freshness 端到端 0%：
+//   20 本番茄热榜书 × 679 源 = 13580 样本，parsed 0，valid 0。
+// 原因不是源坏了，是**这些书在别的网站根本不存在**——番茄独家首发，
+// 第三方聚合站无从收录。于是每一轮都在测「这本书有没有被人搬」，
+// 而不是在测「源本身健不健康」。
+//
+// 换用完结老书后同条件实测（3 本经典，120s 预算）：
+//   Candidate 313 → Touched 310 → Parsed 9 → Valid 6（端到端 1.9%）
+// 且成功样本全是 leading_or_match，章节数与参考几乎一致——源是好的，
+// 只是之前从来没被问对问题。
+//
+// 选「完结」而不是「连载」还有两个附带好处：
+//   1) 章节总数恒定，不会因为站点更新节奏不同造成假「落后」
+//   2) 老书全网转载多，能真正拉开「哪些源收录全、哪些源缺章」的差距
+//
+// ══ 关于 reference（参考章节数）══════════════════════════════════════
+// 人工填的绝对值不可靠，实测已有反例：《斗罗大陆》在不同站点分别报出
+// 236 / 336 / 711 三种章节数，全都「对」——分别对应原著分卷口径、
+// 通行口径、以及把单章拆成多个子节的站点。
+// 所以：
+//   · reference 在这里只作为**先验**写入（供 freshness-audit 对照）
+//   · 真正的判定基准由 freshness-audit 用「本轮实测众数」自校准
+//   · 两者偏差 >20% 时报告会明确标出 referenceDrift，不再静默误判
+// 想重新标定某本书的真实值：node scripts/calibrate-reference.js "书名"
 const fs = require('fs');
 const vm = require('vm');
 
@@ -25,6 +47,8 @@ const COUNT = Number(arg('count', 20));
 const OUT = arg('out', 'books.json');
 const MIN_CHAPTERS = Number(arg('min-chapters', 50));
 const POLLS = Number(arg('polls', 4));
+// 取书模式：classic=只用完结老书（默认）；fanqie=旧行为；mixed=老书为主+番茄补齐
+const MODE = arg('mode', 'classic');
 // 低于此样本量不做诊断，宁可失败也不产出不可信报告。
 // 但试跑（--count 很小）时不该被固定下限卡死，故下限跟随 COUNT 缩放：
 // 正式 20 本 → 下限 15；--count=4 试跑 → 下限 3。
@@ -61,8 +85,18 @@ async function bookMeta(bookId) {
 }
 
 (async () => {
-    console.log('━━━━ 番茄实时热榜取书 ━━━━');
+    const picked = [];
+    const sampledAt = new Date().toLocaleString('zh-CN', { hour12: false });
+
+    // ══ 番茄热榜取书（仅在 fanqie / mixed 模式下拉取）══════════════════
+    // classic 模式下完全不碰番茄接口：既省时间，也避免「热榜独家书
+    // 混进题库」——那正是端到端 0% 的根因。
+    const wantFanqie = MODE === 'fanqie' || MODE === 'mixed';
+    if (wantFanqie) {
+        console.log('━━━━ 番茄实时热榜取书（mode=' + MODE + '）━━━━');
+    }
     const rows = [];
+    if (wantFanqie) {
     try {
         const seenPoll = new Set();
         for (let i = 0; i < POLLS; i++) {
@@ -87,6 +121,7 @@ async function bookMeta(bookId) {
         console.log('热门推荐条目 ' + list.length + ' 条');
     } catch (e) {
         console.log('热门推荐接口失败（继续用最近更新）: ' + e.message);
+    }
     }
 
     // 去重 + 按分类分组
@@ -113,9 +148,6 @@ async function bookMeta(bookId) {
         if (!added) break;
         round++;
     }
-
-    const picked = [];
-    const sampledAt = new Date().toLocaleString('zh-CN', { hour12: false });
 
     // ── 优先补一批「源库高覆盖」书目（2026-11-10，P0）──────────────────
     // 实测（各取前 10 个有效源，统计精确同名命中数）：
@@ -164,20 +196,28 @@ async function bookMeta(bookId) {
         ['庆余年', 700, '历史'],          // 实测 4/10
         ['赘婿', 500, '历史']            // 实测 4/10
     ];
-    const useConst = String(process.env.BOOKS_CONST_POOL || '1') !== '0';
+    // ── 主池：完结老书（mode=classic 时这是唯一来源）──────────────────
+    // 为什么用完结书而不是连载：见文件头「为什么默认改成完结老书」。
+    // 简版：番茄热榜独家书在第三方站搜不到，测出来的 0% 是选书问题不是源问题。
+    const useConst = MODE === 'classic' || MODE === 'mixed'
+        ? String(process.env.BOOKS_CONST_POOL || '1') !== '0'
+        : false;
     if (useConst) {
-        for (const [title, ref, genre] of CONST_REF) {
+        // 打散顺序，避免每轮都固定取前 N 本（否则永远只测那几本书，
+        // 账本轮换就失去意义）
+        const pool = CONST_REF.slice().sort(() => Math.random() - 0.5);
+        for (const [title, ref, genre] of pool) {
             if (picked.length >= COUNT) break;
             picked.push({
                 key: 'cn_' + Buffer.from(title).toString('hex').slice(0, 16),
                 title,
                 reference: ref,
-                source: '经典书目（人工核对章节总数）',
+                source: '经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）',
                 genre,
                 sampledAt
             });
         }
-        console.log('优先池：' + picked.length + ' 本经典书（源库覆盖率实测 5-10/10）');
+        console.log('主池：' + picked.length + ' 本完结老书（mode=' + MODE + '）');
     }
 
     for (let i = 0; i < candidates.length && picked.length < COUNT; i += 3) {

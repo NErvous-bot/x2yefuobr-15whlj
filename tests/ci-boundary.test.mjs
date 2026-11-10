@@ -482,6 +482,58 @@ else bad('export-health-json.js', '缺失');
   else bad('线路过少', '仅 ' + active.length + ' 条，单点故障风险');
 }
 
+// ============================================================
+// ⑯ 追更题库必须以「完结老书」为主，且判定基准不依赖人工绝对值
+// ------------------------------------------------------------
+// 2026-11-10 实测教训（这是本仓库最贵的一课）：
+//   旧题库全部来自番茄实时热榜，20 本独家新书 × 679 源 = 13580 样本，
+//   parsed 0 / valid 0，整轮端到端 0%。
+//   换完结老书后同条件：Candidate 229 → Parsed 19 → Valid 16（7%）。
+//   差别不在源，而在「问的问题」：番茄独家书第三方站根本不收录。
+//
+// 另外人工填的 reference 也不可靠：《斗罗大陆》在不同站点分别报
+// 236 / 336 / 711 章，全都对（分卷/通行/拆章三种口径）。所以判定基准
+// 必须由 freshness-audit 用本轮实测共识自校准，不能只信人工值。
+{
+  const pick = fs.existsSync('scripts/pick-books.js')
+    ? fs.readFileSync('scripts/pick-books.js', 'utf8')
+    : '';
+  const audit = fs.readFileSync('freshness-audit.js', 'utf8');
+
+  // 默认模式必须是 classic（完结老书）
+  if (/const MODE = arg\('mode',\s*'classic'\)/.test(pick))
+    ok("pick-books.js 默认 mode=classic（完结老书，不依赖番茄热榜）");
+  else bad('题库默认模式', "默认应为 classic；热榜独家书在第三方站搜不到");
+
+  // 番茄接口必须只在 fanqie/mixed 下才拉
+  if (/const wantFanqie = MODE === 'fanqie' \|\| MODE === 'mixed'/.test(pick))
+    ok('番茄接口仅在 fanqie/mixed 模式下拉取（classic 不碰）');
+  else bad('番茄接口未隔离', 'classic 模式仍会请求番茄，属回归');
+
+  // 判定基准必须用实测共识重判，而不只是算个比值
+  if (/reclassifiedByConsensus/.test(audit))
+    ok('按实测共识重判领先/滞后等级（不只是算比值）');
+  else bad('未按共识重判', '只改 ratio 不改 result 会出现 ratio≈1 却判 far_behind');
+
+  // 口径不可比必须显式剔除，不能污染滞后统计
+  if (/incomparableDropped/.test(audit))
+    ok('口径不可比样本显式剔除（拆章/合章不污染判定）');
+  else bad('未剔除不可比样本', '3 倍以上的章数差应降 unknown');
+
+  // reference 漂移必须留痕，不能静默
+  if (/referenceDrift/.test(audit))
+    ok('人工先验与实测共识偏差 >20% 时留痕（referenceDrift）');
+  else bad('漂移不留痕', '先验错了却不报告，等于继续误判');
+
+  // 题库不得再出现番茄独家书
+  if (fs.existsSync('books.json')) {
+    const books = JSON.parse(fs.readFileSync('books.json', 'utf8'));
+    const fq = books.filter((b) => /^fq_/.test(b.key) || /番茄/.test(b.source || '')).length;
+    if (fq === 0) ok('books.json 无番茄独家书（' + books.length + ' 本全部为完结老书）');
+    else bad('题库含番茄书', fq + ' 本来自番茄热榜，会拉低整轮覆盖率');
+  }
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
