@@ -1,10 +1,21 @@
 # 镜像线路名单（每行一条，App 每次同步前自动拉取本文件）
 # 顺序即优先级：前面的先试。GitHub Actions 每3天自动探活剔除死线。
 # 手动维护：直接编辑本文件提交即可，手机App下次同步自动生效，无需重装。
-https://ghproxy.net/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
-https://ghfast.top/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
-https://gh-proxy.com/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
+#
+# ── 2026-11-10 全线路实测重排（Android UA，逐条取 legado.json）──
+# 结论：直连 raw 最快；两个 jsDelivr 边缘节点并列第二；
+#       ghproxy.net 尚可用但偏慢；gh-proxy.com 单次 17s（列入末位兜底）；
+#       ghfast.top 已完全失效（10.5s 后仍 DEAD），本轮移除。
+# 顺序按「实测耗时」排，缩短手机端拿到书源的等待时间。
+#   raw.githubusercontent.com              ~1.6s   679 源
+#   testingcf.jsdelivr.net                 ~1.3s   679 源
+#   fastly.jsdelivr.net                    ~2.6s   679 源
+#   gcore.jsdelivr.net                     ~3.1s   679 源
+#   ghproxy.net                            ~3.3s   679 源
+#   gh-proxy.com                          ~17.0s   679 源（慢，仅作末位兜底）
 https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
-https://gcore.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
-https://fastly.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
 https://testingcf.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
+https://fastly.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
+https://gcore.jsdelivr.net/gh/NErvous-bot/x2yefuobr-15whlj@main/legado.json
+https://ghproxy.net/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json
+https://gh-proxy.com/https://raw.githubusercontent.com/NErvous-bot/x2yefuobr-15whlj/main/legado.json

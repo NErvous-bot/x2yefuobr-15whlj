@@ -106,13 +106,17 @@ public class SyncWorker extends Worker {
         };
     }
 
+    // 兜底线路（仅当 urls.txt 锚点拉不到时才用，正常情况下线路由仓库 urls.txt 决定）。
+    // v3.26 按 2026-11-10 实测重排：直连 raw 最快(~1.6s)，jsDelivr 边缘次之，
+    // ghproxy.net 偏慢(~3.3s)，gh-proxy.com 单次 17s 仅作末位；
+    // ghfast.top 实测已完全失效（10.5s 后仍 DEAD），从兜底里移除，
+    // 否则每次拉不到锚点都要白等 10 秒才轮到下一条。
     private static String[] defaultLines(String repo) {
         return new String[]{
-                "https://ghproxy.net/" + GH_RAW + repo + "/main/legado.json",
-                "https://ghfast.top/" + GH_RAW + repo + "/main/legado.json",
-                "https://gh-proxy.com/" + GH_RAW + repo + "/main/legado.json",
+                GH_RAW + repo + "/main/legado.json",
                 GH_JSD + repo + "@main/legado.json",
-                GH_RAW + repo + "/main/legado.json"
+                "https://ghproxy.net/" + GH_RAW + repo + "/main/legado.json",
+                "https://gh-proxy.com/" + GH_RAW + repo + "/main/legado.json"
         };
     }
 

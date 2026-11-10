@@ -448,6 +448,48 @@ else bad('export-health-json.js', '缺失');
   else bad('子集未入库', '生成了但没提交，公开仓库拿不到可分发版本');
 }
 
+// ============================================================
+// ⑮ 同步线路不得含已知死线（实测驱动）
+// ------------------------------------------------------------
+// 2026-11-10 逐条实测（Android UA，取 legado.json）：
+//   raw.githubusercontent.com   ~1.6s  200  679 源
+//   testingcf.jsdelivr.net      ~1.3s  200  679 源
+//   fastly.jsdelivr.net         ~2.6s  200  679 源
+//   gcore.jsdelivr.net          ~3.1s  200  679 源
+//   ghproxy.net                 ~3.3s  200  679 源
+//   gh-proxy.com               ~17.0s  200  679 源  ← 能通但极慢，只配末位
+//   ghfast.top                 DEAD (10.5s 超时)
+// 死线路挂在 urls.txt / defaultLines 里的代价是用户每次同步白等 10 秒。
+{
+  const urls = fs.existsSync('urls.txt') ? fs.readFileSync('urls.txt', 'utf8') : '';
+  const sync = fs.readFileSync('SourceAutoSync/app/src/main/java/io/nervous/sourcesync/SyncWorker.java', 'utf8');
+  // 取 SyncWorker 里 defaultLines 那一段，避免注释里提到域名造成误判
+  const dlMatch = sync.match(/private static String\[\] defaultLines[\s\S]*?\n    \}/);
+  const dl = dlMatch ? dlMatch[0] : '';
+
+  const deadHosts = ['ghfast.top'];
+  const violations = [];
+  for (const d of deadHosts) {
+    // urls.txt 里只能出现在注释行
+    for (const ln of urls.split('\n')) {
+      if (ln.trim().startsWith('#')) continue;
+      if (ln.includes(d)) violations.push('urls.txt 非注释行含 ' + d);
+    }
+    if (dl.includes(d)) violations.push('SyncWorker.defaultLines 含 ' + d);
+  }
+  if (violations.length === 0) ok('同步线路不含已知死线（ghfast.top 已移除）');
+  else bad('死线路残留', violations.join(' | '));
+
+  // 直连 raw 必须在 urls.txt 里且排在前面（实测最快）
+  const active = urls.split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
+  if (active.length && active[0].includes('raw.githubusercontent.com'))
+    ok('urls.txt 首选线路是直连 raw（实测最快 ~1.6s）');
+  else bad('首选线路', '实测直连最快，应排第一；当前首条：' + (active[0] || '(空)'));
+
+  if (active.length >= 4) ok('urls.txt 保留 ' + active.length + ' 条线路（多路兜底）');
+  else bad('线路过少', '仅 ' + active.length + ' 条，单点故障风险');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
