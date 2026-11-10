@@ -5,6 +5,7 @@
 ## 仓库组件
 
 - `legado.json`：精选书源合集（按健康评分自动分层排序：核心/稳定/备用/观察，不可测源入保护池，确认坏沉底）
+- `dist/legado-public.json`：**可公开再分发的子集**。全量 `legado.json` 是历史累计产物，混有来自无 LICENSE 文件上游（`tickmao/Novel`、`aoaostar/legado`）的条目；`filter.js` 每轮落盘 `reports/source-provenance.json` 记录来源，`build-public-subset.js` 据此剔除无授权来源，只保留授权可追溯的部分（实测 679 → 395，58.2%）。手机同步消费的仍是全量 `legado.json`，两者互不影响
 - `replaceRule.json`：全局替换净化规则（去引导语/引流/求票/乱码，对所有书源生效）
 - `*.sig`：上述 JSON 的 ECDSA P-256 签名文件，App 端内置公钥逐字节验签，防公共镜像线路篡改/投毒
 - `filter.js` + GitHub Actions：每 3 天自动探测域名存活、剔除死源、尝试域名搬家修复、失败保留旧版本，并对成品重新签名
