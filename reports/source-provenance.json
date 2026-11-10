@@ -1,0 +1,2656 @@
+{
+ "generatedAt": 1794285482037,
+ "byUrl": {
+  "http://www.7kbook.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.wanwx.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://minipapi.sfacg.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.suixkan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://sma.yueyouxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.zzdushu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://touchlife.cootekservice.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://api.midureader.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://luoxiadushu.com": {
+   "id": "tickmao",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wtzw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.4yt.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.kushuge.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.bimidu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://qmbook.taoyuewenhua.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kk169.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.swsk.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ihuaben.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://novel.html5.qq.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://fiction.fengduxiaoshuo.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://wap.qiqixs.info": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.xbotaodz.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po5.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wxscs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.qbtr.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://23.224.242.55": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.aixiawx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.tshu8.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.dingdian888.com": {
+   "id": "tickmao",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.conglianhao.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://tiantangxiangzuoshenzhenwangyou.qwyd.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.dkmi.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.kxwx.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://wap.wangshugu.info": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.jhsssd.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.tzy2.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sjks88.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.pinshulou.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.biquge345.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.ygzww.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.dcrbk.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://appi.kuwo.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap.jhssd.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.dbxsn.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.bsxiaoshuo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.yetianlian.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.shibashuwu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.dbxsd.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://b.faloo.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://uukanshu.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://wenxuebank.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.ixsw.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.aixiaxsw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.dtxsw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ybswa.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.duokan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://funs.me": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.tiandizw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.chamabooks.net": {
+   "id": "tickmao",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.oneceng.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fbook.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.aixiashu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.qingrenyouxi.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.haogushi88.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.17kankan.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.frtxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.xsabc.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.biquge.xin": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.xiangtxsw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kuuai.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://wap.shukuge.com": {
+   "id": "tickmao",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://jpxs123.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.399xs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.haitangwx.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.rourouwu2.com": {
+   "id": "tickmao",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.rulianshi.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.bilinovel.com": {
+   "id": "jiwangyihao-bilinovel",
+   "license": "MPL-2.0",
+   "publicPublish": true
+  },
+  "https://tw.linovelib.com": {
+   "id": "jiwangyihao-bilinovel",
+   "license": "MPL-2.0",
+   "publicPublish": true
+  },
+  "https://masiro.me": {
+   "id": "jiwangyihao-masiro",
+   "license": "MPL-2.0",
+   "publicPublish": true
+  },
+  "https://www.wenku8.cc": {
+   "id": "jiwangyihao-wenku",
+   "license": "MPL-2.0",
+   "publicPublish": true
+  },
+  "https://www.sudugu.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.qishu99.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.aiqu999.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://ncode.syosetu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://bcshuku.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://read.douban.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.erciyan.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.shuhaige.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wanglisong.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://sto55.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.qdsf.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.douxsw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.deqixs.co": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://ixdzs.tw": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.biquge78.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.bxsw7.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.diancang.xyz": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://trxs.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://book.sfacg.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.xbiqige.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.feiyanqing.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fxsw.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.168txt.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yqxz.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.qfxs123.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.qsyz.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.qudushu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.56zw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://jpxs123.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://seyouxiaoshuo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.lenglengbb.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.liehuozw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://xn--vcsx64d.alicesw12.xyz": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yeduge.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ibbs.pro": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://aaread.club": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.wukanshu.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.yuwangshe.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.yuwangshe.one": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.rourouwu10.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jile1.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po18e.vip": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.isex.work": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://wx.voxpie.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://xapi.xinmanhua.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://manga18fx.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.biquge365.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://api.xingliangglobal.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yingyuxiaoshuo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fuxiaoshu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.x2552.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www7.lenglengbb.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fxshu.top": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.x23us.us": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://read.xiaoshuo1-sm.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://120.25.175.92": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://a.lc1001.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://qcbook.taoyuewenhua.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.ttshu8.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://w.heiyan.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.bbiqudu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://hareading.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.38xs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.88xiaoshuo.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.roushuwu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.ruochu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.ltxswu.me": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.txt80.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.qinkan.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://xiaoshuo.uc.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jjwxc.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://api.ieasou.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.yuedu.163.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.91banzhu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.zjsw.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ypppt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://yz4.chaoxing.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.635k.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://t.shuqi.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://mobile.zongcai666.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ibus233.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://n.cmread.com/r/p/zonghesywap.jsp": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.azycjd.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.sfacg.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://api.huaya.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ibus2333.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.biqugehxs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.langrenxiaoshuo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://apiwz.midukanshu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.xxsy.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://cn.xgcartoon.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.shubl.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.uaa004.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po18to.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.jiuhuaiwenxue.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://mianfei22.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.sougou.work": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.yuzhaiwuone.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.biquge001.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap.po18.work": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://tybook.taoyuewenhua.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.rouwennp.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fuxsb.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.qishu99.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.qodown.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://444.1006sd.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po18m.vip": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.xiguashuwu4.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://wap.faloo.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.dybz123.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yeduji.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.xbqgxs.vip": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.xxtxt.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.aishu9999.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.lanlanbo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://kgbook.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.qbiqus.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://wiki.biligame.com/skyrim": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.shuke8.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.6mj.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://w7w.23fgh.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://tongren.faloo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yuzhaiwen.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://bookshelf.html5.qq.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://touchlife.cootekservice.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://android.jjwxc.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.xyuzhaiwu2.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.jizai22.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.gb84.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://i.12bz.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.po18m.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po18po.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://afdian.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.botaodz.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.dmxsw.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.shenhuazhihou.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.dmxs.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.win10city.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.7shuwu.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.xianqihaotianmi.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://book.qq.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yuzhaiwuh.xyz": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.txtduo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.sansanyanqing.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://wap.xyushuwu11.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://nav.jijia-co.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.22mt.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.zei8.me": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.x33yq.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.gaysay.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.savilletailor.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.tushumi.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.xianqihaotianmi.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://app.shubl.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.gaoyuantong.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.blshuge.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.or7.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.limaogushi.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.yuzhai.life": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.kanshuw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.po18.asia": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.xqiushubang.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.xbotaodz.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.jjjjxsw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.yueyouxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.aijjxs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.daowenge.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.ibbxs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.longtengxiaoshuo.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wuxianxs123.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://dushu.baidu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wuxianbook.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.zhanvxs.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.97k.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ttshu8.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.52mypost.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.xiaobanzhu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.4xiaoshuo.info": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://234.234516.xyz": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://api.midukanshu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.9191net.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.booksky.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.haitang123.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yiyeshu.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.blxsw.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.28lu.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.yydsxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.biqu5200.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.ibusrm.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.wtzw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://xchina.ink": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.gulongbbs.com/wuxia": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.heiyan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.qinkan.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://fapi.fanxxs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.kk169.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.txtduo.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.tingroom.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sxcnw.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.yqk.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap.jjwxc.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.maojiuxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://23.225.143.232": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://ixdzs8.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://ruarourou.top": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sangshixs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.readnovel.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.52shuku.vip": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.kepub.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.maifeizx.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.lulushuwu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.52dzxy.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wxsck.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://wap.po18.in": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.ndlib.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yqk.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://h5.lc1001.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://goway.reader.yueyouxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://so.html5.qq.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://lcread.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.aiqu222.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://g.hongshu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://tw.hjwzw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://api.shaoniandream.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://w2.heiyan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.shushun.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.lulushu123.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.enjing.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.yetianlian.info": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jiumodiary.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://s.sfacg.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.489d.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://bbs.yamibo.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://re0zero.top": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://apps.jjwxc.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.jjwxc.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.lulushu18.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.hyuzhaiwu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://pre-api.tuishujun.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.rulianshi.la": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sadfunsad.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.wenxue88.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.i25zw.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://open3.vistastory.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.xs8.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.sfwx.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.yuzhai.info": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://book.vik.im": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.godcom.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.ruoxia.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://qushu123.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://tianyashuku.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://ylxs.de": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://kakuyomu.jp": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.fuxs.top": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.or77.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.eyushuwu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.rourouwu18.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://www.ranwen1.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.xyuzhaiwu5.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://bqg123.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://qbtr.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.po18site.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://m.fushutxt.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.daomubiji.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.niuzhanxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.627txt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.xyusk.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.yetianlian.la": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://ab.newdu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.zei8.vip": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.jjwxc.net/free": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.txt80.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yanqinggang.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.wushuzw.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.finalbooks.work": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.80qishu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://novel.tingroom.com/wap/index.php": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://zhanvxs.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.shuqi.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://yuewen.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://app.kujiang.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://freevideo.zqqds.cn": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.zongheng.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.txtduo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.yizhiqc.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wechat.idejian.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.8kana.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://wap.zwkan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.quanben-xiaoshuo.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.qbtr.me": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.qunxs.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://mobile.hotread.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.nprouwen.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "http://5sing.kugou.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.qunxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.17k.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.yetianlian.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://api-bc.wtzw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.ihuaben.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.x23us.cc": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.gongzicp.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.xiaoshuouu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.quanben5.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.gongzicp.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://api-bc.zonghengxiaoshuo.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://book.eayue.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://m.lamei2.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.52pojie.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://api.wan123x.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.bqgcn.net": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://www.xxbiqu.com": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://fqapi.komr.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.69shuba.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.laikan9.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://api.leeyegy.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.lianjianxsw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.nshkedu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://get.xiashuzhan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://apitt.kanshushenapp.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.damaoli.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.88ttv.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wucuoxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ranwena.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.wzxywj.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ranwen.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.isiluke.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.rucedu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.heenee.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.zgbnt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ydxrf.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sypvm.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.shqxjx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.dnmcn.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.39shuwu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ixuanshu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.uuxs.info": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.syhzzf.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jwzhn.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.skynan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yjcard.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.zzxx.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.jingzhi5.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://webapi.gongzicp.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yeban360.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.jiqinw.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.gaohbook.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.popo.tw": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.po18.tw": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://allcp.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.htlvbooks.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.myrics.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://xn--pxtr7m.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://t.icesmall.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.banshujiang.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://image.baidu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.shoujixs.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.43kanshu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://5165.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.bequgew.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.lwxstxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://margezitar.github.io": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://75jl.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.iqb8.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://ixunshu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.longfuxs8.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.myhaitang.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.guowx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://api.coolapk.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.yingsx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.gulongwang.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.35xss.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.daizhige.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.3qtxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://souxs.leeyegy.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.biqusa.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.shumilou.co": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://new-qk.lifves.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.uidzhx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.aixiatxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.sosadfun.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.tanmenba.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.shucang.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ranwen.tw": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.bqg225.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.xqishuta.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yeshuyuan.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.92wx.la": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.fuxsb.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.qirebook.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.tianshuwx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jingdianbook.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.guishuji.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.iquanben.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.1bqg.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.quanbenwo.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.roushuwu7.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.uu234w.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://dict.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.xinbqg.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://iyueba.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.timotxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.miduxs.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.hljzc.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://book.sina.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.damotu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap.yingsx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://api.jiaston.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://crxs.me": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.jinyongbook.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.weilaitianwang.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.fx361.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.wuxia.net.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kehuan.net.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://s.fjwhcbsh.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.bjcan8.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.zhangyue.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kptxt.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.kujiang.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.kanunu8.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.doufuyuedu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://h5.17k.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.20xs.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kenshuwx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.123du.vip": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.soushuwang.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.shuhui8.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.bqg18.cc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.chunyushuwu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.jmshuwu.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.migudm.cn": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://manga.bilibili.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://gj.zdic.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.biqugse.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.3renwx.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://m.ppxs.net": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://zjsw.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://enread.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.liudatxt.org": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.ibiquta.info": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://wap.dingdiansk.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://m.ttshu12.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap-test.ciweimao.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.haiyue8.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://wap.ciweimao.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.heag8.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://www.kongfz.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.qq717.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "http://api.doufuyuedu.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.yuque.com/yuqueyonghun8txcr/psb8yc": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
+  "https://www.smkan.top": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  }
+ },
+ "unlockedOverlap": 819
+}

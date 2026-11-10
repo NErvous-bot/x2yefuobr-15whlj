@@ -382,6 +382,72 @@ else bad('export-health-json.js', '缺失');
   else bad('管道退出码漏洞 ' + violations.length + ' 处', violations.join(' | '));
 }
 
+// ============================================================
+// ⑬ 评分不得在满分端饱和（实际可用性扣分）
+// ------------------------------------------------------------
+// 2026-11-10 实测：base 上限 70 + stab 上限 20 + streak 上限 10 = 恰好 100。
+// 于是「三关全过 + 连续 5 次 pass」的源必然 score=100 ——
+// 实测 155 个 core 源**全部同分 100**，排序只能靠原始顺序，等于没有区分度。
+//
+// 更糟的是它盖住了真问题：161 个「三关全过」里，
+// 🎃第一版主🎃#10 chapters=1、🎃吾爱文学🎃 chapters=9、琦书网 chapters=5
+// —— 目录个位数章节的源，和 7000 章的源拿一样的 100 分、一样进 core。
+// 用户手机上一打开只搜到一两个条目，这就是「用着不踏实」的来源。
+{
+  const src = fs.readFileSync('score.js', 'utf8');
+
+  if (/usableWhy/.test(src) && /chaptersSeen/.test(src))
+    ok('评分含实际可用性扣分（chaptersSeen/contentLenSeen）');
+  else bad('评分饱和', 'base+stab+streak 恰好封顶 100，所有三关全过的源同分');
+
+  if (/目录仅/.test(src) && /正文仅/.test(src))
+    ok('扣分带可追溯原因（目录仅N章 / 正文仅N字符）');
+  else bad('扣分无依据', '降级了但看不出为什么，无法追责');
+
+  // 反向验证：扣分必须真的参与 score 计算，不是只算不扣
+  if (/const score = Math\.max\(0, Math\.min\(100, base \+ stab \+ streak \+ usable\)\)/.test(src))
+    ok('usable 确实参与 score 计算（不是算了不用）');
+  else bad('usable 未生效', '扣分变量没有进入 score 表达式');
+}
+
+// ============================================================
+// ⑭ 公开再分发合规：必须有「可公开子集」且接进流水线
+// ------------------------------------------------------------
+// 2026-11-10 实测：仓库为 public，而 legado.json 里 679 个源中有 284 个
+// （41.8%）可追溯到无 LICENSE 文件的上游（tickmao/Novel、aoaostar/legado）。
+// 两个上游的条目都会被合并进来（历史累计），但书源本身不带上游标记，
+// 所以此前「哪个源是哪来的」无从判断 —— 风险被记录在 NOTICE 里，但没有消除。
+//
+// 处置：filter.js 每轮落盘 reports/source-provenance.json（溯源表），
+// build-public-subset.js 据它产出 dist/legado-public.json（可公开子集），
+// 全量 legado.json 保持不变（个人使用 + 手机同步消费）。
+// 这三件事必须同时存在，缺一条合规就断了，所以逐条断言。
+{
+  const filterSrc = fs.readFileSync('filter.js', 'utf8');
+  const upd = read('update.yml');
+
+  if (/source-provenance\.json/.test(filterSrc))
+    ok('filter.js 落盘来源溯源表（source-provenance.json）');
+  else bad('缺溯源表', '无法判断某个源来自哪个上游，合规无从下手');
+
+  if (fs.existsSync('build-public-subset.js'))
+    ok('存在 build-public-subset.js（可公开子集生成器）');
+  else bad('缺公开子集生成器', '公开仓库里无法只发布授权可追溯的部分');
+
+  const sub = fs.existsSync('build-public-subset.js') ? fs.readFileSync('build-public-subset.js', 'utf8') : '';
+  if (/hit\.publicPublish === false/.test(sub) && /--check/.test(sub))
+    ok('公开子集按 publicPublish=false 剔除，且自带 --check 校验');
+  else bad('公开子集判定', '剔除口径必须与 upstreams.json 的授权闸门一致');
+
+  if (/build-public-subset\.js/.test(upd))
+    ok('update.yml 已接入公开子集生成');
+  else bad('未接入流水线', '写了脚本但流水线不跑，等于没有');
+
+  if (/dist\/legado-public\.json/.test(upd))
+    ok('update.yml 提交 dist/legado-public.json');
+  else bad('子集未入库', '生成了但没提交，公开仓库拿不到可分发版本');
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
