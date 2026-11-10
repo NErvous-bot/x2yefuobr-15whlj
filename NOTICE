@@ -44,11 +44,29 @@
 - 回归测试断言「`license === NONE` 的条目必须 `publicPublish === false`」，
   防止以后有人把无授权来源悄悄打开。
 
-**已知遗留**：`filter.js` 的 `UPSTREAMS` 是这条流水线上线前写死的静态清单，
-其中仍包含 `tickmao` 与 `aoaostar`，所以它们的条目目前仍会被合并进 `legado.json`。
-移除这两个上游会让成品从 700 余条骤降到百条量级（并触发发布保险丝的源量熔断），
-因此没有自动执行、留待人工决策：若要彻底合规，需要同时调整 `UPSTREAMS`、
-`fuse.js` 的数量阈值，并接受书源数量的大幅下降。
+**实际状态（2026-11-10 复核，本节此前已过时，现按代码实况更正）**：
+`filter.js` 中那份硬编码 `UPSTREAMS` **已被移除**。当前实现是：
+
+```js
+const upstreamsConfig = require('./upstreams.json');
+function buildUpstreams(config) { /* u.enabled!==false && u.publicPublish===true 才放行 */ }
+const UPSTREAMS = upstreamSelection.urls;   // 与 upstream-sync.js 共用同一套闸门
+```
+
+即 `filter.js` 与 `upstream-sync.js` **读同一份 `upstreams.json`、执行同一道授权闸门**，
+不存在「两处各自维护」的情况。实测闸门输出：
+
+```
+允许: 6  jiwangyihao-bilinovel / -bilinovel-like / -esjzone / -masiro / -wenku,
+         shidahuilang-bak        (MPL-2.0 / GPL-3.0)
+拦截: 2  tickmao(NONE), aoaostar(NONE)
+```
+
+**仍存在的遗留**：`legado.json` 是历史累计产物，其中由这两个上游并入的条目
+无法用 URL 反查来源（书源本身不携带上游标记），所以「历史条目」这一块
+**没有可靠的自证手段**。当前只保证新轮次不再引入。若要彻底处理，需要
+人工或按 `upstream-state.json` 的历史快照做差集，并接受成品数量下降触发的
+`fuse.js` 熔断阈值调整。
 
 ---
 

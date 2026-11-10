@@ -65,6 +65,12 @@ jobs:
       # 拉不到官方源码（网络抖动）→ SKIP 且 exit 0，不因外部网络挡住发布。
       - name: 官方契约检查（Provider 路由 + BookSource 字段）
         run: |
+          # 退出码闸门（2026-11-10 修复）：GHA 的 run 默认是 `bash -e`，但
+          # `cmd | tee file` 这个管道的退出状态只看最后一个命令 tee。
+          # 于是 node 返回非零（官方删了路由/字段 = 契约破裂）时，tee 仍 exit 0，
+          # 整个 step 判成功 —— 这正是「CI 全绿但契约已经坏了」的静默漏洞。
+          # pipefail 让管道任一环节失败即整条失败；这里显式设置，不依赖 shell 默认。
+          set -o pipefail
           echo "### 官方契约检查" >> $GITHUB_STEP_SUMMARY
           node tests/official-contract.test.js 2>&1 | tee /tmp/contract.log
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -89,6 +95,12 @@ jobs:
 
       - name: Android APK 构建（debug，硬门槛——SyncWorker.java 编译必须通过）
         run: |
+          # 退出码闸门（2026-11-10 修复）：与契约检查同一个漏洞。
+          # `gradle ... | tee build.log` 的退出码来自 tee，不是 gradle。
+          # 编译失败（Java 语法错、缺符号）时 tee 照样 exit 0 →
+          # 这条「硬门槛」实际从来没拦住过任何一次编译失败。
+          # 这是本仓库 CI 里危害最大的一处静默洞，必须 pipefail。
+          set -o pipefail
           cd SourceAutoSync
           gradle assembleDebug --no-build-cache --rerun-tasks 2>&1 | tee build.log
-        # 不再 continue-on-error：Java 编译失败必须阻断验收
+        # 编译失败必须阻断验收（pipefail 保证退出码真的来自 gradle）

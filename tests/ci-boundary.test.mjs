@@ -347,6 +347,41 @@ else bad('export-health-json.js', '缺失');
   else bad('超短目录', '1-2 章的假目录会计入 valid，把中位数拉到个位数');
 }
 
+// ============================================================
+// ⑫ 管道退出码闸门：`cmd | tee` 必须配 pipefail
+// ------------------------------------------------------------
+// 2026-11-10 发现的实际漏洞：GHA 的 run 是 `bash -e`（errexit），
+// 但 `cmd | tee file` 的退出状态只看管道最后一个命令 tee。
+// 于是：
+//   · node tests/official-contract.test.js 返回 1（官方删路由）→ tee exit 0
+//   · gradle assembleDebug 编译失败 → tee exit 0
+// 两条都判成功。第二条更致命：所谓「硬门槛」从上线起就没拦过任何一次编译失败。
+// build-sync.yml 里本来就有 set -o pipefail，说明作者知道这件事，
+// 只是 test.yml 漏了 —— 所以必须用断言锁住，不能靠记性。
+{
+  const files = ['test.yml', 'build-sync.yml', 'update.yml', 'source-audit.yml', 'js-eval.yml'];
+  let violations = [];
+  for (const f of files) {
+    let t;
+    try { t = read(f); } catch (e) { continue; }
+    const lines = t.split('\n');
+    // 逐条 run 块检查：块内出现 | tee 就必须在该行之前出现 set -o pipefail
+    let pipefailAt = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      if (/^\s*run:\s*\|\s*$/.test(ln)) pipefailAt = -1;          // 新的 run 块，重置
+      if (/set -o pipefail/.test(ln)) pipefailAt = i;
+      // 跳过纯注释行，避免把说明文字当成真实命令
+      if (/^\s*#/.test(ln)) continue;
+      if (/\|\s*tee\b/.test(ln)) {
+        if (pipefailAt < 0 || pipefailAt > i) violations.push(f + ':' + (i + 1) + ' ' + ln.trim());
+      }
+    }
+  }
+  if (violations.length === 0) ok('所有 `| tee` 管道都配了 set -o pipefail（退出码不被吞）');
+  else bad('管道退出码漏洞 ' + violations.length + ' 处', violations.join(' | '));
+}
+
 console.log(`\n===== 汇总: ${pass + fail} 项 =====`);
 console.log('✅ 通过: ' + pass);
 console.log('❌ 失败: ' + fail);
