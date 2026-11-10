@@ -1,0 +1,10 @@
+{
+ "incoming": 2838,
+ "deduped": 2838,
+ "exact": 791,
+ "sameHost": 102,
+ "fresh": 1945,
+ "invalid": 0,
+ "freshJs": 1044,
+ "freshNoSearch": 0
+}

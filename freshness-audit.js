@@ -1195,8 +1195,18 @@ if (require.main === module && process.argv.includes('--test-t1')) {
             const ruleUrl = (s.ruleSearch && s.ruleSearch.url) || '';
             const both = String(url) + ' ' + String(ruleUrl);
 
-            // 1) JS 动态规则：本 job 不执行书源 JS，这类必然测不出
-            if (/<js>|@js:|java\./i.test(both)) {
+            // 1) JS 动态规则：本 job 不执行书源 JS，这类必然测不出。
+            //
+            // 2026-11-10 例外规则（PRE_FILTER_KEEP_JS=1）：仍然保留这些源参与抽样，
+            // 只把它们在报告里标成 jsDependent。理由：
+            //   · 「CI 测不出」是能力边界，不等于「源不好」，不该从统计口径里消失
+            //   · 若直接剔除，报告会显示「覆盖率 100%」却漏掉 116 个真实存在的源，
+            //     读者无法判断到底是没测还是不必测
+            //   · 保留后它们会以「JS求值已禁用」计入失败原因，这个原因名本身就
+            //     准确说明了问题归属，比静默剔除诚实
+            // 想看旧行为（直接剔除）就设 PRE_FILTER_KEEP_JS=0。
+            const KEEP_JS = (process.env.PRE_FILTER_KEEP_JS || '1') !== '0';
+            if (!KEEP_JS && /<js>|@js:|java\./i.test(both)) {
                 dropped.jsRule++;
                 return false;
             }

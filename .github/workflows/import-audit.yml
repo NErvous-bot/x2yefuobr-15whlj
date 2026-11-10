@@ -1,0 +1,120 @@
+name: 外部书源包验收（Playwright 三关）
+
+# 为什么要有这个 workflow（2026-11-10）
+#
+# 用户给了一份 2838 条的第三方书源包，要并入仓库。问题是「这源到底能不能用」
+# 这个判断在本地无法可靠得出：
+#   实测本机到这批小说站的 HTTPS 会在 TLS 阶段被对端重置
+#   （TCP:443 连通、TLS 握手 0 字节 RST、HTTP 正常），
+#   而同一批站在 GitHub Actions（Azure）能正常出书。
+#   本地筛出来的「死源」是假死，拿它做删除依据会误杀好源。
+#
+# 所以把筛选放进 CI：环境与用户手机更接近，且可复现、可留证。
+#
+# 本 workflow 只写 reports/import/，绝不改 legado.json / 评分 / 签名。
+# 通过验收的源如何入库，仍由 update.yml 的 filter 闸门统一决定。
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkg_url:
+        description: '书源包 URL（留空则用仓库内 .import/pkg.json）'
+        required: false
+        default: ''
+      limit:
+        description: '本轮最多实测多少条（0=全量，很慢）'
+        required: false
+        default: '300'
+      shard:
+        description: '分片序号（0 起，配合 shard_total 把全量拆成多批）'
+        required: false
+        default: '0'
+      shard_total:
+        description: '分片总数'
+        required: false
+        default: '1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 装 Playwright + Chromium
+        run: |
+          npm install playwright@latest
+          npx playwright install --with-deps chromium
+
+      - name: 准备书源包
+        env:
+          PKG_URL: ${{ inputs.pkg_url }}
+        run: |
+          mkdir -p .import
+          if [ -n "$PKG_URL" ]; then
+            echo "下载 $PKG_URL"
+            curl -fsSL --max-time 120 -o .import/pkg.json "$PKG_URL"
+          fi
+          if [ ! -s .import/pkg.json ]; then
+            echo "::error::没有书源包。请填 pkg_url，或先把包提交到 .import/pkg.json"
+            exit 1
+          fi
+          node -e "
+            const a=JSON.parse(require('fs').readFileSync('.import/pkg.json','utf8'));
+            const n=Array.isArray(a)?a.length:a.bookSources.length;
+            console.log('包内条目: '+n);
+            if(!n) process.exit(1);
+          "
+
+      - name: 三重验收（只写 reports/import/）
+        env:
+          IMPORT_PKG: .import/pkg.json
+          LIMIT: ${{ inputs.limit }}
+          SHARD: ${{ inputs.shard }}
+          SHARD_TOTAL: ${{ inputs.shard_total }}
+        run: node scripts/import-audit.mjs
+
+      - name: 硬断言（不得改任何成品）
+        run: |
+          for f in legado.json replaceRule.json version.txt legado.json.sig replaceRule.json.sig; do
+            if ! git diff --quiet HEAD -- "$f" 2>/dev/null; then
+              echo "::error::验收流程不得修改成品: $f"
+              exit 1
+            fi
+          done
+          echo "成品未被修改 ✓"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: import-audit-${{ inputs.shard }}-of-${{ inputs.shard_total }}
+          path: reports/import/
+          retention-days: 30
+
+      - name: 提交报告
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git add reports/import/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "报告无变化"
+            exit 0
+          fi
+          git commit -m "auto import-audit: $(date +%F) shard ${{ inputs.shard }}/${{ inputs.shard_total }}（纯报告）"
+          git pull --rebase origin main || true
+          git push origin HEAD

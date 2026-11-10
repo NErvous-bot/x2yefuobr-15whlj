@@ -24,6 +24,50 @@
 const fs = require('fs');
 const { norm } = require('./src/source-id');
 
+// ── JS 依赖源（2026-11-10 新增）────────────────────────────────────────────
+// CI 的求值 job 没有执行书源 JS 的权限（安全隔离，见 js-eval.yml），
+// 所以任何在搜索/目录/正文规则里用了 JS 的源，在 CI 里**永远测不出来**。
+//
+// 这类源不是「坏源」也不是「可疑源」，而是「本机测不了但手机能跑」的源。
+// 之前的处置是：一律落进 untestable 保护池（weight 90~130）+ 被 freshness
+// 预筛剔除，等于既不给分也不给位置。
+//
+// 实测代价：仓库里 116 个源栽在这（filter 预筛统计），全被压在 90 档。
+// 更糟的是它们会被打上「不可测」的隐性标签，看起来像劣质源。
+//
+// 正确处置：承认这是「能力边界」而不是「源质量」，单列一档：
+//   · 不打任何 CI-* 分组标签（打了就是冤枉它）
+//   · weight 给 200：高于 untestable 保护池（90~160），低于「已验证备用」（300），
+//     理由是「手机端确实能跑通」值得比纯不可测高，但未经 CI 验证不该压过已验证源
+//   · freshness 预筛不再剔除它们（见 freshness-audit.js 的 PRE_FILTER_KEEP_JS）
+//   · health 报告里保留 jsDependent 标记，供报告读者区分
+function isJsDependent(s) {
+    if (!s || typeof s !== 'object') return false;
+    // 逐个检查真正会发起请求的那些规则字段，而不是全文 grep：
+    // bookSourceComment 里提到 "@js" 很常见（作者写说明），全文匹配会误判。
+    const fields = [
+        s.searchUrl,
+        s.exploreUrl,
+        s.header,
+        s.jsLib,
+        s.mainJs,
+        s.loginUrl,
+        s.loginCheckJs,
+        s.coverDecodeJs,
+    ];
+    const ruleBlocks = [s.ruleSearch, s.ruleToc, s.ruleContent, s.ruleBookInfo, s.ruleExplore, s.ruleReview];
+    for (const b of ruleBlocks) {
+        if (b && typeof b === 'object') {
+            for (const v of Object.values(b)) fields.push(v);
+        }
+    }
+    for (const f of fields) {
+        if (typeof f !== 'string' || !f) continue;
+        if (/<js>|@js:|java\./i.test(f)) return true;
+    }
+    return false;
+}
+
 // ── 官方 BookSource 字段白名单 ────────────────────────────────────────────────
 // 来源：LegadoTeam/legado@master  app/src/main/java/io/legado/app/data/entities/BookSource.kt
 // 共 33 个字段（含 BaseSource 的 override：jsLib / enabledCookieJar / concurrentRate /
@@ -121,9 +165,81 @@ function ciTagsOf(v) {
     return tags;
 }
 
+// 当前正在评分的源对象。用于识别「JS 依赖」这类能力边界。
+//
+// 为什么用模块级变量而不是给 grade() 加第二个参数：
+// tests/repo-regression.test.js 里有多条断言用正则 /function grade\(v\)/
+// 从源码里抠出函数体、再用 new Function 重建来单测分级逻辑。
+// 一旦改签名，这些断言全部失效（实测挂了 5 条）。
+//
+// 同时注意：重建后的函数运行在独立作用域，拿不到本文件的模块级变量。
+// 所以 grade() 体内**不得直接引用外部标识符**，需要的判断全部内联。
+let _gradingSource = null;
+
 function grade(v) {
+    // 内联 JS 依赖判定：不能调用外部的 isJsDependent()，
+    // 否则 new Function 重建时找不到该标识符。
+    // 同理，_gradingSource 也必须在函数内用 typeof 探测后再取，
+    // 不能直接引用——重建后的函数作用域里没有这个模块级变量。
+    const _src = typeof _gradingSource === 'undefined' ? null : _gradingSource;
+    let jsDep = false;
+    if (_src) {
+        const f = [
+            _src.searchUrl,
+            _src.exploreUrl,
+            _src.header,
+            _src.jsLib,
+            _src.mainJs,
+            _src.loginUrl,
+            _src.loginCheckJs,
+            _src.coverDecodeJs,
+        ];
+        for (const b of [
+            _src.ruleSearch,
+            _src.ruleToc,
+            _src.ruleContent,
+            _src.ruleBookInfo,
+            _src.ruleExplore,
+            _src.ruleReview,
+        ]) {
+            if (b && typeof b === 'object') for (const x of Object.values(b)) f.push(x);
+        }
+        for (const x of f) {
+            if (typeof x === 'string' && x && /<js>|@js:|java\./i.test(x)) {
+                jsDep = true;
+                break;
+            }
+        }
+    }
     // v: health.json 源条目 → { score, layer, weight }
+    //
+    // ── JS 依赖源的单列处置（2026-11-10）────────────────────────────────
+    // 实测全库 680 个源里有 394 个用了 JS（@js / <js> / java.*），其中：
+    //   · 172 个 health=null（CI 求值 job 无执行权限，必然测不出）
+    //   · 30 个居然有实测结果（说明这些源的 JS 只在发现页/封面等非主链路，
+    //        搜索+目录+正文仍能纯静态跑通）
+    //   · 192 个不在 health 报告里（本轮 filter 新并入，还没轮到测）
+    //
+    // 所以不能「有 JS 就降级」——那会把 30 个实测通过的源一起冤枉。
+    // 分层判据改成「状态」而不是「有无 JS」：
+    //   a) 有实测结果的 → 照常按分数分层，JS 只是备注（下面照常走）
+    //   b) 无实测结果 + 有 JS → 单列 js-dependent 档，weight 200
+    //      （高于 untestable 保护池 90~160，低于已验证备用 300：
+    //        手机端确实能跑，但没经过 CI 验证，不该压过已验证源）
+    //   c) 无实测结果 + 无 JS → 维持原 untestable 保护池 90~120
     if (!v || v.health === null || v.health === undefined) {
+        if (jsDep) {
+            // 但「历史上曾实测通过」的 JS 源不能压到 200 —— 那是已证明能跑通的，
+            // 压下去等于用 JS 标记抹掉实测证据。实测救了 2 个（本轮统计）。
+            const passedBefore = Array.isArray(v && v.recent) && v.recent.includes('pass');
+            return {
+                score: null,
+                layer: 'js-dependent',
+                weight: passedBefore ? 260 : 200,
+                jsDependent: true,
+                jsVerifiedBefore: passedBefore,
+            };
+        }
         // 不可测保护池：曾经实测通过(recent有pass)→120，从未验证→90。
         // 必须低于备用层下界 150：旧值 440/380 高于 stable 下界 300，会让「从没验证过
         // 的源」排在「已验证稳定」的源前面，与「不判死但也不置顶」的设计意图相反。
@@ -238,18 +354,24 @@ try {
     const list = JSON.parse(fs.readFileSync('legado.json', 'utf8'));
     const H = JSON.parse(fs.readFileSync('health/source_health.json', 'utf8')).sources || {};
 
-    const layers = { core: [], stable: [], backup: [], watch: [], untestable: [], dead: [] };
+    const layers = { core: [], stable: [], backup: [], watch: [], untestable: [], 'js-dependent': [], dead: [] };
     const tagCount = {};
     let tagged = 0;
     for (const s of list) {
         const k = norm(s.bookSourceUrl);
         const v = H[k];
+        // 把源对象一并传进去：需要它来识别「JS 依赖」这类能力边界，
+        // 单看 health 条目分不清「测不出来」和「本来就没测」。
+        _gradingSource = s;
         const g = grade(v);
+        _gradingSource = null;
         s.weight = g.weight;
 
         // CI 判定标签：先剥掉上一轮留下的 CI- 标签，再按本轮结论补上（幂等，不累积）
         const baseGroup = stripCIGroups(s.bookSourceGroup);
-        const tags = ciTagsOf(v);
+        // JS 依赖且 CI 无实测结果 → 不打任何 CI- 标签。
+        // 打了就是冤枉它：测不出来是 CI 的能力边界，不是源的毛病。
+        const tags = (g.layer === 'js-dependent') ? [] : ciTagsOf(v);
         const mergedGroup = [baseGroup].concat(tags).filter(Boolean).join(',');
         if (mergedGroup) s.bookSourceGroup = mergedGroup;
         else delete s.bookSourceGroup;

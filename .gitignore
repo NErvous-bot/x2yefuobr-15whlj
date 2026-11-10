@@ -22,3 +22,4 @@ rssSources.json
 
 # 官方契约检查的运行时产物（只在本机/CI 生成，不入库）
 reports/contract-warnings.txt
+.import/
