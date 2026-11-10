@@ -1,9 +1,53 @@
 {
- "generatedAt": 1794042644889,
- "runAt": "2026-11-07T09:10:44.889Z",
+ "generatedAt": 1794305640557,
+ "runAt": "2026-11-10T10:14:00.557Z",
  "oldRef": "HEAD",
- "baselineSha": "1e05368b58d42bf978b1065698e2dc284dbfd040",
- "tier1": [],
+ "baselineSha": "39b54f9277c87e522954b6172ebe658d8f418437",
+ "tier1": [
+  {
+   "name": "吾看书",
+   "url": "https://www.wukanshu.cc",
+   "traits": [
+    "POST",
+    "js规则"
+   ],
+   "oldNote": "三关全过（第1本正文为空，换书后通过）",
+   "newNote": "正文不足200字（实得199）；另换 2 本仍失败",
+   "attempts": [
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "OTHER",
+     "reason": "三关全过（第1本正文为空，换书后通过）"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "OTHER",
+     "reason": "三关全过（第1本正文为空，换书后通过）"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "PASS",
+     "reason": "三关全过"
+    },
+    {
+     "pass": true,
+     "kind": "pass",
+     "stage": "OTHER",
+     "reason": "三关全过（第1本正文为空，换书后通过）"
+    },
+    {
+     "pass": false,
+     "kind": "fail",
+     "stage": "CONTENT_EMPTY",
+     "reason": "正文不足200字（实得199）；另换 2 本仍失败"
+    }
+   ],
+   "verdict": "FLAPPING"
+  }
+ ],
  "tier2": [],
  "resolved": []
 }

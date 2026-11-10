@@ -1,11 +1,11 @@
 {
- "generatedAt": 1794285501602,
- "totalSources": 679,
+ "generatedAt": 1794305641068,
+ "totalSources": 680,
  "publicSources": 395,
- "removed": 284,
- "removedRatio": 41.8,
+ "removed": 285,
+ "removedRatio": 41.9,
  "byUpstream": {
-  "aoaostar": 279,
+  "aoaostar": 280,
   "tickmao": 5
  },
  "note": "publicSources = 可在公开仓库再分发的子集；legado.json 仍为全量（个人使用）",
@@ -13,18 +13,6 @@
   {
    "name": "快眼看书",
    "url": "http://www.booksky.cc/",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "🎃第一版主🎃#10",
-   "url": "http://i.12bz.net#🎃",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "🎃吾爱文学🎃",
-   "url": "http://m.x2552.com#🎃",
    "upstream": "aoaostar",
    "license": "NONE"
   },
@@ -37,12 +25,6 @@
   {
    "name": "全本同人",
    "url": "https://www.qbtr.cc",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "穿越小说",
-   "url": "http://www.kk169.net",
    "upstream": "aoaostar",
    "license": "NONE"
   },
@@ -65,27 +47,9 @@
    "license": "NONE"
   },
   {
-   "name": "经典书库",
-   "url": "https://www.jingdianbook.com/",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
    "name": "快眼看书",
    "url": "http://www.botaodz.com/",
    "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "👔 夜书文苑",
-   "url": "https://www.yeshuyuan.com/",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "肉肉屋②",
-   "url": "https://m.rourouwu2.com/#🚀",
-   "upstream": "tickmao",
    "license": "NONE"
   },
   {
@@ -97,18 +61,6 @@
   {
    "name": "奇怪小说",
    "url": "http://www.yetianlian.info",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "安之原创",
-   "url": "http://www.azycjd.com#yc1101",
-   "upstream": "aoaostar",
-   "license": "NONE"
-  },
-  {
-   "name": "优品文档（导+）",
-   "url": "https://www.ypppt.com/",
    "upstream": "aoaostar",
    "license": "NONE"
   },
@@ -125,8 +77,56 @@
    "license": "NONE"
   },
   {
-   "name": "桃桃书",
-   "url": "https://m.ttshu12.com/",
+   "name": "bl书阁🎃",
+   "url": "https://www.blshuge.com#🎃",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "📖 耽美小说",
+   "url": "https://www.dmxs.org/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "老包输站",
+   "url": "https://www.8kana.com#",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "爱下书小说网",
+   "url": "https://www.aixiaxsw.com",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "爱下书小说网",
+   "url": "http://www.aixiashu.net",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "独步小说",
+   "url": "https://www.dbxsd.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "🎃顶点小说🎃#8",
+   "url": "https://www.dingdian888.com#🎃",
+   "upstream": "tickmao",
+   "license": "NONE"
+  },
+  {
+   "name": "穿越小说",
+   "url": "http://www.kk169.net",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "👔 夜书文苑",
+   "url": "https://www.yeshuyuan.com/",
    "upstream": "aoaostar",
    "license": "NONE"
   }

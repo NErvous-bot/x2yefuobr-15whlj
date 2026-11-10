@@ -2,23 +2,24 @@
 旧报告 HEAD vs 新报告（只读复查，未修改任何书源）
 
 ━━ 迁移矩阵 ━━
-  153  available->available
-    7  available->untestable
+  152  available->available
+    1  available->broken
+    8  available->untestable
     1  broken->broken
-   10  broken->removed
-    4  broken->untestable
-    8  untestable->available
-    1  untestable->broken
-    1  untestable->removed
-  498  untestable->untestable
-新增源 2
+    1  broken->removed
+    9  untestable->available
+    3  untestable->broken
+  499  untestable->untestable
+新增源 6
 
-━━ 一级复查：旧可用 → 确认坏 0 ━━
+━━ 一级复查：旧可用 → 确认坏 1 ━━
+  FLAPPING 1
+  [FLAPPING 4/5] 吾看书 | 阶段: OTHER,OTHER,PASS,OTHER,CONTENT_EMPTY | 特征: POST+js规则
 
 ━━ 二级复查：旧BL不可测 → 确认坏 0（保险丝模式：跳过实测） ━━
 
-━━ 往轮候选终态 0（基线 1e05368） ━━
+━━ 往轮候选终态 0（基线 39b54f9） ━━
 
 ━━ 保险丝判定 ━━
-PASS：旧可用 → 确认坏 = 0
+PASS：旧可用 → 确认坏 = 1（均属抖动/疑似误判，禁止删除即可）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

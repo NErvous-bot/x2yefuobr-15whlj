@@ -35,5 +35,6 @@
   {"name":"自动·站点推广「笔趣阁」","group":"净化-自动","pattern":"笔趣阁","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":40,"sortNo":3},
   {"name":"自动·引流域名 bbs.fmx.cn","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*bbs\\.fmx\\.cn(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":41,"sortNo":4},
   {"name":"自动·引流域名 o55.com","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*o55\\.com(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":42,"sortNo":5},
-  {"name":"自动·引流域名 xsfb.com.com","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*xsfb\\.com\\.com(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":43,"sortNo":6}
+  {"name":"自动·引流域名 xsfb.com.com","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*xsfb\\.com\\.com(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":43,"sortNo":6},
+  {"name":"自动·引流域名 m.biquge85.com","group":"净化-自动","pattern":"(?:[a-zA-Z0-9\\-]+\\.)*m\\.biquge85\\.com(?:/[^一-龥\\s，。]{0,30})?","replacement":"","scope":"","isEnabled":true,"isRegex":true,"order":44,"sortNo":7}
 ]

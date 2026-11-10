@@ -1,8 +1,8 @@
 {
- "https://newsmiss.lofter.com": {
-  "name": "乐乎文章（优）",
+ "https://www.soshuw.net": {
+  "name": "搜书网",
   "reason": "probe-dead",
-  "evidence": "domain dead: https://newsmiss.lofter.com"
+  "evidence": "domain dead: https://www.soshuw.net"
  },
  "https://www.18shuku.com": {
   "name": "🙈十八书库",
@@ -144,11 +144,6 @@
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
- "https://www.fengyu.cc": {
-  "name": "风雨小说",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
  "http://m.dhzw.cc": {
   "name": "大海中文",
   "reason": "aging-failed",
@@ -204,16 +199,6 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "https://noc.syosetu.com/top/top": {
-  "name": "ノクターンノベルズ",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
- "https://mnlt.syosetu.com/top/top": {
-  "name": "ムーンライトノベルズ",
-  "reason": "aging-failed",
-  "evidence": "搜索无结果"
- },
  "https://www.lalashuwu.com": {
   "name": "啦啦书屋",
   "reason": "aging-failed",
@@ -252,11 +237,6 @@
  "http://www.xiaoshuobuluo.com": {
   "name": "小说部落",
   "reason": "aging-failed",
-  "evidence": "搜索接口410"
- },
- "https://m.xdybz.com": {
-  "name": "⚠️第一版主～",
-  "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
  "https://sobooks.net": {
@@ -271,11 +251,6 @@
  },
  "https://yuwangshe.in": {
   "name": "🔴新欲望社[分页]",
-  "reason": "aging-failed",
-  "evidence": "搜索接口404"
- },
- "https://m.lrxs.org": {
-  "name": "🔞 懒人小说 🪜",
   "reason": "aging-failed",
   "evidence": "搜索接口404"
  },
@@ -304,9 +279,14 @@
   "reason": "aging-failed",
   "evidence": "搜索无结果"
  },
- "http://www.fbook.net": {
-  "name": "书盟小说",
-  "reason": "canon-merged",
-  "evidence": "merged into http://www.fbook.net/ basis=lastUpdateTime"
+ "http://hao8.net": {
+  "name": "好吧小说",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
+ },
+ "https://www.xs7.com": {
+  "name": "小说旗2",
+  "reason": "aging-failed",
+  "evidence": "搜索无结果"
  }
 }

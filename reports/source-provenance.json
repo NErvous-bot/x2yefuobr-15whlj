@@ -1,5 +1,5 @@
 {
- "generatedAt": 1794285482037,
+ "generatedAt": 1794305576935,
  "byUrl": {
   "http://www.7kbook.com": {
    "id": "shidahuilang-bak",
@@ -1211,6 +1211,11 @@
    "license": "GPL-3.0",
    "publicPublish": true
   },
+  "https://newsmiss.lofter.com": {
+   "id": "aoaostar",
+   "license": "NONE",
+   "publicPublish": false
+  },
   "https://www.jjjjxsw.com": {
    "id": "shidahuilang-bak",
    "license": "GPL-3.0",
@@ -1767,6 +1772,11 @@
    "publicPublish": false
   },
   "http://m.wushuzw.org": {
+   "id": "shidahuilang-bak",
+   "license": "GPL-3.0",
+   "publicPublish": true
+  },
+  "https://noc.syosetu.com/top/top": {
    "id": "shidahuilang-bak",
    "license": "GPL-3.0",
    "publicPublish": true
@@ -2652,5 +2662,5 @@
    "publicPublish": false
   }
  },
- "unlockedOverlap": 819
+ "unlockedOverlap": 824
 }

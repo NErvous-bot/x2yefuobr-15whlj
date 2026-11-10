@@ -240,12 +240,6 @@
   "since": 1793165839985
  },
  {
-  "url": "http://www.23hh.la/",
-  "name": "爱尚小说（优）",
-  "reason": "stable-dead",
-  "since": 1793165839985
- },
- {
   "url": "http://www.38xs.net/",
   "name": "🔖三八小说网",
   "reason": "stable-dead",
@@ -346,6 +340,12 @@
   "name": "必读居",
   "reason": "stable-dead",
   "since": 1793182868253
+ },
+ {
+  "url": "http://www.biquge.xin",
+  "name": "笔趣阁",
+  "reason": "stable-dead",
+  "since": 1794305640620
  },
  {
   "url": "http://www.biquge5200.com/",
@@ -1750,6 +1750,12 @@
   "name": "果露小说",
   "reason": "stable-dead",
   "since": 1793165839985
+ },
+ {
+  "url": "https://www.xiaoshuo.com.tw",
+  "name": "繁體小說网",
+  "reason": "stable-dead",
+  "since": 1794305640620
  },
  {
   "url": "https://www.xinruipai.cn",
