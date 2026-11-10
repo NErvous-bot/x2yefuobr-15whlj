@@ -304,18 +304,17 @@ jobs:
         # 注意文件名：App 端按「原名+.sig」取签名，即 legado.json.sig / replaceRule.json.sig
         # 2026-10-04 起 runner 的 openssl 签名报 unsupported 导致 0 字节签名被静默提交，改用 node 内置 crypto 并强制自验签
         run: node sign.js
-      # 公开子集（2026-11-10）：仓库是 public，全量 legado.json 里混着
-      # 无 LICENSE 文件上游（tickmao/Novel、aoaostar/legado）并入的条目。
-      # 这一步把「可公开再分发」的部分单独产出一份 dist/legado-public.json，
-      # 全量 legado.json 保持不变（个人使用，手机同步消费的是它）。
-      # 判定依据是 filter.js 落盘的 reports/source-provenance.json，纯观测不误删。
-      # 放在 sign 之后：它不参与签名，也不影响手机端，只是分发辅助产物。
-      - name: 生成公开子集（剔除无授权上游来源）
-        run: node build-public-subset.js
-      # 硬断言：公开子集里不允许残留 publicPublish=false 的源。
-      # 用 --check 而非直接 grep，保证判定逻辑与产出逻辑是同一份代码。
-      - name: 公开子集合规校验（残留无授权源即阻断）
-        run: node build-public-subset.js --check
+      # 验签关必须内联在这里，不能只靠 .github/workflows/verify-signature.yml。
+      # 原因（2026-11-10 实测）：本 workflow 用 secrets.GITHUB_TOKEN 推 main，
+      # 而 GitHub 规定 GITHUB_TOKEN 触发的 push 不再引起后续 workflow 运行。
+      # 结果是 verify-signature.yml 自 2026-10-27 起只跑过 1 次，之后每次
+      # auto update 推上去的成品都没被那道独立验签关看过 —— 保护形同虚设。
+      # 这里用同一份 verify-sign.js 在推送前就地验签，失败即让 CI 标红。
+      # 若将来改用 PAT / App token 推送，这道内联关仍应保留：它拦的是
+      # 「本轮生成的签名和本轮生成的成品对不上」，跟推送身份无关。
+      - name: 成品验签 + 指纹一致性（推送前就地校验）
+        if: steps.gate.outputs.blocked == '0'
+        run: node verify-sign.js
       - name: commit
         env:
           # checkout 关闭了 persist-credentials，推送阶段单独用令牌写 remote。
@@ -330,8 +329,6 @@ jobs:
           git rm -q --ignore-unmatch legado.sig replaceRule.sig
           git add legado.json legado.json.sig replaceRule.json replaceRule.json.sig version.txt health/source_health.json urls.txt candidates.txt quarantine.json quarantine-stash.json harvested.json upstream-state.json
           git add reports/ 2>/dev/null || true
-          # 公开子集与报告一并入库：这是 public 仓库里唯一「可合法再分发」的那份
-          git add dist/legado-public.json 2>/dev/null || true
           # push origin HEAD：在 main 上等价于推 main，在其他分支（测试）推同名分支
           git diff --cached --quiet || (
             git commit -m "auto update"

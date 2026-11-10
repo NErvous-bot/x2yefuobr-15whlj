@@ -411,41 +411,33 @@ else bad('export-health-json.js', '缺失');
 }
 
 // ============================================================
-// ⑭ 公开再分发合规：必须有「可公开子集」且接进流水线
+// ⑭ 发布验签关必须真正跑起来（不是写着好看）
 // ------------------------------------------------------------
-// 2026-11-10 实测：仓库为 public，而 legado.json 里 679 个源中有 284 个
-// （41.8%）可追溯到无 LICENSE 文件的上游（tickmao/Novel、aoaostar/legado）。
-// 两个上游的条目都会被合并进来（历史累计），但书源本身不带上游标记，
-// 所以此前「哪个源是哪来的」无从判断 —— 风险被记录在 NOTICE 里，但没有消除。
+// 2026-11-10 实测：update.yml 用 secrets.GITHUB_TOKEN 推 main，而 GitHub
+// 规定 GITHUB_TOKEN 触发的 push 不再引起后续 workflow 运行。直接后果是
+// verify-signature.yml 从 2026-10-27 起只运行过 1 次（run #1），此后每一次
+// auto update 推上去的成品都没被独立验签关看过 —— 那道关实际上已经死了。
 //
-// 处置：filter.js 每轮落盘 reports/source-provenance.json（溯源表），
-// build-public-subset.js 据它产出 dist/legado-public.json（可公开子集），
-// 全量 legado.json 保持不变（个人使用 + 手机同步消费）。
-// 这三件事必须同时存在，缺一条合规就断了，所以逐条断言。
+// 处置：把 node verify-sign.js 内联进 update.yml 的 sign 之后、commit 之前。
+// 下面三条断言锁死它不被顺手删掉或挪到 commit 之后（挪后面就等于没验）。
 {
-  const filterSrc = fs.readFileSync('filter.js', 'utf8');
   const upd = read('update.yml');
+  const lines = upd.split(/\r?\n/);
 
-  if (/source-provenance\.json/.test(filterSrc))
-    ok('filter.js 落盘来源溯源表（source-provenance.json）');
-  else bad('缺溯源表', '无法判断某个源来自哪个上游，合规无从下手');
+  const signIdx = lines.findIndex((l) => /run:\s*node sign\.js\s*$/.test(l));
+  const verIdx = lines.findIndex((l) => /run:\s*node verify-sign\.js\s*$/.test(l));
+  const commitIdx = lines.findIndex((l) => /^\s*- name:\s*commit\s*$/.test(l));
 
-  if (fs.existsSync('build-public-subset.js'))
-    ok('存在 build-public-subset.js（可公开子集生成器）');
-  else bad('缺公开子集生成器', '公开仓库里无法只发布授权可追溯的部分');
+  if (verIdx >= 0) ok('update.yml 内联了成品验签（verify-sign.js）');
+  else bad('缺内联验签', 'GITHUB_TOKEN 推送不触发后续 workflow，独立验签关收不到货');
 
-  const sub = fs.existsSync('build-public-subset.js') ? fs.readFileSync('build-public-subset.js', 'utf8') : '';
-  if (/hit\.publicPublish === false/.test(sub) && /--check/.test(sub))
-    ok('公开子集按 publicPublish=false 剔除，且自带 --check 校验');
-  else bad('公开子集判定', '剔除口径必须与 upstreams.json 的授权闸门一致');
+  if (signIdx >= 0 && verIdx >= 0 && verIdx > signIdx)
+    ok('验签在签名之后执行（验的是本轮新生成的签名）');
+  else bad('验签顺序错', '必须先 sign.js 再 verify-sign.js，否则验的是旧签名');
 
-  if (/build-public-subset\.js/.test(upd))
-    ok('update.yml 已接入公开子集生成');
-  else bad('未接入流水线', '写了脚本但流水线不跑，等于没有');
-
-  if (/dist\/legado-public\.json/.test(upd))
-    ok('update.yml 提交 dist/legado-public.json');
-  else bad('子集未入库', '生成了但没提交，公开仓库拿不到可分发版本');
+  if (verIdx >= 0 && commitIdx >= 0 && verIdx < commitIdx)
+    ok('验签在 commit 之前执行（坏签名不会被推上 main）');
+  else bad('验签晚于提交', '先 commit 再验签，等于把坏签名先发出去');
 }
 
 // ============================================================

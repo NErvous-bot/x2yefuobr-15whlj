@@ -5,7 +5,6 @@
 ## 仓库组件
 
 - `legado.json`：精选书源合集（按健康评分自动分层排序：核心/稳定/备用/观察，不可测源入保护池，确认坏沉底）
-- `dist/legado-public.json`：**可公开再分发的子集**。全量 `legado.json` 是历史累计产物，混有来自无 LICENSE 文件上游（`tickmao/Novel`、`aoaostar/legado`）的条目；`filter.js` 每轮落盘 `reports/source-provenance.json` 记录来源，`build-public-subset.js` 据此剔除无授权来源，只保留授权可追溯的部分（实测 679 → 395，58.2%）。手机同步消费的仍是全量 `legado.json`，两者互不影响
 - `replaceRule.json`：全局替换净化规则（去引导语/引流/求票/乱码，对所有书源生效）
 - `*.sig`：上述 JSON 的 ECDSA P-256 签名文件，App 端内置公钥逐字节验签，防公共镜像线路篡改/投毒
 - `filter.js` + GitHub Actions：每 3 天自动探测域名存活、剔除死源、尝试域名搬家修复、失败保留旧版本，并对成品重新签名
@@ -16,6 +15,7 @@
 - `fuse.js` + `reports/fuse-summary.txt`：发布保险丝（旧可用→新坏须经多轮实测定生死，仅"稳定死亡"才拦截发布；总源数/可用数骤降熔断；BLOCKED 时自动回滚成品文件，手机端书源逐字节不变，仅提交诊断报告）
 - `recheck-regression.js`：回归复查裁决器（对状态异常的源做多轮实测裁决，输出新旧状态迁移矩阵，只读不改正式书源）
 - `sign.js`：ECDSA 签名脚本（node 内置 crypto，签名后自验签，坏签名直接让 CI 失败，杜绝 0 字节签名被静默提交）
+- `verify-sign.js`：只用公钥复核仓库里真实落地的成品与签名。**2026-11-10 起内联进 `update.yml`（sign 之后、commit 之前）**，原因见下节：独立 workflow 那条路在 GITHUB_TOKEN 推送下根本收不到货
 - `probe.js` + `urls.txt` + `candidates.txt`：下载线路自动探活剔除、候选池自动扩容
 - `preflight.js`：升级预演工具，上传新 filter.js 前可本地跑一遍看预期效果
 - `SourceAutoSync/`：手机端自动同步 App 源码（GPL-3.0）。每天 5:00 自动检查：先拉 `version.txt` 指纹（内容没变当天不下载）→ 多镜像轮询下载 + 逐字节 ECDSA 验签 → 通过阅读App的 ContentProvider 批量写入（写前按手机可达性禁用断网源），写入回查通过后按上次同步清单删除仓库已剔除的旧源（按 `bookSourceUrl` 精确匹配，不会动用户自建源）；接口不可用或写入失败时自动改走官方在线导入深链（`legado://import`）；同步结束通过系统通知栏告知结果（成功/失败/无变化）
@@ -62,6 +62,8 @@ node preflight.js
 ## 实现说明
 
 - 签名使用 node 内置 crypto（sign.js）而非 openssl：2026-10-04 起 runner 镜像的 openssl 签名报 unsupported，旧管道写法会把 0 字节签名静默提交，现改为签名后自验签、失败即 CI 失败。
+- **验签关为什么要内联（2026-11-10 修）**：`update.yml` 用 `secrets.GITHUB_TOKEN` 推 main，而 GitHub 明文规定 GITHUB_TOKEN 触发的 push **不再引起后续 workflow 运行**。直接后果是 `verify-signature.yml` 从 2026-10-27 建起来只跑过 1 次（run #1），此后 5 次 auto update 推上去的成品**一次都没被那道关看过**——README 曾经写的「有人手改 json 立刻标红」是纸面保护。现把 `node verify-sign.js` 内联到 sign 之后、commit 之前，并由 `tests/ci-boundary.test.mjs` 三条断言锁死顺序（必须存在、必须在 sign 之后、必须在 commit 之前）。若以后改用 PAT / App token 推送，这道内联关仍保留——它拦的是「本轮签名和本轮成品对不上」，与推送身份无关。
+- **`reports/source-provenance.json` 仍在生成**：`filter.js` 每轮落盘来源溯源表，用于诊断「某个源来自哪个上游、许可证是什么」。删掉公开子集后它不再是合规流水线的输入，但仍是排查上游问题的唯一凭据，保留。
 - HTTPS 安全：2026-10-14 起移除全局 NODE_TLS_REJECT_UNAUTHORIZED=0（8 个脚本），上游 jsdelivr/GitHub raw 证书链完整，正常强校验无问题。
 - 审计脚本：smoke-p0.js（上游拉取+实测 smoke）、test-p0.js（P0 回归）、freshness-audit.js（分页完整性）、rank-legado.js（跨书排序）独立运行。
 - 书源按「>365天未更新」进入老化名单，删除前先真实实测三关（搜索出书→目录≥1章→正文≥200字）：全过豁免保留（90天免复测）、确定坏才剔除（每轮上限8%）；规则不可测（js动态语法、JSONPath高级语法、bookUrl模板拼接）、网络失败、反爬验证一律豁免不误删，由域名探活层兜底真死源；探活死源剔除仍受单次30%阈值保护。
