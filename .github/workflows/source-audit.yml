@@ -117,9 +117,14 @@ jobs:
         with:
           node-version: '20'
       # 取书失败不阻断：沿用仓库里现有的题库继续诊断（快照日期见 books.json 的 sampledAt）
-      - name: 刷新追更题库（番茄实时热榜）
+      # 题库来源：完结老书（2026-11-10 改）。
+      # 旧写法用番茄实时热榜，实测整轮端到端 0%——热榜是番茄独家首发，
+      # 第三方聚合站根本不收录，测出来的是「这本书有没有被搬」，
+      # 不是「源健不健康」。换完结老书后同条件 Valid 16/19。
+      # 这里显式写 --mode=classic，避免以后默认值变动导致行为漂移。
+      - name: 刷新追更题库（完结老书）
         continue-on-error: true
-        run: node scripts/pick-books.js --count=20 --polls=4
+        run: node scripts/pick-books.js --count=20 --mode=classic
       - name: 跨源追更诊断（只读 legado.json，只写 reports/freshness-*）
         env:
           # 每本书的时间预算；20 本 × 240s ≈ 80min，预算越大单本覆盖源越多
