@@ -1160,8 +1160,80 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     
     // 加载源清单
     const legadoPath = process.env.LEGADO_PATH || 'legado.json';
-    const list = JSON.parse(fs.readFileSync(legadoPath, 'utf8'));
+    let list = JSON.parse(fs.readFileSync(legadoPath, 'utf8'));
     console.log('源清单：' + list.length + ' 个源');
+
+    // ── 预筛：先剔掉「结构上不可能出结果」的源 ────────────────────────
+    // 2026-11-10 实测背景：13580 个候选样本里只有 273 个真正测到过，
+    // 69%（9307 条）耗在「时间预算截断」上，而截断掉的那批源里相当一部分
+    // 根本不可能出结果 —— 它们每轮都被分到预算、每轮都在超时前被砍掉，
+    // 真正的可用源反而拿不到时间。预筛把预算从死源手里抢回来。
+    //
+    // 三种必剔（都不产生任何有效样本，纯烧预算）：
+    //   1) searchUrl 含 <js> / @js: / java.  → 本 job 无 JS 执行权限，
+    //      必然落到「JS求值已禁用」。实测本轮就有 698 条样本卡在这里。
+    //   2) 完全没配 searchUrl 且没有 ruleSearch.url → 无从发起搜索
+    //   3) health 报告里 ipBlocked 或 连续 content=false 的 stable-dead 源
+    //
+    // 保守边界：预筛只动「结构性不可测」，不碰任何需要一次请求才能判断的源。
+    // 网络抖动、超时、反爬验证一律不预筛 —— 那些必须真测才知道。
+    // FRESHNESS_PREFILTER=0 可关闭本行为，用于对照实验。
+    let prefilterStats = null;
+    if ((process.env.FRESHNESS_PREFILTER || '1') !== '0') {
+        let healthMap = {};
+        try {
+            const h = JSON.parse(fs.readFileSync('health/source_health.json', 'utf8'));
+            healthMap = h.sources || {};
+        } catch (e) {
+            console.warn('⚠️ 无 health/source_health.json，预筛只用结构规则');
+        }
+
+        const dropped = { jsRule: 0, noSearchUrl: 0, deadOrBlocked: 0 };
+        const before = list.length;
+        list = list.filter((s) => {
+            const url = (s.searchUrl || '');
+            const ruleUrl = (s.ruleSearch && s.ruleSearch.url) || '';
+            const both = String(url) + ' ' + String(ruleUrl);
+
+            // 1) JS 动态规则：本 job 不执行书源 JS，这类必然测不出
+            if (/<js>|@js:|java\./i.test(both)) {
+                dropped.jsRule++;
+                return false;
+            }
+            // 2) 完全无从搜索
+            if (!String(url).trim() && !String(ruleUrl).trim()) {
+                dropped.noSearchUrl++;
+                return false;
+            }
+            // 3) 健康报告已判确定坏 / IP 受限
+            const rec = healthMap[norm(s.bookSourceUrl)];
+            if (rec && typeof rec.health !== 'undefined' && rec.health !== null) {
+                if (rec.health === false || rec.content === false || rec.ipBlocked === true) {
+                    dropped.deadOrBlocked++;
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        const removed = before - list.length;
+        prefilterStats = {
+            before,
+            after: list.length,
+            removed,
+            removedRatio: before ? Math.round((removed / before) * 1000) / 10 : 0,
+            reasons: { ...dropped },
+        };
+        console.log(
+            '预筛：剔除 ' + removed + '/' + before + '（' +
+            '  JS规则 ' + dropped.jsRule +
+            ' / 无搜索入口 ' + dropped.noSearchUrl +
+            ' / 已判坏或IP受限 ' + dropped.deadOrBlocked + '）→ 保留 ' + list.length
+        );
+        if (removed > 0) {
+            console.log('   预算将集中到 ' + list.length + ' 个结构上可测的源上（FRESHNESS_PREFILTER=0 可关闭）');
+        }
+    }
     
     const details = [];
     const summary = { generatedAt: Date.now(), books: {} };
@@ -1554,6 +1626,10 @@ if (require.main === module && process.argv.includes('--test-t1')) {
     summary.totals = {
         books: books.length,
         sourcesInList: list.length,
+        // 预筛透明化：被剔掉的结构性不可测源必须留痕，否则「679 个源全测过」
+        // 这类口径会失真 —— 分母悄悄缩小了，读者看不出来。
+        prefilter: prefilterStats || null,
+        sourcesBeforePrefilter: prefilterStats ? prefilterStats.before : list.length,
         samples: details.length,
         measuredSamples: details.filter(d => d.catalog_checked).length,
         uniqueSourcesSampled: new Set(details.map(d => d.source_url_hash)).size,

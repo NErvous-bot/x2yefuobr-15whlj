@@ -9,6 +9,16 @@ on:
   schedule:
     - cron: '0 4 * * 0'
   workflow_dispatch:
+    inputs:
+      job:
+        description: '要跑哪些 job'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all            # 三重验源 + 追更诊断（等同定时行为）
+          - freshness-only # 只跑追更诊断，跳过 Playwright 三重验源
+          - audit-only     # 只跑三重验源
 
 permissions:
   contents: write
@@ -33,6 +43,7 @@ concurrency:
 
 jobs:
   audit:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.job != 'freshness-only' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,9 +93,19 @@ jobs:
 
   # 追更诊断：与三重验收分开跑，独立输出 reports/freshness-*.json/csv；
   # 只刷新题库（books.json）与诊断报告，同样严禁触碰任何成品/评分文件。
-  # needs: audit —— 两个 job 都会写 main，串行化避免 rebase/push 竞争。
+  #
+  # 依赖关系（2026-11-10 改）：原先无条件 needs: audit，导致想单独验证账本
+  # 跨轮次行为时也必须先把 Playwright 三重验源整套跑一遍（装 Chromium + 45 个
+  # 候选实测，十几分钟），拿账本却一行都不需要它。
+  #
+  # 现在改为「跟着 audit 走」有条件依赖：
+  #   · 定时触发（周日）：audit 会跑，freshness 排在它后面串行，保持原行为
+  #                        （两者都写 main，串行避免 rebase/push 竞争）
+  #   · 手动 dispatch 且只选 freshness：audit 被跳过，freshness 立即开跑，
+  #                        用于单独验证账本 / 预筛效果，不浪费 CI 分钟
   freshness:
     needs: audit
+    if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.job != 'audit-only') }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
