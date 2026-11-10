@@ -1,0 +1,32 @@
+# 换行符策略 —— 这几类文件必须逐字节稳定，不能被 autocrlf 改写
+#
+# 背景（2026-11-10 实测）：Windows 上 core.autocrlf=true 会把 LFS 里的 LF
+# 检出成 CRLF。对 legado.json / replaceRule.json / version.txt 而言这不是
+# 风格问题，而是**正确性问题**：
+#   · *.sig 是对"文件字节"做的 ECDSA 签名
+#   · version.txt 存的是 md5(文件字节)
+#   · App 端做逐字节验签 + 指纹比对
+# 一旦检出时换了换行，
+#   本地 node verify-sign.js 就报「签名不符 / version.txt 不一致」，
+#   而远端 git 对象其实是好的 —— 纯属本地假警报，却会让人以为成品被篡改。
+# 实测：同一份 replaceRule.json，CRLF 版本验签 false，LF 版本验签 true。
+#
+# 处置：签名相关文件一律 -text（不做任何换行转换），按原字节进出。
+*.json      -text
+*.sig       -text
+version.txt -text
+*.apk       -text
+
+# 源码与文档保持仓库统一用 LF（这里显式声明，避免依赖各人 autocrlf 设置）
+*.js        text eol=lf
+*.mjs       text eol=lf
+*.cjs       text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.kt        text eol=lf
+*.java      text eol=lf
+*.gradle    text eol=lf
+*.sh        text eol=lf
+NOTICE      text eol=lf
+LICENSE     text eol=lf
