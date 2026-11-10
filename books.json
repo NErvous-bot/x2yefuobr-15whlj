@@ -1,67 +1,11 @@
 [
   {
-    "key": "cn_e7a59ee5a293",
-    "title": "神墓",
-    "reference": 900,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e981aee5a4a9",
-    "title": "遮天",
-    "reference": 1880,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e58991e69da5",
-    "title": "剑来",
-    "reference": 1307,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "仙侠",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e8afa1e7a798e4b9",
-    "title": "诡秘之主",
-    "reference": 1432,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "奇幻",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
     "key": "cn_e5ae8ce7be8ee4b8",
     "title": "完美世界",
     "reference": 2000,
     "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
     "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e99baae4b8ade682",
-    "title": "雪中悍刀行",
-    "reference": 1003,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "武侠",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e5a4a7e98193e69c",
-    "title": "大道朝天",
-    "reference": 1000,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "仙侠",
-    "sampledAt": "2026/11/10 19:44:58"
-  },
-  {
-    "key": "cn_e8b598e5a9bf",
-    "title": "赘婿",
-    "reference": 500,
-    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
-    "genre": "历史",
-    "sampledAt": "2026/11/10 19:44:58"
+    "sampledAt": "2026/11/10 12:06:23"
   },
   {
     "key": "cn_e69697e7a0b4e88b",
@@ -69,7 +13,39 @@
     "reference": 1600,
     "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
     "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e585a8e8818ce9ab",
+    "title": "全职高手",
+    "reference": 1700,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "游戏",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e789a7e7a59ee8ae",
+    "title": "牧神记",
+    "reference": 1500,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "玄幻",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e99baae4b8ade682",
+    "title": "雪中悍刀行",
+    "reference": 1003,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "武侠",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e79b98e9be99",
+    "title": "盘龙",
+    "reference": 800,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "奇幻",
+    "sampledAt": "2026/11/10 12:06:23"
   },
   {
     "key": "cn_e5a4a7e4b8bbe5ae",
@@ -77,7 +53,39 @@
     "reference": 1500,
     "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
     "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e6ada6e58aa8e4b9",
+    "title": "武动乾坤",
+    "reference": 1300,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "玄幻",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e58991e69da5",
+    "title": "剑来",
+    "reference": 1307,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "仙侠",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e8b598e5a9bf",
+    "title": "赘婿",
+    "reference": 500,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "历史",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e7a59ee5a293",
+    "title": "神墓",
+    "reference": 900,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "玄幻",
+    "sampledAt": "2026/11/10 12:06:23"
   },
   {
     "key": "cn_e5ba86e4bd99e5b9",
@@ -85,7 +93,39 @@
     "reference": 700,
     "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
     "genre": "历史",
-    "sampledAt": "2026/11/10 19:44:58"
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e994a6e8a1a3e4b9",
+    "title": "锦衣之下",
+    "reference": 400,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "言情",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e69697e7bd97e5a4",
+    "title": "斗罗大陆",
+    "reference": 336,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "玄幻",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e8afa1e7a798e4b9",
+    "title": "诡秘之主",
+    "reference": 1432,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "奇幻",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e981aee5a4a9",
+    "title": "遮天",
+    "reference": 1880,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "玄幻",
+    "sampledAt": "2026/11/10 12:06:23"
   },
   {
     "key": "cn_e4b8b4e6b88ae8a1",
@@ -93,6 +133,22 @@
     "reference": 700,
     "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
     "genre": "玄幻",
-    "sampledAt": "2026/11/10 19:44:58"
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e5a4a7e98193e69c",
+    "title": "大道朝天",
+    "reference": 1000,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "仙侠",
+    "sampledAt": "2026/11/10 12:06:23"
+  },
+  {
+    "key": "cn_e587a1e4babae4bf",
+    "title": "凡人修仙传",
+    "reference": 2446,
+    "source": "经典完结书目（reference 为先验，判定基准由本轮实测共识自校准）",
+    "genre": "仙侠",
+    "sampledAt": "2026/11/10 12:06:23"
   }
 ]
