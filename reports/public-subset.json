@@ -1,0 +1,134 @@
+{
+ "generatedAt": 1794285501602,
+ "totalSources": 679,
+ "publicSources": 395,
+ "removed": 284,
+ "removedRatio": 41.8,
+ "byUpstream": {
+  "aoaostar": 279,
+  "tickmao": 5
+ },
+ "note": "publicSources = 可在公开仓库再分发的子集；legado.json 仍为全量（个人使用）",
+ "removedSample": [
+  {
+   "name": "快眼看书",
+   "url": "http://www.booksky.cc/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "🎃第一版主🎃#10",
+   "url": "http://i.12bz.net#🎃",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "🎃吾爱文学🎃",
+   "url": "http://m.x2552.com#🎃",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "手机看书（优）",
+   "url": "https://www.sjks88.com",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "全本同人",
+   "url": "https://www.qbtr.cc",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "穿越小说",
+   "url": "http://www.kk169.net",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "乡土小说",
+   "url": "https://www.xiangtxsw.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "精品小说",
+   "url": "https://jpxs123.cc",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "五六中文",
+   "url": "https://www.56zw.com#",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "经典书库",
+   "url": "https://www.jingdianbook.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "快眼看书",
+   "url": "http://www.botaodz.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "👔 夜书文苑",
+   "url": "https://www.yeshuyuan.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "肉肉屋②",
+   "url": "https://m.rourouwu2.com/#🚀",
+   "upstream": "tickmao",
+   "license": "NONE"
+  },
+  {
+   "name": "笔趣阁",
+   "url": "http://www.biquge001.com#🎃",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "奇怪小说",
+   "url": "http://www.yetianlian.info",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "安之原创",
+   "url": "http://www.azycjd.com#yc1101",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "优品文档（导+）",
+   "url": "https://www.ypppt.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "爱下书嘚",
+   "url": "http://www.aixiawx.com/#嘚嘚21.0201",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "优四小说网",
+   "url": "http://www.xyusk.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  },
+  {
+   "name": "桃桃书",
+   "url": "https://m.ttshu12.com/",
+   "upstream": "aoaostar",
+   "license": "NONE"
+  }
+ ]
+}

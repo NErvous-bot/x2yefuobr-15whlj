@@ -564,6 +564,60 @@ function variants(o) {
     fs.writeFileSync(file, JSON.stringify(out));
     console.log('legado.json 已更新（合并 ' + merged + ' / 修复 ' + repaired + ' / 剔除 ' + removed + '+' + agedRemoved + '+' + manualRemoved + '（探活+老化+人工）/ 隔离 ' + quarantined + ' / 新增 ' + added + ' / 番茄+' + fanqieAdded + ' / 本地策展+' + localAdded + ' / URL规范化改写 ' + canonChanged + ' 合并 ' + canonMerged + '）');
 
+    // ── 来源溯源表（2026-11-10，合规用）────────────────────────────────
+    // 背景：仓库是 public，而 legado.json 是历史累计产物，里面混着
+    // 无 LICENSE 文件上游（tickmao/Novel、aoaostar/legado）并入的条目。
+    // 书源本身不携带上游标记，所以「某个源是哪来的」此前无从判断。
+    //
+    // 做法：每轮把「仍然存在的源」与「各上游当前清单」求交集，
+    // 把命中结果落成 reports/source-provenance.json。
+    // 这是纯观测文件，不参与成品，也不改变任何筛选行为。
+    // 下游可据此生成「可公开子集」：把 license=NONE 上游命中的 URL 剔除。
+    //
+    // 注意：只能识别「当前上游清单里仍有的」。上游已下架的条目认不出来，
+    // 这部分属于无法自证的历史遗留，不在这里假装已解决。
+    try {
+        const provenance = { generatedAt: Date.now(), byUrl: {}, unlockedOverlap: 0 };
+        const mineKeys = new Set(out.map((s) => norm(s.bookSourceUrl)).filter(Boolean));
+        const upstreamsConf = Array.isArray(upstreamsConfig) ? upstreamsConfig : [];
+        const http = require('http');
+        const https = require('https');
+        for (const u of upstreamsConf) {
+            if (!u || !Array.isArray(u.urls) || u.enabled === false) continue;
+            const locked = u.publicPublish !== true;
+            for (const url of u.urls) {
+                try {
+                    const body = await new Promise((resolve, reject) => {
+                        const mod = url.startsWith('https') ? https : http;
+                        const req = mod.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 }, (res) => {
+                            if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+                            let buf = '';
+                            res.setEncoding('utf8');
+                            res.on('data', (c) => { buf += c; });
+                            res.on('end', () => resolve(buf));
+                        });
+                        req.on('timeout', () => { req.destroy(); resolve(null); });
+                        req.on('error', () => resolve(null));
+                    });
+                    if (!body) continue;
+                    const parsed = JSON.parse(body);
+                    const arr = Array.isArray(parsed) ? parsed : (parsed.sources || parsed.data || []);
+                    for (const s of arr) {
+                        const k = norm(s && s.bookSourceUrl);
+                        if (!k || !mineKeys.has(k)) continue;
+                        provenance.byUrl[k] = { id: u.id, license: u.license, publicPublish: u.publicPublish === true };
+                        if (locked) provenance.unlockedOverlap++;
+                    }
+                    break; // 一个上游拿到清单即可，不必把备用 URL 全拉
+                } catch (e) { /* 单个上游失败不影响主流程 */ }
+            }
+        }
+        fs.writeFileSync('reports/source-provenance.json', JSON.stringify(provenance, null, 1));
+        console.log('来源溯源：' + Object.keys(provenance.byUrl).length + ' 个源可定位上游，其中来自无授权上游 ' + provenance.unlockedOverlap + ' 个');
+    } catch (e) {
+        console.warn('来源溯源失败（不影响成品）：' + e.message);
+    }
+
     // Phase B-1 → Phase D-1: 对比 HEAD legado.json 补删除清单 + 存活保留
     // P1-1 修复：上游不再提供 ≠ 源已失效。对每个 missing 源先 alive() 探测 origin：
     //   域名还活着 → 保留旧源（加回 out，不出现在 deletionManifest）

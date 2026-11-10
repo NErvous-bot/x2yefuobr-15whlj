@@ -152,8 +152,39 @@ function grade(v) {
     if (consFail === 1) stab -= 5; else if (consFail === 2) stab -= 15;
     const consPass = consOf(recent, 'pass');
     const streak = consPass >= 3 ? 10 : consPass === 2 ? 7 : consPass === 1 ? 4 : 0;
-    const score = Math.max(0, Math.min(100, base + stab + streak));
+
+    // ── 实际可用性扣分（2026-11-10，饱和修复）──────────────────────────
+    // 实测发现：base 上限 70 + stab 上限 20 + streak 上限 10 = 恰好 100。
+    // 于是「三关全过 + 连续 5 次 pass」的源必然 score=100 —— 155 个 core
+    // 源全部同分，评分在满分端完全饱和，排序只能靠原始顺序，等于没有区分度。
+    //
+    // 更糟的是它把真问题盖住了：实测 161 个「三关全过」里，
+    // 「🎃第一版主🎃#10」chapters=1、「🎃吾爱文学🎃」chapters=9、
+    // 「琦书网」chapters=5 —— 目录只有个位数章节的源，和真正
+    // 7000 章的源拿一样的 100 分、一样进核心层。
+    // 用户在手机上打开这种源只会搜到一两个条目，这就是「不踏实」的来源。
+    //
+    // 处置：按「实测到的实际产出」扣分，只降不判死。
+    //   · 目录 < 10 章        → -18（几乎不可用，明显是空壳/占位）
+    //   · 目录 < 50 章        →  -8（能搜到但内容极少）
+    //   · 正文长度 < 300 字符 → -15（拿到了页面但正文规则基本没取到内容）
+    //   · 正文长度 < 1000     →  -5（正文偏短，可能是试读/摘要）
+    // 这几条都是 health.js 已经实测出来的事实，不需要新增探测。
+    const chaptersSeen = Number(v.chapters || 0);
+    const contentLenSeen = Number(v.contentLen || 0);
+    let usable = 0;
+    const usableNotes = [];
+    if (chaptersSeen > 0 && chaptersSeen < 10) { usable -= 18; usableNotes.push('目录仅' + chaptersSeen + '章'); }
+    else if (chaptersSeen > 0 && chaptersSeen < 50) { usable -= 8; usableNotes.push('目录仅' + chaptersSeen + '章'); }
+    if (contentLenSeen > 0 && contentLenSeen < 300) { usable -= 15; usableNotes.push('正文仅' + contentLenSeen + '字符'); }
+    else if (contentLenSeen > 0 && contentLenSeen < 1000) { usable -= 5; usableNotes.push('正文偏短'); }
+
+    const score = Math.max(0, Math.min(100, base + stab + streak + usable));
     if (consFail >= 3) return { score, layer: 'watch', weight: 30 };
+    if (usableNotes.length) {
+        // 扣分依据随结果带回，便于在 source_scores.json 里追责
+        var usableWhy = usableNotes.join('；');
+    }
 
     // ── 可信度闸门（2026-11-01，评审 P1）──────────────────────────────────────
     //
@@ -195,10 +226,10 @@ function grade(v) {
         const w = score >= 90 ? 460 : score >= 75 ? 280 : 140;
         return { score, layer: score >= 90 ? 'core' : score >= 75 ? 'stable' : 'backup', weight: w, deepLimited: true };
     }
-    if (score >= 90) return { score, layer: 'core', weight: Math.round(500 + (score - 90) * 20) };
-    if (score >= 75) return { score, layer: 'stable', weight: Math.round(300 + (score - 75) * 12) };
-    if (score >= 60) return { score, layer: 'backup', weight: Math.round(150 + (score - 60) * 9) };
-    return { score, layer: 'watch', weight: 50 };
+    if (score >= 90) return { score, layer: 'core', weight: Math.round(500 + (score - 90) * 20), usableWhy };
+    if (score >= 75) return { score, layer: 'stable', weight: Math.round(300 + (score - 75) * 12), usableWhy };
+    if (score >= 60) return { score, layer: 'backup', weight: Math.round(150 + (score - 60) * 9), usableWhy };
+    return { score, layer: 'watch', weight: 50, usableWhy };
 }
 
 // 主流程：只有直接 node score.js 才执行评分+改写 legado.json
