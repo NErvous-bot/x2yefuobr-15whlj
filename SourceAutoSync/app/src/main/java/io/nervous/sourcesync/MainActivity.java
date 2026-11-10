@@ -228,36 +228,62 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 「自检」按钮：做一次主动探测，把结论写进历史，便于事后回看 */
+    /**
+     * 「自检」按钮：做一次主动探测并记录。
+     * v3.25 修正两处（评审指出）：
+     *  1) 原实现在主线程直接调 WorkManager Future 的 .get()，数据库繁忙时会卡界面
+     *     甚至 ANR。本类顶部已有 queryExec（single thread）就是为此准备的，改过去。
+     *  2) 原注释说「写进历史」，实际只覆盖 SharedPreferences 的 last，
+     *     历史里看不到这条自检。现在真正追加进 hist（与 Worker 的 done() 同格式）。
+     */
     private void runSelfTest() {
-        StringBuilder sb = new StringBuilder("自检 v" + BuildConfig.VERSION_NAME + "：");
-        try {
-            boolean notif = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    == android.content.pm.PackageManager.PERMISSION_GRANTED;
-            sb.append(notif ? "通知OK" : "通知未授权");
-            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
-            boolean battery = pm == null || pm.isIgnoringBatteryOptimizations(getPackageName());
-            sb.append(battery ? "；省电已豁免" : "；省电未豁免");
-            sb.append("；任务链");
-            List<WorkInfo> list = WorkManager.getInstance(this)
-                    .getWorkInfosForUniqueWork("daily-next").get();
-            boolean scheduled = false;
-            for (WorkInfo wi : list) {
-                WorkInfo.State st = wi.getState();
-                if (st == WorkInfo.State.ENQUEUED || st == WorkInfo.State.RUNNING) { scheduled = true; break; }
+        queryExec.execute(() -> {
+            StringBuilder sb = new StringBuilder("自检 v" + BuildConfig.VERSION_NAME + "：");
+            try {
+                boolean notif = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                        == android.content.pm.PackageManager.PERMISSION_GRANTED;
+                sb.append(notif ? "通知OK" : "通知未授权");
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                boolean battery = pm == null || pm.isIgnoringBatteryOptimizations(getPackageName());
+                sb.append(battery ? "；省电已豁免" : "；省电未豁免");
+                sb.append("；任务链");
+                List<WorkInfo> list = WorkManager.getInstance(this)
+                        .getWorkInfosForUniqueWork("daily-next").get();
+                boolean scheduled = false;
+                for (WorkInfo wi : list) {
+                    WorkInfo.State st = wi.getState();
+                    if (st == WorkInfo.State.ENQUEUED || st == WorkInfo.State.RUNNING) { scheduled = true; break; }
+                }
+                sb.append(scheduled ? "正常" : "未排程");
+            } catch (Exception e) {
+                sb.append("检查异常：").append(e.getClass().getSimpleName());
             }
-            sb.append(scheduled ? "正常" : "未排程");
-        } catch (Exception e) {
-            sb.append("检查异常：").append(e.getClass().getSimpleName());
-        }
-        String msg = sb.toString();
-        try {
-            android.content.SharedPreferences sp = getSharedPreferences("sync", MODE_PRIVATE);
-            sp.edit().putString("last", msg).apply();
-        } catch (Exception ignored) {}
-        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
-        refresh();
-        renderSelfCheck();
+            final String msg = sb.toString();
+            try {
+                android.content.SharedPreferences sp = getSharedPreferences("sync", MODE_PRIVATE);
+                // 同时更新 last（当前状态）与 hist（历史尾巴），与 Worker.done() 一致
+                String oldHist = sp.getString("hist", "");
+                String stamp = new java.text.SimpleDateFormat("MM-dd HH:mm",
+                        java.util.Locale.CHINA).format(new java.util.Date());
+                String newHist = (stamp + " " + msg + (oldHist.isEmpty() ? "" : "\n" + oldHist));
+                // 只保留最近 6 行，避免无限增长
+                String[] lines = newHist.split("\n");
+                if (lines.length > 6) {
+                    StringBuilder keep = new StringBuilder();
+                    for (int i = 0; i < 6; i++) {
+                        if (i > 0) keep.append('\n');
+                        keep.append(lines[i]);
+                    }
+                    newHist = keep.toString();
+                }
+                sp.edit().putString("last", msg).putString("hist", newHist).apply();
+            } catch (Exception ignored) {}
+            runOnUiThread(() -> {
+                android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
+                refresh();
+                renderSelfCheck();
+            });
+        });
     }
 
     @Override
